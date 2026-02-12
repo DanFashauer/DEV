@@ -1,0 +1,285 @@
+# Enterprise Shell - iOS Enterprise Login Shell
+
+A secure iOS/iPadOS enterprise application that functions as a "login shell" for shared mobile devices in supervised, MDM-managed environments.
+
+## Overview
+
+Enterprise Shell provides a secure kiosk-style interface for shared devices in enterprise environments. Users authenticate using hardware badge readers, and the app enforces strict session lifecycle management with automatic data cleanup.
+
+## Features
+
+### Core Functionality
+- **Badge Reader Integration**: USB-C/Lightning hardware badge reader support via External Accessory Framework
+- **Session State Machine**: Explicit state transitions (LockedIdle → BadgeCaptured → Authenticating → Provisioning → ActiveSession → Terminating → LockedIdle)
+- **OIDC Authentication**: Microsoft Entra ID integration with token exchange flow
+- **Secure Token Storage**: iOS Keychain for authentication tokens
+- **Backend API Integration**: Session start/end, audit logging
+- **Persona-Based UI**: Role-based workspace configuration
+- **App Launching**: Launch enterprise apps based on user role
+- **Session Teardown**: Complete data wipe on session end
+- **Audit Logging**: Comprehensive event logging
+
+### Platform Support
+- iPadOS 15.0+ (primary target)
+- iOS 15.0+ (secondary)
+- Supervised devices only
+- MDM-managed environments
+
+## Project Structure
+
+```
+ios/
+├── project.yml              # XcodeGen configuration
+├── setup.sh                 # Setup script
+├── README.md               # This file
+└── EnterpriseShell/
+    ├── AppDelegate.swift   # App lifecycle
+    ├── SceneDelegate.swift  # Scene management
+    ├── Info.plist          # App configuration
+    ├── EnterpriseShell.entitlements  # Entitlements
+    ├── Models/
+    │   ├── SessionState.swift    # State machine definition
+    │   └── SessionData.swift     # Data models
+    ├── Services/
+    │   ├── SessionStateManager.swift  # State machine logic
+    │   ├── BadgeReaderManager.swift   # Badge reader integration
+    │   ├── KeychainService.swift      # Secure storage
+    │   ├── OIDCAuthService.swift      # OIDC authentication
+    │   ├── BackendService.swift       # API communication
+    │   ├── AppLauncher.swift          # App launching
+    │   └── AuditLogger.swift         # Audit logging
+    ├── Utilities/
+    │   └── DeviceInfo.swift          # Device information
+    ├── Views/
+    │   ├── LockedIdleViewController.swift
+    │   ├── BadgeCapturedViewController.swift
+    │   ├── AuthenticatingViewController.swift
+    │   ├── ProvisioningViewController.swift
+    │   ├── ActiveSessionViewController.swift
+    │   └── TerminatingViewController.swift
+    └── Resources/
+        └── Assets.xcassets/
+```
+
+## Configuration Required
+
+### 1. OIDC Configuration
+Edit `Services/OIDCAuthService.swift`:
+```swift
+struct OIDCConfig {
+    let clientId: "<YOUR_CLIENT_ID>"
+    let tenantId: "<YOUR_TENANT_ID>"
+    let redirectUri: "com.enterprise.shell://auth/callback"
+    let scopes: [...]
+}
+```
+
+### 2. Backend Configuration
+Set environment variable or edit `Services/BackendService.swift`:
+```swift
+static var baseUrl: String {
+    ProcessInfo.processInfo.environment["BACKEND_BASE_URL"] ?? "https://api.enterprise.example.com"
+}
+```
+
+### 3. Badge Reader Protocol
+Edit `Services/BadgeReaderManager.swift`:
+```swift
+private let accessoryProtocol = "com.enterprise.badgereader" // Protocol string for your badge reader
+```
+
+## Setup Instructions
+
+### Prerequisites
+- macOS with Xcode
+- XcodeGen (install via `brew install xcodegen`)
+- Apple Developer account (for code signing)
+
+### Build Steps
+
+1. **Install XcodeGen**
+   ```bash
+   brew install xcodegen
+   ```
+
+2. **Generate Xcode Project**
+   ```bash
+   cd ios
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+
+3. **Open in Xcode**
+   ```bash
+   open ios/EnterpriseShell.xcodeproj
+   ```
+
+4. **Configure Signing**
+   - Select your Development Team in Xcode
+   - Update bundle identifier as needed
+
+5. **Configure Constants**
+   - OIDC client ID and tenant
+   - Backend URL
+   - Badge reader protocol
+
+6. **Build and Run**
+   ```bash
+   xcodebuild -project ios/EnterpriseShell.xcodeproj \
+     -scheme EnterpriseShell \
+     -sdk ipados \
+     -configuration Debug \
+     build
+   ```
+
+## MDM Configuration
+
+### Required Restrictions
+When configuring MDM, apply these restrictions for kiosk mode:
+- `SingleAppMode` or `Autolock` enabled
+- `AllowCamera` = false (unless needed)
+- `AllowScreenShot` = false
+- `AllowUSBFileTransfer` = false
+- `AllowOpenFrom unmanaged to managed` = false
+- `AllowOpenFrom managed to unmanaged` = false
+
+### App Configuration Payload
+```xml
+<key>PayloadContent</key>
+<array>
+    <dict>
+        <key>PayloadType</key>
+        <string>com.apple.app.lock</string>
+        <key>Mandatory</key>
+        <true/>
+        <key>PayloadIdentifier</key>
+        <string>com.enterprise.shell.appLock</string>
+        <key>PayloadUUID</key>
+        <string>...</string>
+        <key>PayloadVersion</key>
+        <integer>1</integer>
+        <key>LockApplication</key>
+        <true/>
+    </dict>
+</array>
+```
+
+## Session Lifecycle
+
+### State Machine
+```
+LockedIdle → BadgeCaptured → Authenticating → Provisioning → ActiveSession → Terminating → LockedIdle
+```
+
+### State Descriptions
+1. **LockedIdle**: Full-screen login prompt, waiting for badge scan
+2. **BadgeCaptured**: Badge ID received, preparing authentication
+3. **Authenticating**: Validating badge with backend, OIDC flow
+4. **Provisioning**: Loading persona, launching apps
+5. **ActiveSession**: User workspace, role-based UI
+6. **Terminating**: Revoking tokens, clearing data, logging
+
+### Session End Triggers
+- User taps "End Session" button
+- Idle timeout (configurable per persona)
+- Security violation detected
+- App goes to background (if not allowed)
+- MDM-initiated lock
+
+## Badge Reader Integration
+
+### Supported Hardware
+The app uses the External Accessory Framework to communicate with badge readers connected via:
+- USB-C
+- Lightning
+
+### Protocol Requirements
+Your badge reader must:
+1. Support the External Accessory Protocol
+2. Send badge data via serial communication
+3. Format: `[HEADER][BADGE_ID][FOOTER]`
+
+Example data format:
+- Header: `0x02`
+- Footer: `0x03`
+- Example: `0x02 31 32 33 34 35 36 0x03` → Badge ID: "123456"
+
+## Security Features
+
+### Token Storage
+- All tokens stored in iOS Keychain
+- `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` protection
+- Access group isolation
+
+### Session Isolation
+- No data persistence between sessions
+- Automatic token revocation on end
+- Audit logging for all operations
+
+### Data Wipe
+On session end:
+- Keychain cleared
+- URL cache purged
+- User defaults reset
+- In-memory data cleared
+
+## Backend API Endpoints
+
+### Required Endpoints
+- `POST /api/sessions/start` - Validate badge, return session token
+- `POST /api/sessions/{id}/end` - Notify session end
+- `POST /api/audit/logs` - Send audit events
+- `GET /health` - Health check
+
+### Request/Response Formats
+See `Models/SessionData.swift` for detailed API models.
+
+## Testing
+
+### Badge Reader Testing
+1. Use Xcode to run on device
+2. Connect badge reader via USB-C/Lightning
+3. Tap badge - should progress through states
+4. Check Xcode console for debug output
+
+### Session Flow Testing
+1. Start app → LockedIdle state
+2. Simulate badge scan → BadgeCaptured → Authenticating
+3. Backend mock → Provisioning → ActiveSession
+4. Tap End Session → Terminating → LockedIdle
+
+## Deployment
+
+### App Store / VPP
+1. Archive in Xcode
+2. Upload to App Store Connect
+3. Distribute via Volume Purchase Program (VPP)
+
+### Custom Enterprise Distribution
+1. Create Enterprise Certificate
+2. Export as .ipa
+3. Distribute via MDM
+
+## Limitations (MVP)
+
+- No NFC badge reading
+- No offline authentication
+- No biometric fallback
+- No Apple ID integration
+- No OS-level user switching
+
+## Dependencies
+
+No external dependencies required. Uses:
+- iOS 15+ SDK
+- Security framework
+- External Accessory framework
+- AuthenticationServices framework
+
+## License
+
+Proprietary - Enterprise Use Only
+
+## Support
+
+For enterprise support and customization, contact your IT department.
