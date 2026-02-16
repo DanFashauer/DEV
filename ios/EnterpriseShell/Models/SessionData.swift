@@ -192,3 +192,41 @@ struct APIError: Codable {
     let message: String
     let details: [String: String]?
 }
+
+// MARK: - Badge Enrollment Models
+
+/// Request to check badge enrollment status
+struct BadgeEnrollmentRequest: Codable {
+    let badgeId: String
+    let deviceId: String
+    let deviceSerial: String
+    let timestamp: Date
+    let metadata: [String: String]
+}
+
+/// Request to complete badge enrollment
+struct CompleteEnrollmentRequest: Codable {
+    let badgeId: String
+    let userInfo: EnrollmentUserInfo
+    let timestamp: Date
+}
+
+/// User info for badge enrollment
+struct EnrollmentUserInfo: Codable {
+    let employeeId: String
+    let displayName: String
+    let email: String
+    let department: String?
+    let title: String?
+}
+
+/// Response from badge enrollment check
+struct BadgeEnrollmentResponse: Codable {
+    let isEnrolled: Bool
+    let needsProvisioning: Bool
+    let persona: Persona?
+    let sessionToken: String?
+    let user: UserInfo?
+    let error: APIError?
+    let enrollmentInstructions: String?
+}

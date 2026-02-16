@@ -233,6 +233,19 @@ final class BadgeReaderManager: NSObject {
         NotificationCenter.default.removeObserver(self)
         disconnectFromAccessory()
     }
+    
+    // MARK: - State Reset
+    
+    /// Reset the badge reader state for next user
+    func resetReaderState() {
+        // Clear data buffer
+        dataBuffer.removeAll()
+        
+        // Reset reading state
+        isReading = false
+        
+        AuditLogger.shared.log(event: .badgeReaderReset, metadata: nil)
+    }
 }
 
 // MARK: - EAAccessoryDelegate

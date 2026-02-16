@@ -111,6 +111,13 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
                 await beginAuthentication()
             }
             
+        case .enrolling:
+            // Badge enrollment flow - handled by handleUnenrolledBadge
+            // UI shows enrollment instructions
+            AuditLogger.shared.log(event: .badgeEnrollmentStarted, metadata: [
+                "badgeId": maskBadgeId(capturedBadgeId ?? "unknown")
+            ])
+            
         case .provisioning:
             // Configure session based on persona
             Task {
@@ -170,6 +177,12 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
                 deviceSerial: DeviceInfo.serialNumber ?? "unknown"
             )
             
+            // Check if badge is not enrolled - initiate enrollment flow
+            if startSessionResponse.error?.code == "BADGE_NOT_ENROLLED" {
+                await handleUnenrolledBadge(badgeId: badgeId)
+                return
+            }
+            
             guard startSessionResponse.success,
                   let sessionToken = startSessionResponse.sessionToken,
                   let persona = startSessionResponse.persona,
@@ -203,11 +216,83 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
             transition(to: .provisioning)
             
         } catch {
+            // Check if this might be an unenrolled badge error
+            if isUnenrolledBadgeError(error) {
+                await handleUnenrolledBadge(badgeId: badgeId)
+                return
+            }
+            
             AuditLogger.shared.log(event: .authenticationFailed, metadata: [
                 "error": error.localizedDescription
             ])
             transition(to: .lockedIdle, error: error)
         }
+    }
+    
+    /// Handle the case where a badge is not enrolled
+    private func handleUnenrolledBadge(badgeId: String) async {
+        AuditLogger.shared.log(event: .badgeNotEnrolled, metadata: [
+            "badgeId": maskBadgeId(badgeId)
+        ])
+        
+        // Transition to enrolling state to show enrollment UI
+        transition(to: .enrolling)
+        
+        // Check enrollment status with backend
+        do {
+            let enrollmentResponse = try await BackendService.shared.checkBadgeEnrollment(
+                badgeId: badgeId,
+                deviceId: DeviceInfo.identifier,
+                deviceSerial: DeviceInfo.serialNumber ?? "unknown"
+            )
+            
+            if enrollmentResponse.isEnrolled {
+                // Badge was enrolled, proceed to authentication
+                await beginAuthentication()
+            } else if enrollmentResponse.needsProvisioning {
+                // Badge needs provisioning, continue with enrollment flow
+                // The UI should show enrollment instructions
+                // User would need to complete enrollment through another method
+                // For now, return to locked idle with message
+                transition(to: .lockedIdle, error: SessionError.enrollmentRequired)
+            } else {
+                // Cannot enroll badge
+                transition(to: .lockedIdle, error: SessionError.enrollmentNotAvailable)
+            }
+            
+        } catch {
+            AuditLogger.shared.log(event: .badgeEnrollmentFailed, metadata: [
+                "error": error.localizedDescription
+            ])
+            transition(to: .lockedIdle, error: error)
+        }
+    }
+    
+    /// Check if error indicates an unenrolled badge
+    private func isUnenrolledBadgeError(_ error: Error) -> Bool {
+        if let sessionError = error as? SessionError {
+            switch sessionError {
+            case .enrollmentRequired, .enrollmentNotAvailable:
+                return true
+            default:
+                break
+            }
+        }
+        
+        let errorMessage = error.localizedDescription.lowercased()
+        return errorMessage.contains("not enrolled") || 
+               errorMessage.contains("enrollment") ||
+               errorMessage.contains("badge not found")
+    }
+    
+    /// Mask badge ID for privacy in logs
+    private func maskBadgeId(_ badgeId: String) -> String {
+        guard badgeId.count > 4 else {
+            return "****"
+        }
+        let prefix = badgeId.prefix(2)
+        let suffix = badgeId.suffix(2)
+        return "\(prefix)****\(suffix)"
     }
     
     // MARK: - Session Provisioning
@@ -364,6 +449,9 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
         stopTimeoutTimer()
         
         clearLocalSessionData()
+        
+        // Perform comprehensive device cleanup for next user
+        performDeviceCleanup()
     }
     
     private func clearLocalSessionData() {
@@ -371,17 +459,129 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
         KeychainService.shared.clearAllSessionData()
         
         // Clear UserDefaults session data
-        UserDefaults.standard.removeObject(forKey: "current_session_id")
-        UserDefaults.standard.removeObject(forKey: "idle_timeout")
-        UserDefaults.standard.removeObject(forKey: "allow_copy_paste")
+        clearUserDefaultsSessionData()
         
         // Clear any cached data
-        URLCache.shared.removeAllCachedResponses()
+        clearCacheData()
         
         // Reset session data
         currentSession = nil
         capturedBadgeId = nil
         lastError = nil
+    }
+    
+    private func clearUserDefaultsSessionData() {
+        let sessionKeys = [
+            "current_session_id",
+            "idle_timeout",
+            "allow_copy_paste",
+            "session_start_time",
+            "user_persona",
+            "user_display_name",
+            "user_email"
+        ]
+        
+        for key in sessionKeys {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+    }
+    
+    private func clearCacheData() {
+        // Clear URL cache completely
+        let cache = URLCache.shared
+        cache.removeAllCachedResponses()
+        
+        // Clear temporary directory
+        clearTemporaryDirectory()
+        
+        // Clear any custom caches
+        clearCustomCaches()
+    }
+    
+    private func clearTemporaryDirectory() {
+        let tempDir = FileManager.default.temporaryDirectory
+        do {
+            let tempContents = try FileManager.default.contentsOfDirectory(
+                at: tempDir,
+                includingPropertiesForKeys: nil
+            )
+            
+            for file in tempContents {
+                // Only remove files, not directories
+                try? FileManager.default.removeItem(at: file)
+            }
+        } catch {
+            AuditLogger.shared.log(event: .cacheCleanupError, metadata: [
+                "error": "Failed to clear temp directory: \(error.localizedDescription)"
+            ])
+        }
+    }
+    
+    private func clearCustomCaches() {
+        // Clear any enterprise app-specific cached data
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+        
+        if let cacheDir = cacheDir {
+            // Clear app cache but preserve system caches
+            let allowedCacheFolders = ["com.enterprise.shell"]
+            
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(
+                    at: cacheDir,
+                    includingPropertiesForKeys: nil
+                )
+                
+                for folder in contents {
+                    if allowedCacheFolders.contains(folder.lastPathComponent) {
+                        try FileManager.default.removeItem(at: folder)
+                    }
+                }
+            } catch {
+                // Cache cleanup failed, continue anyway
+            }
+        }
+    }
+    
+    /// Comprehensive device cleanup for next user
+    /// Ensures all traces of previous user are removed
+    private func performDeviceCleanup() {
+        // Reset badge reader state
+        resetBadgeReaderState()
+        
+        // Clear any pending network requests
+        cancelPendingRequests()
+        
+        // Reset device to ready state
+        resetDeviceToReadyState()
+        
+        AuditLogger.shared.log(event: .deviceCleanupComplete, metadata: [
+            "timestamp": ISO8601DateFormatter().string(from: Date())
+        ])
+    }
+    
+    private func resetBadgeReaderState() {
+        // Reset badge reader buffer
+        BadgeReaderManager.shared.resetReaderState()
+        
+        // Clear any pending badge reads
+        capturedBadgeId = nil
+    }
+    
+    private func cancelPendingRequests() {
+        // Cancel any pending authentication or network requests
+        // This is handled by URLSession automatically, but we can
+        // invalidate sessions if needed
+    }
+    
+    private func resetDeviceToReadyState() {
+        // Ensure device is ready for next user
+        // This may include:
+        // - Resetting UI state
+        // - Clearing any background tasks
+        // - Ensuring all resources are freed
+        
+        // Post notification that device is ready for new session
+        NotificationCenter.default.post(name: .deviceReadyForNewSession, object: nil)
     }
     
     private func sendSessionAudit(session: SessionData, reason: SessionEndReason) async throws {
@@ -490,6 +690,8 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
             return BadgeCapturedViewController(badgeId: badgeId)
         case .authenticating:
             return AuthenticatingViewController()
+        case .enrolling:
+            return EnrollingViewController(badgeId: capturedBadgeId ?? "Unknown")
         case .provisioning:
             return ProvisioningViewController()
         case .activeSession:
@@ -583,6 +785,8 @@ enum SessionError: LocalizedError {
     case authenticationFailed(String)
     case missingSession
     case tokenRefreshFailed
+    case enrollmentRequired
+    case enrollmentNotAvailable
     
     var errorDescription: String? {
         switch self {
@@ -596,6 +800,10 @@ enum SessionError: LocalizedError {
             return "Session data is missing"
         case .tokenRefreshFailed:
             return "Failed to refresh authentication token"
+        case .enrollmentRequired:
+            return "Badge is not enrolled. Please contact your administrator to enroll your badge."
+        case .enrollmentNotAvailable:
+            return "Badge enrollment is not available. Please contact your administrator."
         }
     }
 }

@@ -48,7 +48,17 @@ final class AuditLogger {
         // MDM
         case mdmConfigurationReceived
         case mdmPolicyApplied
-    }
+        
+        // Device cleanup
+        case deviceCleanupComplete
+        case badgeReaderReset
+        case cacheCleanupError
+        
+        // Badge enrollment
+        case badgeNotEnrolled
+        case badgeEnrollmentStarted
+        case badgeEnrollmentCompleted
+        case badgeEnrollmentFailed
     
     // MARK: - Properties
     

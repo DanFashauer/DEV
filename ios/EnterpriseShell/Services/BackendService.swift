@@ -163,6 +163,79 @@ final class BackendService {
         return (200...299).contains(httpResponse.statusCode)
     }
     
+    // MARK: - Badge Enrollment
+    
+    /// Check if a badge is enrolled, and if not, initiate enrollment
+    func checkBadgeEnrollment(
+        badgeId: String,
+        deviceId: String,
+        deviceSerial: String
+    ) async throws -> BadgeEnrollmentResponse {
+        let url = URL(string: "\(Self.baseUrl)/api/badges/check-enrollment")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody = BadgeEnrollmentRequest(
+            badgeId: badgeId,
+            deviceId: deviceId,
+            deviceSerial: deviceSerial,
+            timestamp: Date(),
+            metadata: DeviceInfo.metadata
+        )
+        
+        request.httpBody = try encoder.encode(requestBody)
+        
+        addDeviceAuthHeaders(to: &request)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BackendError.invalidResponse
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw BackendError.httpError(statusCode: httpResponse.statusCode)
+        }
+        
+        return try decoder.decode(BadgeEnrollmentResponse.self, from: data)
+    }
+    
+    /// Complete the badge enrollment process
+    func completeBadgeEnrollment(
+        badgeId: String,
+        userInfo: EnrollmentUserInfo
+    ) async throws -> BadgeEnrollmentResponse {
+        let url = URL(string: "\(Self.baseUrl)/api/badges/enroll")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody = CompleteEnrollmentRequest(
+            badgeId: badgeId,
+            userInfo: userInfo,
+            timestamp: Date()
+        )
+        
+        request.httpBody = try encoder.encode(requestBody)
+        
+        addDeviceAuthHeaders(to: &request)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BackendError.invalidResponse
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw BackendError.httpError(statusCode: httpResponse.statusCode)
+        }
+        
+        return try decoder.decode(BadgeEnrollmentResponse.self, from: data)
+    }
+    
     // MARK: - Device Authentication
     
     private func addDeviceAuthHeaders(to request: inout URLRequest) {

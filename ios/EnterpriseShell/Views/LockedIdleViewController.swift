@@ -66,7 +66,19 @@ final class LockedIdleViewController: UIViewController {
         return indicator
     }()
     
+    private lazy var errorLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        label.textAlignment = .center
+        label.textColor = .systemRed
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true
+        return label
+    }()
+    
     private var badgeReaderObserver: NSObjectProtocol?
+    private var stateChangeObserver: NSObjectProtocol?
     
     // MARK: - Lifecycle
     
@@ -74,11 +86,13 @@ final class LockedIdleViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupBadgeReaderObserver()
+        setupStateChangeObserver()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         updateReaderStatus()
+        checkForLastError()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -95,6 +109,9 @@ final class LockedIdleViewController: UIViewController {
         if let observer = badgeReaderObserver {
             NotificationCenter.default.removeObserver(observer)
         }
+        if let observer = stateChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
     
     // MARK: - Setup
@@ -107,6 +124,7 @@ final class LockedIdleViewController: UIViewController {
         view.addSubview(badgeIconView)
         view.addSubview(activityIndicator)
         view.addSubview(statusLabel)
+        view.addSubview(errorLabel)
         
         NSLayoutConstraint.activate([
             // Background
@@ -144,7 +162,12 @@ final class LockedIdleViewController: UIViewController {
             // Status
             statusLabel.topAnchor.constraint(equalTo: activityIndicator.bottomAnchor, constant: 16),
             statusLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
+            statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            
+            // Error Label
+            errorLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 12),
+            errorLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            errorLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24)
         ])
         
         // Animate badge icon
@@ -166,6 +189,37 @@ final class LockedIdleViewController: UIViewController {
             name: .EAAccessoryDidDisconnect,
             object: nil
         )
+    }
+    
+    private func setupStateChangeObserver() {
+        stateChangeObserver = NotificationCenter.default.addObserver(
+            forName: .sessionStateDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let newState = notification.userInfo?[SessionStateNotificationKeys.newState] as? SessionState else {
+                return
+            }
+            
+            // Check for errors when transitioning to lockedIdle
+            if newState == .lockedIdle {
+                self?.checkForLastError()
+            }
+        }
+    }
+    
+    private func checkForLastError() {
+        if let error = SessionStateManager.shared.lastError {
+            errorLabel.text = error.localizedDescription
+            errorLabel.isHidden = false
+            
+            // Auto-hide after 10 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
+                self?.errorLabel.isHidden = true
+            }
+        } else {
+            errorLabel.isHidden = true
+        }
     }
     
     private func updateReaderStatus() {

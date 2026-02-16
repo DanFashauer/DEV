@@ -5,6 +5,7 @@ enum SessionState: String, CaseIterable {
     case lockedIdle = "LockedIdle"
     case badgeCaptured = "BadgeCaptured"
     case authenticating = "Authenticating"
+    case enrolling = "Enrolling"  // For unenrolled badges - provisioning flow
     case provisioning = "Provisioning"
     case activeSession = "ActiveSession"
     case terminating = "Terminating"
@@ -18,6 +19,8 @@ enum SessionState: String, CaseIterable {
             return "Badge Captured"
         case .authenticating:
             return "Authenticating..."
+        case .enrolling:
+            return "Setting Up Access..."
         case .provisioning:
             return "Provisioning Session..."
         case .activeSession:
@@ -51,10 +54,12 @@ enum SessionState: String, CaseIterable {
     var allowedTransitions: [SessionState] {
         switch self {
         case .lockedIdle:
-            return [.badgeCaptured, .authenticating]
+            return [.badgeCaptured, .authenticating, .enrolling]
         case .badgeCaptured:
-            return [.lockedIdle, .authenticating]
+            return [.lockedIdle, .authenticating, .enrolling]
         case .authenticating:
+            return [.lockedIdle, .provisioning, .enrolling]
+        case .enrolling:
             return [.lockedIdle, .provisioning]
         case .provisioning:
             return [.lockedIdle, .activeSession]
@@ -69,6 +74,7 @@ enum SessionState: String, CaseIterable {
 /// Notification posted when session state changes
 extension Notification.Name {
     static let sessionStateDidChange = Notification.Name("sessionStateDidChange")
+    static let deviceReadyForNewSession = Notification.Name("deviceReadyForNewSession")
 }
 
 /// User info keys for session state notifications
