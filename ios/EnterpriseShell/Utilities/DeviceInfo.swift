@@ -69,7 +69,7 @@ struct DeviceInfo {
     /// Device UDID (requires MDM)
     static var udid: String? {
         // This requires special entitlements
-        return ProcessInfo.processInfo.environ["DEVICE_UDID"]
+        return ProcessInfo.processInfo.environment["DEVICE_UDID"]
     }
     
     /// Whether device is supervised
