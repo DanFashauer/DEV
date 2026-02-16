@@ -78,12 +78,13 @@ final class ActiveSessionViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        startIdleTimer()
+        // Timeout is managed by SessionStateManager
+        updateTimeoutDisplay()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        stopIdleTimer()
+        // Timeout is managed by SessionStateManager
     }
     
     // MARK: - Setup
@@ -137,43 +138,14 @@ final class ActiveSessionViewController: UIViewController {
         roleLabel.text = "Role: \(session.persona.roleName)"
     }
     
-    // MARK: - Idle Timer
+    // MARK: - Timeout Display
     
-    private var idleTimer: Timer?
-    private var idleTimeRemaining: TimeInterval = 300
-    
-    private func startIdleTimer() {
-        stopIdleTimer()
+    private func updateTimeoutDisplay() {
+        guard let session = currentSession else { return }
         
-        idleTimeRemaining = UserDefaults.standard.object(forKey: "idle_timeout") as? TimeInterval ?? 300
-        
-        updateTimeoutLabel()
-        
-        idleTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.updateIdleTimer()
-        }
-    }
-    
-    private func stopIdleTimer() {
-        idleTimer?.invalidate()
-        idleTimer = nil
-    }
-    
-    private func updateIdleTimer() {
-        idleTimeRemaining -= 1
-        
-        if idleTimeRemaining <= 0 {
-            stopIdleTimer()
-            SessionStateManager.shared.endSession(userInitiated: false)
-        } else {
-            updateTimeoutLabel()
-        }
-    }
-    
-    private func updateTimeoutLabel() {
-        let minutes = Int(idleTimeRemaining) / 60
-        let seconds = Int(idleTimeRemaining) % 60
-        timeoutLabel.text = String(format: "Session expires in %02d:%02d", minutes, seconds)
+        // Get idle timeout from session restrictions
+        let idleTimeout = session.persona.restrictions.idleTimeout
+        timeoutLabel.text = String(format: "Session expires in %02d:00", Int(idleTimeout / 60))
     }
     
     // MARK: - Actions
@@ -187,7 +159,6 @@ final class ActiveSessionViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         alert.addAction(UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
-            self?.stopIdleTimer()
             SessionStateManager.shared.endSession(userInitiated: true)
         })
         

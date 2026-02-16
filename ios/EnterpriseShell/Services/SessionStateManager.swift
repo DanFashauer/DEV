@@ -290,12 +290,18 @@ final class SessionStateManager: ObservableObject {
     
     // MARK: - Session Termination
     
+    private var isTerminating = false
+    
     func endSession(userInitiated: Bool = false) {
+        // Prevent concurrent termination attempts
+        guard !isTerminating else { return }
         guard currentState == .activeSession else { return }
         
+        isTerminating = true
         let reason: SessionEndReason = userInitiated ? .userInitiated : .timeout
         Task {
             await terminateSession(reason: reason)
+            isTerminating = false
         }
     }
     
@@ -349,7 +355,9 @@ final class SessionStateManager: ObservableObject {
     // MARK: - Data Cleanup
     
     private func cleanupCurrentSession() {
-        guard currentState == .activeSession else { return }
+        // Always clear session data when transitioning to lockedIdle
+        // The guard was removed because by the time this is called,
+        // currentState has already been changed to .lockedIdle
         clearLocalSessionData()
     }
     
@@ -360,6 +368,7 @@ final class SessionStateManager: ObservableObject {
         // Clear UserDefaults session data
         UserDefaults.standard.removeObject(forKey: "current_session_id")
         UserDefaults.standard.removeObject(forKey: "idle_timeout")
+        UserDefaults.standard.removeObject(forKey: "allow_copy_paste")
         
         // Clear any cached data
         URLCache.shared.removeAllCachedResponses()
@@ -402,6 +411,8 @@ final class SessionStateManager: ObservableObject {
     
     private func updateActivity() {
         currentSession?.updateActivity()
+        // Reset the timeout timer when user is active
+        startTimeoutTimer()
     }
     
     private func startTimeoutTimer() {
