@@ -14,6 +14,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // Configure badge reader
         BadgeReaderManager.shared.setup()
+        BadgeReaderManager.shared.delegate = SessionStateManager.shared
         
         // Log app launch
         AuditLogger.shared.log(event: .appLaunched, metadata: [

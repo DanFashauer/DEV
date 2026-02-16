@@ -51,7 +51,7 @@ enum SessionState: String, CaseIterable {
     var allowedTransitions: [SessionState] {
         switch self {
         case .lockedIdle:
-            return [.badgeCaptured]
+            return [.badgeCaptured, .authenticating]
         case .badgeCaptured:
             return [.lockedIdle, .authenticating]
         case .authenticating:
@@ -59,7 +59,7 @@ enum SessionState: String, CaseIterable {
         case .provisioning:
             return [.lockedIdle, .activeSession]
         case .activeSession:
-            return [.terminating]
+            return [.terminating, .lockedIdle]
         case .terminating:
             return [.lockedIdle]
         }

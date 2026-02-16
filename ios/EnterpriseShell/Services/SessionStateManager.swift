@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 
 /// Manages the session lifecycle state machine
-final class SessionStateManager: ObservableObject {
+final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
     
     // MARK: - Singleton
     
@@ -498,6 +498,36 @@ final class SessionStateManager: ObservableObject {
     
     // MARK: - Helpers
     
+    /// Handle badge tap from hardware reader - clears session if active and starts new auth
+    func handleBadgeTap(_ badgeId: String) {
+        // If there's an active session, clear it first
+        if currentState == .activeSession {
+            AuditLogger.shared.log(event: .badgeTapDuringActiveSession, metadata: [
+                "previousSessionId": currentSessionId ?? "none",
+                "newBadgeId": maskBadgeId(badgeId)
+            ])
+            
+            // Immediately clear all session data and transition to locked idle
+            // This ensures clean state for new badge authentication
+            clearLocalSessionData()
+            
+            // Stop any running timers
+            stopActivityTimer()
+            stopTimeoutTimer()
+            
+            // Transition to locked idle state (ready for new badge authentication)
+            transition(to: .lockedIdle)
+            
+            // Start authentication process with new badge
+            capturedBadgeId = badgeId
+            transition(to: .authenticating)
+        } else {
+            // No active session - start new authentication
+            capturedBadgeId = badgeId
+            transition(to: .authenticating)
+        }
+    }
+    
     private func maskBadgeId(_ badgeId: String) -> String {
         guard badgeId.count > 4 else { return "****" }
         let prefix = String(badgeId.prefix(2))
@@ -512,6 +542,25 @@ final class SessionStateManager: ObservableObject {
                 "error": error.localizedDescription
             ])
         }
+    }
+    
+    // MARK: - BadgeReaderManagerDelegate
+    
+    func badgeReader(_ manager: BadgeReaderManager, didReadBadge badgeId: String) {
+        // Handle badge read event from hardware reader
+        DispatchQueue.main.async { [weak self] in
+            self?.handleBadgeTap(badgeId)
+        }
+    }
+    
+    func badgeReader(_ manager: BadgeReaderManager, didFailWithError error: Error) {
+        AuditLogger.shared.log(event: .badgeReaderError, metadata: [
+            "error": error.localizedDescription
+        ])
+    }
+    
+    func badgeReaderDidDisconnect(_ manager: BadgeReaderManager) {
+        AuditLogger.shared.log(event: .badgeReaderDisconnected, metadata: nil)
     }
 }
 

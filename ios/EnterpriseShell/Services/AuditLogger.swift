@@ -39,6 +39,8 @@ final class AuditLogger {
         // Badge reader
         case badgeReaderConnected
         case badgeReaderDisconnected
+        case badgeTapDuringActiveSession
+        case badgeReaderError
         
         // Errors
         case error
