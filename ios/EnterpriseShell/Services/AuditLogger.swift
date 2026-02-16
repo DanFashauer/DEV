@@ -59,6 +59,18 @@ final class AuditLogger {
         case badgeEnrollmentStarted
         case badgeEnrollmentCompleted
         case badgeEnrollmentFailed
+        
+        // Security events
+        case securityLockout
+        case securityRateLimitExceeded
+        case securityFailedAttempt
+        case securitySuspiciousBadge
+        case securityRequestExpired
+        case securityTokenBindingFailed
+        case securityDeviceBindingRejected
+        case securitySessionBindingRejected
+        case securityInvalidSignature
+        case securityDeviceCompromised
     
     // MARK: - Properties
     

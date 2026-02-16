@@ -148,6 +148,28 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
             return
         }
         
+        // SECURITY: Validate badge ID format before processing
+        let validationResult = SecurityManager.shared.validateBadgeId(badgeId)
+        if !validationResult.valid {
+            AuditLogger.shared.log(event: .securitySuspiciousBadge, metadata: [
+                "badgeId": maskBadgeId(badgeId),
+                "reason": validationResult.error ?? "invalid_format"
+            ])
+            transition(to: .lockedIdle, error: SessionError.invalidBadgeFormat)
+            return
+        }
+        
+        // SECURITY: Check rate limiting before processing
+        let rateLimitResult = SecurityManager.shared.isBadgeScanAllowed(badgeId: badgeId)
+        if !rateLimitResult.allowed {
+            AuditLogger.shared.log(event: .securityRateLimitExceeded, metadata: [
+                "badgeId": maskBadgeId(badgeId),
+                "reason": rateLimitResult.reason ?? "rate_limit_exceeded"
+            ])
+            transition(to: .lockedIdle, error: SessionError.rateLimited)
+            return
+        }
+        
         capturedBadgeId = badgeId
         
         AuditLogger.shared.log(event: .badgeScanned, metadata: [
@@ -787,6 +809,9 @@ enum SessionError: LocalizedError {
     case tokenRefreshFailed
     case enrollmentRequired
     case enrollmentNotAvailable
+    case invalidBadgeFormat
+    case rateLimited
+    case securityViolation(String)
     
     var errorDescription: String? {
         switch self {
@@ -804,6 +829,12 @@ enum SessionError: LocalizedError {
             return "Badge is not enrolled. Please contact your administrator to enroll your badge."
         case .enrollmentNotAvailable:
             return "Badge enrollment is not available. Please contact your administrator."
+        case .invalidBadgeFormat:
+            return "Invalid badge format detected"
+        case .rateLimited:
+            return "Too many attempts. Please try again later."
+        case .securityViolation(let reason):
+            return "Security violation: \(reason)"
         }
     }
 }

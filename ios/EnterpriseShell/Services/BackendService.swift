@@ -248,6 +248,9 @@ final class BackendService {
         if let token = OIDCAuthService.shared.getAccessToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
+        
+        // SECURITY: Add request signing for API integrity
+        SecurityManager.shared.signRequest(&request, body: request.httpBody)
     }
 }
 
