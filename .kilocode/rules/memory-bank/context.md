@@ -1,10 +1,10 @@
-# Active Context: Next.js Starter Template
+# Active Context: Next.js Starter Template with iOS EnterpriseShell
 
 ## Current State
 
-**Template Status**: ✅ Ready for development
+**Project Status**: ✅ Ready for development
 
-The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. It's ready for AI-assisted expansion to build any type of application.
+The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk application. Both are ready for deployment.
 
 ## Recently Completed
 
@@ -14,6 +14,9 @@ The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. I
 - [x] ESLint configuration
 - [x] Memory bank documentation
 - [x] Recipe system for common features
+- [x] iOS EnterpriseShell kiosk app with session management
+- [x] Fixed Swift compilation errors (DeviceInfo.swift, OIDCAuthService.swift)
+- [x] Verified Next.js build and type checking
 
 ## Current Structure
 
@@ -23,14 +26,17 @@ The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. I
 | `src/app/layout.tsx` | Root layout | ✅ Ready |
 | `src/app/globals.css` | Global styles | ✅ Ready |
 | `.kilocode/` | AI context & recipes | ✅ Ready |
+| `ios/EnterpriseShell/` | iOS kiosk app | ✅ Ready |
 
 ## Current Focus
 
-The template is ready. Next steps depend on user requirements:
+The project includes an iOS EnterpriseShell application for enterprise kiosk management. The app features:
 
-1. What type of application to build
-2. What features are needed
-3. Design/branding preferences
+1. Badge-based authentication flow
+2. OIDC integration with Microsoft Entra ID
+3. Session state management
+4. Audit logging
+5. Enterprise app launching
 
 ## Quick Start Guide
 
@@ -85,3 +91,6 @@ export async function GET() {
 | Date | Changes |
 |------|---------|
 | Initial | Template created with base setup |
+| 2026-02-16 | Added iOS EnterpriseShell kiosk app |
+| 2026-02-16 | Fixed Swift bugs (environ→environment, extra parenthesis) |
+| 2026-02-16 | Verified all builds pass (TypeScript, ESLint, Next.js)
