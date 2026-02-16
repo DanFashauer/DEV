@@ -574,8 +574,9 @@ final class ActiveSessionViewController: UIViewController {
         }
         
         let startedAt = session.startedAt
-        let idleTimeout = session.persona.restrictions.idleTimeout
-        let expiresAt = startedAt.addingTimeInterval(idleTimeout)
+        // Use maxSessionDuration if available, otherwise fall back to idleTimeout
+        let sessionDuration = session.persona.restrictions.maxSessionDuration ?? session.persona.restrictions.idleTimeout
+        let expiresAt = startedAt.addingTimeInterval(sessionDuration)
         let remaining = expiresAt.timeIntervalSince(Date())
         
         if remaining > 0 {
@@ -717,7 +718,10 @@ extension ActiveSessionViewController: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "HomeScreenAppCell", for: indexPath) as! HomeScreenAppCell
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "HomeScreenAppCell", for: indexPath) as? HomeScreenAppCell else {
+            // Return an empty cell if casting fails - should not happen in normal flow
+            return UICollectionViewCell()
+        }
         
         if collectionView == requiredAppsCollectionView {
             if let apps = session?.persona.appLaunchConfig.requiredApps,

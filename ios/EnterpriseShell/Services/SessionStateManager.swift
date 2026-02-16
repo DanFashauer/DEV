@@ -358,6 +358,11 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
         // Always clear session data when transitioning to lockedIdle
         // The guard was removed because by the time this is called,
         // currentState has already been changed to .lockedIdle
+        
+        // Stop any running timers to prevent memory leaks or unexpected callbacks
+        stopActivityTimer()
+        stopTimeoutTimer()
+        
         clearLocalSessionData()
     }
     
@@ -476,7 +481,13 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
         case .lockedIdle:
             return LockedIdleViewController()
         case .badgeCaptured:
-            return BadgeCapturedViewController(badgeId: capturedBadgeId ?? "")
+            // Guard against nil badge ID - should not happen in normal flow
+            guard let badgeId = capturedBadgeId else {
+                // Return to locked idle if no badge ID
+                transition(to: .lockedIdle, error: SessionError.missingBadgeId)
+                return LockedIdleViewController()
+            }
+            return BadgeCapturedViewController(badgeId: badgeId)
         case .authenticating:
             return AuthenticatingViewController()
         case .provisioning:

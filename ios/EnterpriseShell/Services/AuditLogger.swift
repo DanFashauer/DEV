@@ -37,8 +37,6 @@ final class AuditLogger {
         case appLaunchFailed
         
         // Badge reader
-        case badgeReaderConnected
-        case badgeReaderDisconnected
         case badgeTapDuringActiveSession
         case badgeReaderError
         
@@ -143,10 +141,8 @@ final class AuditLogger {
             request.httpBody = try encoder.encode(logs)
         } catch {
             print("Failed to encode audit logs: \(error)")
-            // Re-queue logs
-            queue.async { [weak self] in
-                self?.eventQueue.insert(contentsOf: logs, at: 0)
-            }
+            // Store logs locally for later retry
+            storeLocally(logs)
             return
         }
         
@@ -154,10 +150,8 @@ final class AuditLogger {
         let task = URLSession.shared.dataTask(with: request) { [weak self] _, response, error in
             if let error = error {
                 print("Failed to upload audit logs: \(error)")
-                // Re-queue logs
-                self?.queue.async {
-                    self?.eventQueue.insert(contentsOf: logs, at: 0)
-                }
+                // Store locally for retry later
+                self?.storeLocally(logs)
             } else if let httpResponse = response as? HTTPURLResponse,
                       (200...299).contains(httpResponse.statusCode) {
                 // Successfully uploaded
@@ -173,16 +167,52 @@ final class AuditLogger {
     
     // MARK: - Local Storage for Offline
     
-    /// Store logs locally when offline
-    private func storeLocally(_ logs: [AuditLogEntry]) {
-        // Could implement Core Data or file-based storage for offline logs
-        // For MVP, logs are held in memory queue
+    private var localStorageURL: URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("audit_logs.json")
     }
     
-    /// Retrieve stored logs
-    func retrieveStoredLogs() -> [AuditLogEntry]holder for local {
-        // Place storage retrieval
-        return []
+    /// Store logs locally when offline using file-based persistence
+    private func storeLocally(_ logs: [AuditLogEntry]) {
+        guard let url = localStorageURL else { return }
+        
+        do {
+            // Load existing logs
+            var storedLogs = retrieveStoredLogs()
+            
+            // Append new logs (limit to last 1000 to prevent unbounded growth)
+            storedLogs.append(contentsOf: logs)
+            if storedLogs.count > 1000 {
+                storedLogs = Array(storedLogs.suffix(1000))
+            }
+            
+            // Encode and save
+            let data = try JSONEncoder().encode(storedLogs)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            print("Failed to store audit logs locally: \(error)")
+        }
+    }
+    
+    /// Retrieve stored logs from local storage
+    func retrieveStoredLogs() -> [AuditLogEntry] {
+        guard let url = localStorageURL,
+              FileManager.default.fileExists(atPath: url.path) else {
+            return []
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            return try JSONDecoder().decode([AuditLogEntry].self, from: data)
+        } catch {
+            print("Failed to retrieve stored audit logs: \(error)")
+            return []
+        }
+    }
+    
+    /// Clear stored logs (called after successful upload)
+    func clearStoredLogs() {
+        guard let url = localStorageURL else { return }
+        try? FileManager.default.removeItem(at: url)
     }
     
     // MARK: - Convenience Methods

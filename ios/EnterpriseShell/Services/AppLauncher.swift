@@ -33,7 +33,7 @@ final class AppLauncher {
                    let url = URL(string: launchUrlString) {
                     
                     if UIApplication.shared.canOpenURL(url) {
-                        UIApplication.shared.open(url) { success in
+                        UIApplication.shared.open(url, options: [:]) { success in
                             if success {
                                 self.launchedApps.append(app.bundleId)
                                 AuditLogger.shared.log(event: .sessionStarted, metadata: [
@@ -41,40 +41,52 @@ final class AppLauncher {
                                 ])
                                 continuation.resume()
                             } else {
-                                continuation.resume(throwing: AppLauncherError.launchFailed)
+                                // Try fallback methods if primary URL fails
+                                self.tryFallbackLaunch(app: app, continuation: continuation)
                             }
                             return
-                        }
-                    }
-                }
-                
-                // Try opening by bundle ID
-                if let url = URL(string: "\(app.bundleId)://") {
-                    if UIApplication.shared.canOpenURL(url) {
-                        UIApplication.shared.open(url) { success in
-                            if success {
-                                self.launchedApps.append(app.bundleId)
-                                continuation.resume()
-                            } else {
-                                continuation.resume(throwing: AppLauncherError.launchFailed)
-                            }
                         }
                         return
                     }
                 }
                 
-                // If all else fails, try opening in settings
-                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(settingsUrl) { _ in
-                        // Open settings to let user manually open the app
-                        continuation.resume(throwing: AppLauncherError.appNotInstalled)
-                    }
-                    return
-                }
-                
-                continuation.resume(throwing: AppLauncherError.unknown)
+                // Try opening by bundle ID
+                self.tryFallbackLaunch(app: app, continuation: continuation)
             }
         }
+    }
+    
+    private func tryFallbackLaunch(app: EnterpriseApp, continuation: CheckedContinuation<Void, Error>) {
+        // Try bundle ID URL scheme
+        if let url = URL(string: "\(app.bundleId)://") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url, options: [:]) { success in
+                    if success {
+                        self.launchedApps.append(app.bundleId)
+                        continuation.resume()
+                    } else {
+                        // Last resort: open settings
+                        self.openSettingsOrFail(app: app, continuation: continuation)
+                    }
+                }
+                return
+            }
+        }
+        
+        // If all else fails, try opening in settings
+        self.openSettingsOrFail(app: app, continuation: continuation)
+    }
+    
+    private func openSettingsOrFail(app: EnterpriseApp, continuation: CheckedContinuation<Void, Error>) {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl) { _ in
+                // Open settings to let user manually open the app
+                continuation.resume(throwing: AppLauncherError.appNotInstalled)
+            }
+            return
+        }
+        
+        continuation.resume(throwing: AppLauncherError.unknown)
     }
     
     /// Launch app by bundle ID

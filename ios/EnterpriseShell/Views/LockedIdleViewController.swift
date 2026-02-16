@@ -81,6 +81,11 @@ final class LockedIdleViewController: UIViewController {
         updateReaderStatus()
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        stopBadgeIconAnimation()
+    }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         updateReaderStatus()
@@ -188,5 +193,10 @@ final class LockedIdleViewController: UIViewController {
                 self.badgeIconView.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
             }
         )
+    }
+    
+    private func stopBadgeIconAnimation() {
+        badgeIconView.layer.removeAllAnimations()
+        badgeIconView.transform = .identity
     }
 }

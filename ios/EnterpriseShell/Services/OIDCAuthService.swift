@@ -229,9 +229,16 @@ final class OIDCAuthService: NSObject {
         // Check if token needs refresh
         if let expiresAt = tokenExpiresAt,
            expiresAt.timeIntervalSinceNow < 300 {
-            // Token expires in less than 5 minutes
+            // Token expires in less than 5 minutes - refresh in background
             Task {
-                try? await refreshToken()
+                do {
+                    try await refreshToken()
+                } catch {
+                    // Log error but don't crash - caller will handle expired token
+                    AuditLogger.shared.log(event: .tokenRefreshFailed, metadata: [
+                        "error": error.localizedDescription
+                    ])
+                }
             }
         }
         
