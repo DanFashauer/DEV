@@ -17,6 +17,13 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 - [x] iOS EnterpriseShell kiosk app with session management
 - [x] Fixed Swift compilation errors (DeviceInfo.swift, OIDCAuthService.swift)
 - [x] Verified Next.js build and type checking
+- [x] Added enrollment flow for unenrolled badges (EnrollingViewController)
+- [x] **Added comprehensive security enhancements**:
+  - SecurityManager with rate limiting (5 attempts/min, 5-min lockout)
+  - Badge format validation with injection attack detection
+  - Request signing (HMAC-SHA256) for API integrity
+  - Device binding to prevent token hijacking
+  - Security audit events for threat detection
 
 ## Current Structure
 
@@ -27,6 +34,7 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `src/app/globals.css` | Global styles | ✅ Ready |
 | `.kilocode/` | AI context & recipes | ✅ Ready |
 | `ios/EnterpriseShell/` | iOS kiosk app | ✅ Ready |
+| `ios/EnterpriseShell/Services/SecurityManager.swift` | Security features | ✅ New |
 
 ## Current Focus
 
