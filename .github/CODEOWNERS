@@ -1,0 +1,20 @@
+# Code Owners
+
+# Default owner for everything
+* @default-reviewer
+
+# iOS-specific files
+ios/ @ios-reviewer
+
+# Web/Next.js-specific files
+src/ @web-reviewer
+
+# CI/CD workflows
+.github/workflows/ @devops-reviewer
+
+# Security-sensitive files
+SECURITY.md @security-reviewer
+
+# Configuration files
+*.yml @config-reviewer
+*.json @config-reviewer
