@@ -24,6 +24,12 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - Request signing (HMAC-SHA256) for API integrity
   - Device binding to prevent token hijacking
   - Security audit events for threat detection
+- [x] **Code review system setup**:
+  - SwiftLint configuration (`.swiftlint.yml`)
+  - GitHub Actions: `ios-code-quality.yml` (push/PR workflow)
+  - GitHub Actions: `swift-code-review.yml` (detailed PR analysis)
+  - Local analysis script: `ios/run-code-analysis.sh`
+  - Documentation: `ios/CODE_REVIEW.md`
 
 ## Current Structure
 
@@ -34,7 +40,10 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `src/app/globals.css` | Global styles | ✅ Ready |
 | `.kilocode/` | AI context & recipes | ✅ Ready |
 | `ios/EnterpriseShell/` | iOS kiosk app | ✅ Ready |
-| `ios/EnterpriseShell/Services/SecurityManager.swift` | Security features | ✅ New |
+| `.swiftlint.yml` | SwiftLint rules | ✅ New |
+| `.github/workflows/` | CI workflows | ✅ New |
+| `ios/CODE_REVIEW.md` | CI documentation | ✅ New |
+| `ios/run-code-analysis.sh` | Local analysis | ✅ New |
 
 ## Current Focus
 
@@ -102,3 +111,4 @@ export async function GET() {
 | 2026-02-16 | Added iOS EnterpriseShell kiosk app |
 | 2026-02-16 | Fixed Swift bugs (environ→environment, extra parenthesis) |
 | 2026-02-16 | Verified all builds pass (TypeScript, ESLint, Next.js)
+| 2026-02-17 | Code review: SwiftLint setup + GitHub Actions + local analysis script |
