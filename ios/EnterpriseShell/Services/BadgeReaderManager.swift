@@ -30,6 +30,7 @@ final class BadgeReaderManager: NSObject {
     private let headerByte: UInt8 = 0x02
     private let footerByte: UInt8 = 0x03
     private var isReading: Bool = false
+    private let maxBadgeLength: Int = 50 // Maximum allowed badge ID length
     
     // MARK: - Initialization
     
@@ -168,6 +169,16 @@ final class BadgeReaderManager: NSObject {
         let trimmedBadge = badgeString.trimmingCharacters(in: .whitespacesAndNewlines)
         
         guard trimmedBadge.count >= 4 else {
+            delegate?.badgeReader(self, didFailWithError: BadgeReaderError.invalidBadgeLength)
+            return
+        }
+        
+        guard trimmedBadge.count <= maxBadgeLength else {
+            // Log security event for suspicious badge length
+            AuditLogger.shared.log(event: .securitySuspiciousBadge, metadata: [
+                "reason": "badge_length_exceeded",
+                "length": String(trimmedBadge.count)
+            ])
             delegate?.badgeReader(self, didFailWithError: BadgeReaderError.invalidBadgeLength)
             return
         }

@@ -324,6 +324,22 @@ final class SecurityManager {
         return digest.map { String(format: "%02x", $0) }.joined()
     }
     
+    // MARK: - URL Sanitization
+    
+    /// Sanitize string for URL query parameters
+    static func sanitizeForURL(_ value: String) -> String {
+        // First try standard URL encoding
+        if let encoded = value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+            // Additional sanitization to prevent encoding attacks
+            let sanitized = encoded
+                .replacingOccurrences(of: "%00", with: "")  // Remove null bytes
+                .replacingOccurrences(of: "%0a", with: "")  // Remove newlines
+                .replacingOccurrences(of: "%0d", with: "")  // Remove carriage returns
+            return sanitized
+        }
+        return value
+    }
+    
     // MARK: - Token Binding
     
     /// Generate a token binding identifier

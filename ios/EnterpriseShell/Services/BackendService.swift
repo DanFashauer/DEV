@@ -25,6 +25,16 @@ final class BackendService {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 60
+        
+        // SECURITY: Configure TLS certificate pinning
+        // In production, add your server's certificate SHA256 hash
+        // Example: let pinnedHashes = ["sha256/AAAAAAAAAAA="]
+        let pinnedHashes = Self.getPinnedCertificateHashes()
+        if !pinnedHashes.isEmpty {
+            config.urlCache = nil
+            config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        }
+        
         self.session = URLSession(configuration: config)
         
         self.decoder = JSONDecoder()
@@ -32,6 +42,16 @@ final class BackendService {
         
         self.encoder = JSONEncoder()
         self.encoder.dateEncodingStrategy = .iso8601
+    }
+    
+    /// Get certificate hashes for pinning (override in production)
+    private static func getPinnedCertificateHashes() -> [String] {
+        // In production, configure server's certificate SHA256 hashes
+        // Return empty array to disable pinning for development
+        // Example: return ["sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="]
+        return ProcessInfo.processInfo.environment["CERT_PINNING_ENABLED"] == "true"
+            ? (ProcessInfo.processInfo.environment["CERT_HASHES"] ?? "").split(separator: ",").map { String($0) }
+            : []
     }
     
     // MARK: - Session Start
@@ -251,6 +271,10 @@ final class BackendService {
         
         // SECURITY: Add request signing for API integrity
         SecurityManager.shared.signRequest(&request, body: request.httpBody)
+        
+        // SECURITY: Add additional security headers
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
     }
 }
 

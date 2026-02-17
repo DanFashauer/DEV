@@ -3,13 +3,18 @@ import UIKit
 
 /// Utility for accessing device information
 struct DeviceInfo {
-    /// Unique device identifier (encrypted, changes on app reinstall)
+    
+    /// Unique device identifier (stored in Keychain for security, changes on app reinstall)
     static var identifier: String {
-        if let stored = UserDefaults.standard.string(forKey: "device_identifier") {
-            return stored
+        // Use Keychain instead of UserDefaults for secure storage
+        if let stored = try? KeychainService.shared.retrieve(forKey: "device_identifier"),
+           let id = String(data: stored, encoding: .utf8) {
+            return id
         }
         let newId = UUID().uuidString
-        UserDefaults.standard.set(newId, forKey: "device_identifier")
+        if let data = newId.data(using: .utf8) {
+            try? KeychainService.shared.save(data, forKey: "device_identifier")
+        }
         return newId
     }
     

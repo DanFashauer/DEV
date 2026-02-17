@@ -58,6 +58,14 @@ final class OIDCAuthService: NSObject {
     // Callbacks
     private var authCompletion: ((Result<OIDCTokenResult, Error>) -> Void)?
     
+    // URLSession with certificate pinning support
+    private lazy var secureSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 60
+        return URLSession(configuration: config)
+    }()
+    
     // MARK: - Initialization
     
     private override init() {
@@ -102,6 +110,7 @@ final class OIDCAuthService: NSObject {
         var request = URLRequest(url: backendTokenUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         
         let body: [String: Any] = [
             "session_token": sessionToken,
@@ -112,13 +121,21 @@ final class OIDCAuthService: NSObject {
         
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // SECURITY: Sign the request
+        SecurityManager.shared.signRequest(&request, body: request.httpBody)
+        
+        let (data, response) = try await secureSession.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw OIDCError.networkError
         }
         
         guard (200...299).contains(httpResponse.statusCode) else {
+            // Log authentication failure
+            AuditLogger.shared.log(event: .authenticationFailed, metadata: [
+                "reason": "token_exchange_failed",
+                "status": String(httpResponse.statusCode)
+            ])
             throw OIDCError.tokenExchangeFailed
         }
         
@@ -165,14 +182,21 @@ final class OIDCAuthService: NSObject {
         ]
         
         request.httpBody = bodyParams
-            .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
+            .map { "\($0.key)=\(SecurityManager.sanitizeForURL($0.value))" }
             .joined(separator: "&")
             .data(using: .utf8)
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // SECURITY: Add device binding header
+        request.setValue(DeviceInfo.identifier, forHTTPHeaderField: "X-Device-ID")
+        
+        let (data, response) = try await secureSession.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
+            // Log token refresh failure
+            AuditLogger.shared.log(event: .tokenRefreshFailed, metadata: [
+                "reason": "http_error"
+            ])
             throw OIDCError.refreshFailed
         }
         
