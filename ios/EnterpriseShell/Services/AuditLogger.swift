@@ -71,6 +71,13 @@ final class AuditLogger {
         case securitySessionBindingRejected
         case securityInvalidSignature
         case securityDeviceCompromised
+        
+        // Provider events
+        case providersInitialized
+        case providerConfigurationLoaded
+        case providerConfigurationUpdated
+        case badgeReceived
+        case badgeReaderProviderInitialized
     
     // MARK: - Properties
     

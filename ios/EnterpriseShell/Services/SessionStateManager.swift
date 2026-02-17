@@ -2,7 +2,8 @@ import Foundation
 import UIKit
 
 /// Manages the session lifecycle state machine
-final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
+/// Now uses configurable BadgeReaderProvider and IdentityProvider for flexibility
+final class SessionStateManager: ObservableObject, BadgeReaderProviderDelegate {
     
     // MARK: - Singleton
     
@@ -16,6 +17,9 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
     @Published private(set) var lastError: Error?
     
     // MARK: - Properties
+    
+    private var badgeReaderProvider: BadgeReaderProvider?
+    private var identityProvider: IdentityProvider?
     
     var currentSessionId: String? {
         currentSession?.sessionId
@@ -35,6 +39,27 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
     private init() {
         // Load any persisted session state
         loadPersistedState()
+        
+        // Initialize providers from configuration
+        initializeProviders()
+    }
+    
+    // MARK: - Provider Initialization
+    
+    private func initializeProviders() {
+        // Get providers from configuration service
+        let configService = ProviderConfigurationService.shared
+        
+        badgeReaderProvider = configService.getBadgeReaderProvider()
+        badgeReaderProvider?.delegate = self
+        badgeReaderProvider?.setup()
+        
+        identityProvider = configService.getIdentityProvider()
+        
+        AuditLogger.shared.log(event: .providersInitialized, metadata: [
+            "badgeReader": badgeReaderProvider?.displayName ?? "none",
+            "identityProvider": identityProvider?.displayName ?? "none"
+        ])
     }
     
     // MARK: - State Transitions
@@ -138,7 +163,7 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
     
     // MARK: - Badge Handling
     
-    /// Called when a badge is scanned
+    /// Called when a badge is scanned (from BadgeReaderProviderDelegate)
     func onBadgeScanned(_ badgeId: String) {
         guard currentState == .lockedIdle else {
             AuditLogger.shared.log(event: .badgeScannedUnexpectedState, metadata: [
@@ -214,11 +239,27 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
                 throw SessionError.authenticationFailed(errorMessage)
             }
             
-            // Step 2: Initiate OIDC authentication
-            let oidcResult = try await OIDCAuthService.shared.authenticate(
+            // Step 2: Authenticate using configured identity provider
+            let credentials = AuthenticationCredentials(
+                credentialType: .sessionToken,
+                badgeId: badgeId,
                 sessionToken: sessionToken,
-                persona: persona
+                deviceId: DeviceInfo.identifier,
+                mdmUserId: nil,
+                mfaToken: nil,
+                additionalData: nil
             )
+            
+            let authResult: AuthenticationResult
+            if let provider = identityProvider {
+                authResult = try await provider.authenticate(credentials: credentials, persona: persona)
+            } else {
+                // Fallback to legacy OIDC auth if provider not configured
+                authResult = try await OIDCAuthService.shared.authenticate(
+                    sessionToken: sessionToken,
+                    persona: persona
+                )
+            }
             
             // Create session data
             var session = SessionData(
@@ -226,10 +267,10 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
                 userId: user.userId,
                 badgeId: badgeId,
                 persona: persona,
-                accessToken: oidcResult.accessToken,
-                refreshToken: oidcResult.refreshToken,
-                idToken: oidcResult.idToken,
-                expiresAt: oidcResult.expiresAt
+                accessToken: authResult.accessToken,
+                refreshToken: authResult.refreshToken,
+                idToken: authResult.idToken,
+                expiresAt: authResult.expiresAt
             )
             
             currentSession = session
@@ -423,9 +464,14 @@ final class SessionStateManager: ObservableObject, BadgeReaderManagerDelegate {
         }
         
         do {
-            // Step 1: Revoke OIDC tokens
+            // Step 1: Revoke identity provider tokens
             if let accessToken = session.accessToken {
-                try await OIDCAuthService.shared.revokeToken(accessToken)
+                if let provider = identityProvider {
+                    try await provider.revokeAuthentication(token: accessToken)
+                } else {
+                    // Fallback to legacy OIDC
+                    try await OIDCAuthService.shared.revokeToken(accessToken)
+                }
             }
             
             // Step 2: Send audit logs to backend
