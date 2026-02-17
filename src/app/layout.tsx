@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Template",
-  description: "A minimal Next.js starter template",
+  title: "EnterpriseShell Admin",
+  description: "Enterprise kiosk management dashboard with authentication flows and MDM persona builder",
 };
 
 export default function RootLayout({
