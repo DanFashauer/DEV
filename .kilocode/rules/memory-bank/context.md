@@ -42,6 +42,11 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - MDM persona builder with attribute mapping
   - Provider configuration UI
   - Device management and audit log views
+- [x] **Security baseline and CI**:
+  - SECURITY.md with security checklist and threat model
+  - GitHub Actions: `web.yml` (Next.js lint, typecheck, build, audit)
+  - GitHub Actions: `ios-build.yml` (iOS build, test, analyze, swiftlint)
+  - CODEOWNERS for code ownership
 
 ## Current Structure
 
@@ -61,6 +66,10 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `ios/EnterpriseShell/Services/ProviderConfigurationService.swift` | Provider config service | ✅ New |
 | `src/app/admin/page.tsx` | Admin dashboard GUI | ✅ New |
 | `ios/run-code-analysis.sh` | Local analysis | ✅ New |
+| `SECURITY.md` | Security baseline policy | ✅ New |
+| `.github/workflows/web.yml` | Next.js CI workflow | ✅ New |
+| `.github/workflows/ios-build.yml` | iOS build workflow | ✅ New |
+| `.github/CODEOWNERS` | Code ownership | ✅ New |
 
 ## Current Focus
 
@@ -130,3 +139,4 @@ export async function GET() {
 | 2026-02-16 | Verified all builds pass (TypeScript, ESLint, Next.js)
 | 2026-02-17 | Code review: SwiftLint setup + GitHub Actions + local analysis script |
 | 2026-02-17 | Admin GUI: Auth flow visualization + MDM persona builder + provider config |
+| 2026-02-17 | Security: Add SECURITY.md and CI workflows for web and iOS |
