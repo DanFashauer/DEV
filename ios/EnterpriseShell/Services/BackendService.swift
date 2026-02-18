@@ -10,7 +10,12 @@ final class BackendService {
     // MARK: - Configuration
     
     static var baseUrl: String {
-        ProcessInfo.processInfo.environment["BACKEND_BASE_URL"] ?? "https://api.enterprise.example.com"
+        let url = ProcessInfo.processInfo.environment["BACKEND_BASE_URL"] ?? "https://api.enterprise.example.com"
+        // SECURITY: Enforce HTTPS
+        guard url.hasPrefix("https://") else {
+            fatalError("SECURITY: Backend URL must use HTTPS. Current: \(url)")
+        }
+        return url
     }
     
     // MARK: - Properties

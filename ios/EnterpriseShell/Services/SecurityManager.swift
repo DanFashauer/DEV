@@ -241,8 +241,8 @@ final class SecurityManager {
         let nonce = UUID().uuidString
         request.setValue(nonce, forHTTPHeaderField: "X-Request-Nonce")
         
-        // Create signature base
-        var signatureBase = "\(request.httpMethod ?? "GET"))\(request.url?.absoluteString ?? "")"
+        // Create signature base (canonicalized format)
+        var signatureBase = "\(request.httpMethod ?? "GET")\|\(request.url?.absoluteString ?? "")"
         signatureBase += "\(timestamp)"
         signatureBase += "\(nonce)"
         
@@ -283,8 +283,8 @@ final class SecurityManager {
             }
         }
         
-        // Verify signature
-        var signatureBase = "\(method))\(url)"
+        // Verify signature (canonicalized format)
+        var signatureBase = "\(method)|\(url)"
         signatureBase += "\(timestamp)"
         signatureBase += "\(nonce)"
         

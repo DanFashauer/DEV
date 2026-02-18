@@ -214,9 +214,9 @@ final class AuditLogger {
                 storedLogs = Array(storedLogs.suffix(1000))
             }
             
-            // Encode and save
+            // Encode and save with file protection
             let data = try JSONEncoder().encode(storedLogs)
-            try data.write(to: url, options: .atomic)
+            try data.write(to: url, options: .completeFileProtection)
         } catch {
             print("Failed to store audit logs locally: \(error)")
         }
@@ -264,11 +264,11 @@ final class AuditLogger {
         ])
     }
     
-    /// Log authentication failure
+    /// Log authentication failure (badge ID is masked for privacy)
     func logAuthFailure(reason: String, badgeId: String) {
         log(event: .authenticationFailed, metadata: [
             "reason": reason,
-            "badgeId": badgeId
+            "badgeId": SecurityManager.shared.maskBadgeId(badgeId)
         ])
     }
 }
