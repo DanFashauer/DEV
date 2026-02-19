@@ -1,4 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { 
+  requireAdminAuth, 
+  adminSuccess, 
+  adminError,
+  getSecurityHeaders 
+} from "@/lib/adminAuth";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Admin Stats API Route
@@ -6,29 +14,19 @@ import { NextRequest, NextResponse } from "next/server";
  * Returns mock statistics for the admin dashboard.
  * In production, this would connect to actual data sources.
  * 
- * Requires API key authentication via X-Admin-Api-Key header.
+ * Security features:
+ * - API key authentication via X-Admin-Api-Key header
+ * - Timing-safe comparison to prevent timing attacks
+ * - Rate limiting (30 requests/minute per IP)
+ * - Comprehensive cache control headers
+ * - Audit logging (no secrets logged)
+ * - Fails closed if API key not configured in production
  */
-
-// Get API key from environment (in production, use environment variable)
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "dev-admin-key-12345";
-
-/**
- * Validate API key from request headers
- */
-function validateApiKey(request: NextRequest): boolean {
-  const providedKey = request.headers.get("X-Admin-Api-Key");
-  return providedKey === ADMIN_API_KEY;
-}
-
-export const dynamic = "force-dynamic";
-
 export async function GET(request: NextRequest) {
-  // Check authentication
-  if (!validateApiKey(request)) {
-    return NextResponse.json(
-      { error: "Unauthorized: Invalid or missing API key" },
-      { status: 401 }
-    );
+  // Check authentication (includes rate limiting)
+  const authError = requireAdminAuth(request);
+  if (authError) {
+    return authError;
   }
 
   // Mock data - replace with actual database queries in production
@@ -55,10 +53,5 @@ export async function GET(request: NextRequest) {
     ],
   };
 
-  // Return with cache control headers to prevent caching
-  return NextResponse.json(stats, {
-    headers: {
-      "Cache-Control": "no-store, max-age=0, must-revalidate",
-    },
-  });
+  return adminSuccess(stats);
 }
