@@ -47,6 +47,13 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - GitHub Actions: `web.yml` (Next.js lint, typecheck, build, audit)
   - GitHub Actions: `ios-build.yml` (iOS build, test, analyze, swiftlint)
   - CODEOWNERS for code ownership
+- [x] **BLE-First MVP**:
+  - Frozen BadgeEvent schema (v1) with all required fields
+  - Backend validation script with signature verification
+  - BLEBadgeReaderProvider with CoreBluetooth integration
+  - USBCBadgeReaderProvider for transport parity
+  - ProviderConfigurationService BLE preset
+  - Acceptance tests documentation
 
 ## Current Structure
 
@@ -70,6 +77,11 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `.github/workflows/web.yml` | Next.js CI workflow | ✅ New |
 | `.github/workflows/ios-build.yml` | iOS build workflow | ✅ New |
 | `.github/CODEOWNERS` | Code ownership | ✅ New |
+| `src/lib/types/badge-event.ts` | BadgeEvent TypeScript types | ✅ New |
+| `src/lib/backend/validation.ts` | Backend validation script | ✅ New |
+| `ios/EnterpriseShell/Services/BLEBadgeReaderProvider.swift` | BLE badge reader provider | ✅ New |
+| `ios/EnterpriseShell/Services/USBCBadgeReaderProvider.swift` | USB-C badge reader provider | ✅ New |
+| `ios/BLE_MVP_ACCEPTANCE_TESTS.md` | BLE MVP acceptance tests | ✅ New |
 
 ## Current Focus
 
@@ -140,3 +152,4 @@ export async function GET() {
 | 2026-02-17 | Code review: SwiftLint setup + GitHub Actions + local analysis script |
 | 2026-02-17 | Admin GUI: Auth flow visualization + MDM persona builder + provider config |
 | 2026-02-17 | Security: Add SECURITY.md and CI workflows for web and iOS |
+| 2026-02-20 | BLE-First MVP: BadgeEvent schema + backend validation + BLE provider + USB-C parity |

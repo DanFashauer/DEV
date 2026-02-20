@@ -275,6 +275,14 @@ extension ProviderConfigurationService {
         backend: .default
     )
     
+    /// BLE badge reader with Microsoft Entra ID (MVP)
+    static let bleMicrosoftEntraID = AppConfiguration(
+        badgeReader: .defaultBLE,
+        identityProvider: .defaultMicrosoftEntraID,
+        security: .default,
+        backend: .default
+    )
+    
     /// MDM-based authentication with Intune
     static let mdmIntune = AppConfiguration(
         badgeReader: BadgeReaderConfig(
