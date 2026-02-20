@@ -47,6 +47,12 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - GitHub Actions: `web.yml` (Next.js lint, typecheck, build, audit)
   - GitHub Actions: `ios-build.yml` (iOS build, test, analyze, swiftlint)
   - CODEOWNERS for code ownership
+- [x] **Admin API security hardening**:
+  - Centralized auth module (`src/lib/adminAuth.ts`) with timing-safe comparison
+  - Rate limiting (30 req/min per IP)
+  - Production-fail-closed (no default API key)
+  - Comprehensive cache prevention headers
+  - Audit logging for auth attempts
 
 ## Current Structure
 
@@ -70,6 +76,8 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `.github/workflows/web.yml` | Next.js CI workflow | ✅ New |
 | `.github/workflows/ios-build.yml` | iOS build workflow | ✅ New |
 | `.github/CODEOWNERS` | Code ownership | ✅ New |
+| `src/lib/adminAuth.ts` | Admin auth module with timing-safe comparison | ✅ New |
+| `src/app/api/admin/stats/route.ts` | Admin stats API with hardened auth | ✅ New |
 
 ## Current Focus
 
@@ -140,3 +148,4 @@ export async function GET() {
 | 2026-02-17 | Code review: SwiftLint setup + GitHub Actions + local analysis script |
 | 2026-02-17 | Admin GUI: Auth flow visualization + MDM persona builder + provider config |
 | 2026-02-17 | Security: Add SECURITY.md and CI workflows for web and iOS |
+| 2026-02-19 | Admin API: Add timing-safe auth, rate limiting, and audit logging |
