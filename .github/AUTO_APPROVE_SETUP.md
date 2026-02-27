@@ -1,6 +1,17 @@
-# Auto-Approve System Setup
+# Auto-Approve System Setup - HARDENED VERSION
 
-This document explains how to set up the GitHub App for automatic PR approval.
+This document explains how to set up the GitHub App for automatic PR approval with security hardening.
+
+## ⚠️ SECURITY CONSTRAINTS
+
+The hardened system NEVER auto-approves:
+- Changes to `.github/**` (workflows, policies, scripts)
+- Changes to the policy-gate script itself
+- Changes to this setup document
+
+These **always require human approval** to prevent repo takeover via workflow manipulation.
+
+---
 
 ## Overview
 
@@ -101,56 +112,86 @@ Add these to your repository (Repository Settings → Secrets and variables → 
    - ✅ Require conversation resolution before merging
    - ✅ Allow auto-merge (important!)
 
+**IMPORTANT - Branch Protection Settings:**
+- If your ruleset requires "approvals from CODEOWNERS" or specific users, the GitHub App must be added to CODEOWNERS or the ruleset must allow "the actor" (the App) to approve.
+- The auto-approve will only work if the App's approval satisfies the ruleset's approval requirement.
+
 ---
 
-## How It Works
+## What Gets Auto-Approved
 
-### Policy Rules
+### ✅ ALLOWED (auto-approve when policy passes):
+- Code changes in `src/` (except api routes)
+- iOS app changes (except security services)
+- Documentation changes
+- Configuration changes (non-.github)
+
+### ❌ NEVER AUTO-APPROVED (always require human):
+- Anything in `.github/` directory
+- Workflow files
+- Policy gate script
+- This setup document
+
+---
+
+## Policy Rules
 
 The policy gate enforces:
 
 1. **Label Requirement**: PR must have `automerge` label
 2. **Author Allowlist**: Only `DanFashauer` and `kilo-code-bot[bot]` can trigger auto-approve
 3. **Base Branch**: Only merges to `main` or `release` branches
-4. **High-Risk Paths**: Changes to sensitive paths require justification in PR body:
-   - `.github/workflows/**`
+4. **Forbidden Paths**: Changes to `.github/**` or policy-gate ALWAYS require human approval
+5. **Security Justification**: Changes to security-related paths must include "Justification:" in PR body:
    - `src/app/api/**`
-   - `src/lib/backend/validation.ts`
-   - Security-related files
+   - `src/lib/backend/**`
+   - `ios/EnterpriseShell/Services/Security*.swift`
+   - `ios/EnterpriseShell/Services/OIDCAuthService.swift`
+   - `ios/EnterpriseShell/Services/KeychainService.swift`
 
-### Workflow Flow
+### PR Body Format for Security Changes
+
+If your PR touches security-related paths, include:
+
+```markdown
+## Security Review
+
+Justification: [Explain why this change is safe - what threat does it address? How did you verify it?]
+
+Example:
+Justification: Adding input validation to prevent SQL injection in the session API endpoint.
+```
+
+---
+
+## Workflow Flow
 
 ```
 PR opened/updated
        ↓
+   ┌─────────────┐
+   │ Ignore list │───If .github/** changed───→ HUMAN REVIEW REQUIRED
+   └─────────────┘
+       ↓
 Policy Gate runs
        ↓
-   ┌───┴───┐
-   │ Pass? │───No───→ Skip (comment explaining why)
-   └───┬───┘
-       │Yes
-       ↓
+    ┌───┴───┐
+    │ Pass? │───No───→ Skip (comment explaining why)
+    └───┬───┘
+        │Yes
+        ↓
 Wait for CI checks
        ↓
-   ┌───┴───┐
-   │ Pass? │───No───→ Wait more
-   └───┬───┘
-       │Yes
-       ↓
+    ┌───┴───┐
+    │ Pass? │───No───→ Wait more
+    └───┬───┘
+        │Yes
+        ↓
 GitHub App submits APPROVE review
        ↓
 Enable auto-merge
        ↓
 PR auto-merges when all checks pass
-```
-
-### Justifying High-Risk Changes
-
-If your PR touches high-risk paths, include this in your PR description:
-
-```markdown
-Policy: Updated .github/workflows to fix path filter deadlock by including
-workflow files in the paths configuration. This enables CI to run on workflow-only PRs.
 ```
 
 ---
@@ -159,8 +200,8 @@ workflow files in the paths configuration. This enables CI to run on workflow-on
 
 1. Create a test PR with:
    - The `automerge` label
-   - Changes to non-high-risk files
-   - Author: DanFashauer
+   - Changes to non-.github files (e.g., src/app/page.tsx)
+   - Author: DanFashauer or kilo-code-bot[bot]
 
 2. Watch the "Auto-Approve" workflow run
 
@@ -168,6 +209,10 @@ workflow files in the paths configuration. This enables CI to run on workflow-on
    - An approval comment
    - Auto-merge enabled
    - PR auto-merged
+
+**Test .github protection separately:**
+1. Create a PR that modifies `.github/workflows/` - it should be SKIPPED
+2. The workflow should comment explaining human approval is required
 
 ---
 
@@ -187,3 +232,45 @@ workflow files in the paths configuration. This enables CI to run on workflow-on
 ### Workflow not triggering
 - Check that the branch protection rules include the workflow
 - Verify the PR has the `automerge` label
+
+### Auto-approve not working despite policy passing
+- **Check branch protection rules**: If rules require "approvals from CODEOWNERS" or specific users, the GitHub App must be authorized to approve
+- Add the GitHub App to CODEOWNERS file: `@app/dev-autoreviewer` (replace with your app name)
+- Or update ruleset to allow "the actor" to approve
+
+---
+
+## Security Model
+
+| Threat | Protection |
+|--------|------------|
+| Workflow self-approval | `paths-ignore: .github/**` in workflow trigger |
+| Policy gate bypass | Script in `FORBIDDEN_PATHS` - never auto-approves .github |
+| Token theft | GitHub App with minimal permissions |
+| Privilege escalation | Least-privilege permissions in workflow |
+| Blind approval | All checks must pass; explicit decision log emitted |
+
+---
+
+## What to Click Checklist
+
+### GitHub App Setup:
+- [ ] Create GitHub App at github.com/settings/apps/new
+- [ ] Set permissions: PRs (read/write), Checks (read), Contents (read), Metadata (read)
+- [ ] Install app to DEV repository
+- [ ] Copy App ID → repo variable `APP_ID`
+- [ ] Copy Installation ID → repo variable `APP_INSTALLATION_ID`
+- [ ] Generate private key → repo secret `APP_PRIVATE_KEY`
+
+### Repository Settings:
+- [ ] Create `automerge` label
+- [ ] Update main branch protection:
+  - [ ] Require PR reviews
+  - [ ] Require status checks to pass
+  - [ ] Allow auto-merge
+  - [ ] **IMPORTANT**: Allow App to satisfy approval requirement (add to CODEOWNERS or update ruleset)
+
+### Test:
+- [ ] Create test PR with automerge label
+- [ ] Verify auto-approve triggers
+- [ ] Verify .github changes are blocked
