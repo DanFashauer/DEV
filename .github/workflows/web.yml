@@ -4,23 +4,25 @@ on:
   push:
     branches: [main]
     paths:
+      - '.github/workflows/**'
       - 'src/**'
       - 'package.json'
       - 'bun.lock'
-      - 'next.config.ts'
+      - 'next.config.*'
       - 'tsconfig.json'
-      - 'postcss.config.mjs'
-      - 'eslint.config.mjs'
+      - 'postcss.config.*'
+      - 'eslint.config.*'
   pull_request:
     branches: [main]
     paths:
+      - '.github/workflows/**'
       - 'src/**'
       - 'package.json'
       - 'bun.lock'
-      - 'next.config.ts'
+      - 'next.config.*'
       - 'tsconfig.json'
-      - 'postcss.config.mjs'
-      - 'eslint.config.mjs'
+      - 'postcss.config.*'
+      - 'eslint.config.*'
 
 jobs:
   build:
@@ -45,7 +47,7 @@ jobs:
         run: bun typecheck
 
       - name: Build Next.js application
-        run: bun build
+        run: bun run build
 
       - name: Run security audit
         run: bun audit --production
