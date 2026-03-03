@@ -1,12 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { 
+  requireAdminAuth, 
+  adminSuccess, 
+  adminError,
+  getSecurityHeaders 
+} from "@/lib/adminAuth";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Admin Stats API Route
  * 
  * Returns mock statistics for the admin dashboard.
  * In production, this would connect to actual data sources.
+ * 
+ * Security features:
+ * - API key authentication via X-Admin-Api-Key header
+ * - Timing-safe comparison to prevent timing attacks
+ * - Rate limiting (30 requests/minute per IP)
+ * - Comprehensive cache control headers
+ * - Audit logging (no secrets logged)
+ * - Fails closed if API key not configured in production
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Check authentication (includes rate limiting)
+  const authError = requireAdminAuth(request);
+  if (authError) {
+    return authError;
+  }
+
   // Mock data - replace with actual database queries in production
   const stats = {
     totalSessions: 1247,
@@ -31,5 +53,5 @@ export async function GET() {
     ],
   };
 
-  return NextResponse.json(stats);
+  return adminSuccess(stats);
 }
