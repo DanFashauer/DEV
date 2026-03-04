@@ -92,6 +92,18 @@ struct BadgeReaderConfig: Codable {
         mdmProvider: nil
     )
     
+    static let defaultBLE = BadgeReaderConfig(
+        readerType: .bluetoothLE,
+        protocolString: nil,
+        serviceUUID: nil,
+        characteristicUUID: nil,
+        webhookURL: nil,
+        webhookSecret: nil,
+        serialPort: nil,
+        baudRate: nil,
+        mdmProvider: nil
+    )
+    
     static let defaultKeyboardWedge = BadgeReaderConfig(
         readerType: .keyboardWedge,
         protocolString: nil,
@@ -164,6 +176,11 @@ final class BadgeReaderProviderFactory {
             ExternalAccessoryBadgeReaderProvider()
         }
         
+        // Bluetooth LE provider
+        registeredProviders[BadgeReaderType.bluetoothLE.rawValue] = {
+            BLEBadgeReaderProvider()
+        }
+        
         // Keyboard wedge provider
         registeredProviders[BadgeReaderType.keyboardWedge.rawValue] = {
             KeyboardWedgeBadgeReaderProvider()
@@ -177,6 +194,11 @@ final class BadgeReaderProviderFactory {
         // MDM enrollment provider
         registeredProviders[BadgeReaderType.mdmEnrollment.rawValue] = {
             MDMBadgeReaderProvider()
+        }
+        
+        // USB-C provider (parity with BLE)
+        registeredProviders["usbc"] = {
+            USBCBadgeReaderProvider()
         }
     }
     
