@@ -37,6 +37,9 @@ jobs:
       - name: Setup Swift
         run: swift --version
 
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
       - name: Generate Xcode project
         working-directory: ios
         run: |
@@ -77,7 +80,7 @@ jobs:
         run: brew install swiftlint
 
       - name: Run SwiftLint
-        run: swiftlint --config .swiftlint.yml
+        run: swiftlint --config ../.swiftlint.yml
         working-directory: ios
 
       - name: Security Analysis
