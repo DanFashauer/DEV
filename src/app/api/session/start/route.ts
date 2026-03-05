@@ -29,6 +29,7 @@ import { sessionStore, SessionDirective } from '@/lib/sessionStore';
 import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
 import { emitSessionStart } from '@/lib/integrations/webhooks/emitter';
 import { emitAuthFailure } from '@/lib/integrations/webhooks/emitter';
+import { evaluatePolicies } from '@/lib/policy/runtime/evaluate';
 
 /**
  * Simple in-memory rate limiter for session start
@@ -237,9 +238,33 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString(),
     }).catch(err => console.error('[Webhook] Failed to emit session.start:', err));
     
+    // Evaluate policies and get actions
+    const policyContext = {
+      device: { role: 'kiosk', deviceId },
+      user: { role: badgeMapping.department || 'user', userId: badgeMapping.userId, name: badgeMapping.userName },
+      location: { zone: event.context?.locationId || 'unknown' },
+      session: { id: session.sessionId, startedAt: session.createdAt },
+    };
+    
+    const policyActions = evaluatePolicies(policyContext);
+    
+    // Process policy actions
+    for (const action of policyActions) {
+      console.log('[Policy] Action triggered:', action.type, action.params);
+      // Handle specific action types
+      if (action.type === 'set_session_ttl' && action.params?.seconds) {
+        // Extend session TTL
+        await sessionStore.update(session.sessionId, {
+          expiresAt: new Date(Date.now() + action.params.seconds * 1000).toISOString(),
+        });
+        directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
+      }
+    }
+    
     return NextResponse.json({
       success: true,
       session: directive,
+      policyActions: policyActions.length > 0 ? policyActions : undefined,
     });
   } catch (error) {
     console.error('[SessionStart] Error:', error);
