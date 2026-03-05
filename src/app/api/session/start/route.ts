@@ -27,6 +27,8 @@ import { validateAndAuthorizeSessionStart, generateRandomHex } from '@/lib/backe
 import { badgeRegistry } from '@/lib/badgeRegistry';
 import { sessionStore, SessionDirective } from '@/lib/sessionStore';
 import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
+import { emitSessionStart } from '@/lib/integrations/webhooks/emitter';
+import { emitAuthFailure } from '@/lib/integrations/webhooks/emitter';
 
 /**
  * Simple in-memory rate limiter for session start
@@ -102,6 +104,13 @@ export async function POST(request: Request) {
         { type: 'device', id: deviceId },
         { meta: { reason: validation.error, code: validation.code } }
       );
+      // Emit webhook event (best-effort, non-blocking)
+      emitAuthFailure({
+        deviceId,
+        reason: validation.error || 'validation_failed',
+        code: validation.code,
+        timestamp: new Date().toISOString(),
+      }).catch(err => console.error('[Webhook] Failed to emit auth.failure:', err));
       return NextResponse.json(
         { error: validation.error },
         { status: 401 }
@@ -218,6 +227,15 @@ export async function POST(request: Request) {
       deviceId: deviceId,
       expiresAt: session.expiresAt,
     });
+    
+    // Emit webhook event (best-effort, non-blocking)
+    emitSessionStart({
+      sessionId: session.sessionId,
+      userId: session.userId,
+      deviceId: deviceId,
+      badgeId: event.badge.badgeId,
+      timestamp: new Date().toISOString(),
+    }).catch(err => console.error('[Webhook] Failed to emit session.start:', err));
     
     return NextResponse.json({
       success: true,

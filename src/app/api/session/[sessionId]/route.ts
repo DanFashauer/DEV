@@ -19,6 +19,7 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { sessionStore } from '@/lib/sessionStore';
 import { appendAuditRecord } from '@/lib/auditLedger';
+import { emitSessionEnd } from '@/lib/integrations/webhooks/emitter';
 
 interface RouteParams {
   params: Promise<{
@@ -137,6 +138,15 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       target: { type: 'session', id: sessionId },
       meta: { userId: session.userId, terminatedBy: isAdmin ? 'admin' : 'device' },
     });
+    
+    // Emit webhook event (best-effort, non-blocking)
+    emitSessionEnd({
+      sessionId,
+      userId: session.userId,
+      deviceId: session.deviceId,
+      reason: isAdmin ? 'admin_terminated' : 'device_logout',
+      timestamp: new Date().toISOString(),
+    }).catch(err => console.error('[Webhook] Failed to emit session.end:', err));
     
     return NextResponse.json({
       success: true,

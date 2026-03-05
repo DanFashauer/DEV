@@ -4,6 +4,7 @@ import { validateLocationSignal } from "@/lib/location/validate";
 import { createLocationStore } from "@/lib/location/store";
 import { dispatchIntegrationEvent } from "@/lib/integrations/dispatcher";
 import { recordLocationObservation } from "@/lib/auditLedger";
+import { emitLocationObserved } from "@/lib/integrations/webhooks/emitter";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,22 @@ export async function POST(request: Request) {
     deviceId: body.deviceId,
     payload: { ...body },
   });
+
+  // Emit webhook event (best-effort, non-blocking)
+  emitLocationObserved({
+    deviceId: body.deviceId,
+    badgeId: '', // Location signals don't include badgeId
+    location: {
+      mode: body.mode,
+      zone: body.zoneId,
+      building: body.buildingId,
+      floor: body.floorId,
+      coordinates: body.lat && body.lon ? { lat: body.lat!, lon: body.lon! } : undefined,
+      accuracy: body.accuracyM,
+      source: body.source,
+    },
+    timestamp: new Date(body.observedAt).toISOString(),
+  }).catch(err => console.error('[Webhook] Failed to emit asset.location.observed:', err));
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }

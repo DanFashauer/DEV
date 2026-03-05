@@ -23,6 +23,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { badgeRegistry } from '@/lib/badgeRegistry';
 import { requireAdminAuth } from '@/lib/adminAuth';
 import { appendAuditRecord, recordAdminAccess } from '@/lib/auditLedger';
+import { emitBadgeEnroll } from '@/lib/integrations/webhooks/emitter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,6 +65,14 @@ export async function POST(request: NextRequest) {
       target: { type: 'badge', id: badgeUid.trim() },
       meta: { userId: userId.trim(), userName, department },
     });
+    
+    // Emit webhook event (best-effort, non-blocking)
+    emitBadgeEnroll({
+      badgeId: badgeUid.trim(),
+      userId: userId.trim(),
+      enrolledBy: 'admin',
+      timestamp: new Date().toISOString(),
+    }).catch(err => console.error('[Webhook] Failed to emit badge.enroll:', err));
     
     return NextResponse.json({
       success: true,

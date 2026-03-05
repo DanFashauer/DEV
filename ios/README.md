@@ -369,3 +369,79 @@ When location signals are received, the system dispatches `asset.location.observ
 - `payload`: Full location signal data
 
 Webhooks are signed with HMAC-SHA256 using the `INTEGRATION_SIGNING_SECRET`.
+
+## Integrations (Webhooks v1)
+
+The platform includes a production-grade **webhook integrations system** that enables MDM/UEM-agnostic event-driven workflows. This replaces the basic integration dispatcher with a complete solution for external system automation.
+
+### Features
+
+- **Admin CRUD**: Create, read, update, delete webhook endpoints via API
+- **Per-Endpoint Signing**: Each webhook has its own HMAC-SHA256 signing secret
+- **Secret Rotation**: Rotate secrets without downtime
+- **Retry with Backoff**: Exponential backoff + jitter, max 6 attempts
+- **Dead Letter Queue (DLQ)**: Failed deliveries after max retries
+- **Delivery Receipts**: Track delivery status per event
+- **Security**: HTTPS-only in production, blocks localhost
+
+### Supported Events
+
+| Event | Description |
+|-------|-------------|
+| `session.start` | User started a session via badge tap |
+| `session.end` | Session terminated |
+| `badge.enroll` | Badge enrolled to user mapping |
+| `badge.delete` | Badge mapping removed |
+| `auth.failure` | Authentication failed |
+| `asset.location.observed` | Location signal received |
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/integrations/webhooks` | POST | Create webhook |
+| `/api/admin/integrations/webhooks` | GET | List webhooks |
+| `/api/admin/integrations/webhooks/:id` | PATCH | Update webhook |
+| `/api/admin/integrations/webhooks/:id` | DELETE | Delete webhook |
+
+### Example: Create Webhook
+
+```bash
+curl -X POST https://api.example.com/api/admin/integrations/webhooks \
+  -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ServiceNow Incidents",
+    "url": "https://your-instance.service-now.com/api/now/table/incident",
+    "events": ["auth.failure", "badge.delete"],
+    "secret": "your-32-char-minimum-secret-here"
+  }'
+```
+
+### Webhook Payload
+
+```json
+{
+  "id": "uuid",
+  "type": "session.start",
+  "timestamp": "2026-03-05T10:00:00.000Z",
+  "source": { "service": "tap-to-login", "version": "1.0.0" },
+  "data": { "sessionId": "...", "userId": "...", "deviceId": "..." },
+  "deliveryId": "uuid"
+}
+```
+
+### Integration Targets (What Buyers Will Recognize)
+
+- **Cisco ISE / Aruba ClearPass (NAC)**: Consume session events → drive NAC policies or SIEM correlation
+- **SIEM (Splunk / Microsoft Sentinel)**: Ingest webhook stream for security analytics
+- **ServiceNow**: Open incidents on anomaly events (replay attempts, auth failures)
+- **MDM/UEM (Workspace ONE / Intune / Jamf)**: They become consumers of your events, not your dependency
+
+### Security
+
+- HTTPS required in production
+- Localhost blocked in production
+- Per-endpoint secrets (not shared)
+- Idempotency via `deliveryId` + `eventId`
+- Request ID + delivery ID in logs (secrets redacted)

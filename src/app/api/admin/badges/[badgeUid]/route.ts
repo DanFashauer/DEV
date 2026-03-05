@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { badgeRegistry } from '@/lib/badgeRegistry';
 import { requireAdminAuth } from '@/lib/adminAuth';
 import { appendAuditRecord } from '@/lib/auditLedger';
+import { emitBadgeDelete } from '@/lib/integrations/webhooks/emitter';
 
 interface RouteParams {
   params: Promise<{
@@ -63,6 +64,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       target: { type: 'badge', id: badgeUid },
       meta: { previouslyMappedTo: existing?.userId },
     });
+    
+    // Emit webhook event (best-effort, non-blocking)
+    emitBadgeDelete({
+      badgeId: badgeUid,
+      userId: existing?.userId || '',
+      deletedBy: 'admin',
+      timestamp: new Date().toISOString(),
+    }).catch(err => console.error('[Webhook] Failed to emit badge.delete:', err));
     
     return NextResponse.json({
       success: true,
