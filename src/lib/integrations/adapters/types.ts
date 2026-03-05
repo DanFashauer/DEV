@@ -101,8 +101,33 @@ export interface SIEMAdapter {
 }
 
 // ============================================================================
-// UEM Types
+// UEM Types - Universal Surface for MDM/UEM
 // ============================================================================
+
+export interface UEMDeviceState {
+  deviceId: string;
+  enrolled: boolean;
+  compliant: boolean;
+  osVersion?: string;
+  platform?: string;
+  lastSync?: string;
+  tags?: string[];
+  quarantineStatus?: 'none' | 'quarantined' | 'clearing';
+}
+
+export interface UEMTagRequest {
+  deviceId: string;
+  tag: string;
+  reason?: string;
+  correlationId?: string;
+}
+
+export interface UEMQuarantineRequest {
+  deviceId: string;
+  action: 'quarantine' | 'unquarantine';
+  reason?: string;
+  correlationId?: string;
+}
 
 export interface UEMCommandRequest {
   deviceId: string;
@@ -121,13 +146,34 @@ export interface UEMCommandResponse {
 export interface UEMAdapter {
   readonly name: string;
   readonly vendor: string;
-  pushCommand(request: UEMCommandRequest): Promise<UEMCommandResponse>;
+  
+  // Universal UEM Surface
+  getDeviceState(deviceId: string): Promise<UEMDeviceState | null>;
+  setTag(request: UEMTagRequest): Promise<{ success: boolean }>;
+  removeTag(request: UEMTagRequest): Promise<{ success: boolean }>;
+  quarantine(request: UEMQuarantineRequest): Promise<UEMCommandResponse>;
+  clearQuarantine(deviceId: string, reason?: string): Promise<UEMCommandResponse>;
+  syncDevice?(deviceId: string): Promise<UEMCommandResponse>;
+  
+  // Legacy support
+  pushCommand?(request: UEMCommandRequest): Promise<UEMCommandResponse>;
   healthCheck?(): Promise<boolean>;
 }
 
 // ============================================================================
-// NAC Types
+// NAC Types - Network Access Control
 // ============================================================================
+
+export interface NACEndpointInfo {
+  endpointId: string;
+  macAddress?: string;
+  serialNumber?: string;
+  certSubject?: string;
+  name?: string;
+  status: 'unknown' | 'registered' | 'authenticated' | 'disconnected';
+  profiles?: string[];
+  lastSeen?: string;
+}
 
 export interface NACQuarantineRequest {
   deviceId: string;
@@ -150,7 +196,14 @@ export interface NACQuarantineResponse {
 export interface NACAdapter {
   readonly name: string;
   readonly vendor: string;
-  quarantineDevice(request: NACQuarantineRequest): Promise<NACQuarantineResponse>;
+  
+  // Universal NAC Surface
+  lookupEndpoint(identifier: string, type: 'mac' | 'serial' | 'cert'): Promise<NACEndpointInfo | null>;
+  quarantineEndpoint(request: NACQuarantineRequest): Promise<NACQuarantineResponse>;
+  clearQuarantine(endpointId: string, reason?: string): Promise<NACQuarantineResponse>;
+  
+  // Legacy support
+  quarantineDevice?(request: NACQuarantineRequest): Promise<NACQuarantineResponse>;
   healthCheck?(): Promise<boolean>;
 }
 

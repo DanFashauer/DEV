@@ -314,13 +314,13 @@ export class PolicyActionDispatcher {
     }
 
     // Try NAC first, then UEM
-    if (nacAdapter) {
+    if (nacAdapter && nacAdapter.quarantineEndpoint) {
       try {
-        const result = await nacAdapter.quarantineDevice({
+        const result = await nacAdapter.quarantineEndpoint({
           deviceId,
           action: 'quarantine',
           reason: action.params?.reason || `Policy action: ${action.policyName || 'quarantine'}`,
-          duration: action.params?.duration as any,
+          duration: action.params?.duration as number,
           vlan: action.params?.vlan as string,
           correlationId: context.event?.requestId,
           caseId,
@@ -338,12 +338,11 @@ export class PolicyActionDispatcher {
     }
 
     // Fall back to UEM
-    if (uemAdapter) {
+    if (uemAdapter && uemAdapter.quarantine) {
       try {
-        const result = await uemAdapter.pushCommand({
+        const result = await uemAdapter.quarantine({
           deviceId,
-          command: 'lock_device',
-          payload: { reason: action.params?.reason as any },
+          action: 'quarantine',
           reason: action.params?.reason as string,
           correlationId: context.event?.requestId,
         });
