@@ -97,6 +97,26 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - Secret redaction to prevent logging credentials
   - scripts/audit-verify.ts for testing
   - npm scripts: test:audit, audit:verify
+- [x] **Location Signals**:
+  - LocationSignal types (presence/coarse/precise modes)
+  - Location config with safe defaults (LOCATION_MODE=presence)
+  - Location store (Redis/in-memory)
+  - Location validation
+  - Integration dispatcher scaffold
+  - API endpoints: POST /api/location/report, GET /api/admin/location
+  - ios/README.md documentation
+- [x] **Integrations Webhooks v1**:
+  - Admin CRUD for webhook endpoints
+  - Per-endpoint HMAC-SHA256 signing secrets
+  - Secret rotation support
+  - Exponential backoff with jitter + retry (max 6 attempts)
+  - Dead Letter Queue (DLQ) for failed deliveries
+  - Delivery receipts and logs
+  - HTTPS-only in production (blocks localhost)
+  - Event emission: session.start, session.end, badge.enroll, badge.delete, auth.failure, asset.location.observed
+  - API routes: POST/GET /api/admin/integrations/webhooks, PATCH/DELETE /api/admin/integrations/webhooks/:id
+  - Test script: scripts/webhook-test.ts + npm script
+  - ios/README.md quickstart
 
 ## Current Structure
 
