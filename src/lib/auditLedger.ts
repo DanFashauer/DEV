@@ -14,10 +14,16 @@ export type AuditEventType =
   | "asset.location.observed"
   | "admin.access"
   | "policy.matched"
-  | "policy.action.executed";
+  | "policy.action.executed"
+  // Phase 4: Telemetry + Security events
+  | "telemetry.posture.updated"
+  | "telemetry.posture.missing"
+  | "security.webauthn.registered"
+  | "security.webauthn.step_up.success"
+  | "security.webauthn.step_up.failure";
 
 export type Actor = {
-  type: "device" | "admin" | "system";
+  type: "device" | "admin" | "system" | "user";
   id?: string;
 };
 

@@ -14,6 +14,9 @@ export const ActionSchema = z.object({
     "emit_siem_event",
     "quarantine_device",
     "notify_admin",
+    // Phase 4: Step-up auth + Posture gates
+    "require_step_up_auth",
+    "enforce_posture",
   ]),
   params: z.record(z.any()).optional(),
   // Populated by the evaluation engine when returning matched actions
