@@ -9,6 +9,7 @@
 
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
+import { nonceStore } from './nonceStore';
 
 /**
  * Configuration for request signing
@@ -18,12 +19,7 @@ const SIGNING_CONFIG = {
   secretKey: process.env.BACKEND_SIGNING_SECRET ?? 'development-secret-key',
   /** Time window for request validity (5 minutes in ms) */
   validityWindowMs: 5 * 60 * 1000,
-  /** Nonce storage TTL (10 minutes in ms) */
-  nonceTtlMs: 10 * 60 * 1000,
 };
-
-// In-memory nonce store (use Redis in production)
-const nonceStore = new Map<string, number>();
 
 /**
  * BadgeEvent v1 schema validation
@@ -114,26 +110,13 @@ function verifySignature(data: string, key: string, signature: string): boolean 
 }
 
 /**
- * Check if nonce exists and is still valid
+ * Check if nonce exists and is still valid (per-device)
+ * Uses Redis-backed store for production, in-memory for dev
  */
-function isNonceValid(nonce: string): boolean {
-  const existingTs = nonceStore.get(nonce);
-  if (existingTs) {
-    return false; // Nonce already used
-  }
-  
-  // Store nonce with current timestamp
-  nonceStore.set(nonce, Date.now());
-  
-  // Clean up old nonces
-  const now = Date.now();
-  for (const [key, ts] of nonceStore.entries()) {
-    if (now - ts > SIGNING_CONFIG.nonceTtlMs) {
-      nonceStore.delete(key);
-    }
-  }
-  
-  return true;
+async function isNonceValid(deviceId: string, nonce: string): Promise<boolean> {
+  // Try to set nonce atomically - returns false if already exists
+  const added = await nonceStore.setNonce(deviceId, nonce);
+  return added;
 }
 
 /**
@@ -185,8 +168,12 @@ export async function validateAndAuthorizeSessionStart(
     return { valid: false, error: 'Request timestamp outside valid window' };
   }
   
-  // 3. Check replay prevention (nonce)
-  if (!isNonceValid(nonce)) {
+  // 3. Check replay prevention (nonce) - per-device isolation
+  const deviceId = body && typeof body === 'object' && 'device' in body 
+    ? (body as { device?: { deviceId?: string } }).device?.deviceId ?? 'unknown'
+    : 'unknown';
+  
+  if (!(await isNonceValid(deviceId, nonce))) {
     return { valid: false, error: 'Nonce already used or invalid' };
   }
   
