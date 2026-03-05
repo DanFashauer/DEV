@@ -240,3 +240,4 @@ export async function GET() {
 | 2026-03-05 | Implemented Tamper-Evident Audit Ledger (v0.2 Phase 2)
 | 2026-03-05 | Implemented Integrations Webhooks v1 (admin CRUD, signed events, retries, DLQ)
 | 2026-03-05 | Implemented Policy Engine v1 (rule evaluation, admin API, session integration)
+| 2026-03-05 | Implemented Policy Actions + Integrations v1 (ITSM/SIEM adapters, dispatcher)
