@@ -117,6 +117,13 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - API routes: POST/GET /api/admin/integrations/webhooks, PATCH/DELETE /api/admin/integrations/webhooks/:id
   - Test script: scripts/webhook-test.ts + npm script
   - ios/README.md quickstart
+- [x] **Policy Engine v1**:
+  - Rule-based policy evaluation engine
+  - Policy types with conditions (eq, neq, in, gt, lt) and actions
+  - Policy store with in-memory persistence
+  - Admin API: GET/POST /api/admin/policies, PATCH/DELETE /api/admin/policies/:id
+  - Integrated with session.start for dynamic session TTL
+  - Supports actions: launch_app, set_session_ttl, send_itsm_ticket, emit_siem_event, quarantine_device, notify_admin
 
 ## Current Structure
 
@@ -231,3 +238,5 @@ export async function GET() {
 | 2026-03-05 | Created v0.2.0 milestone with 7 issues (GitHub)
 | 2026-03-05 | Implemented #22 Badge Identity Mapping + #23 Session Engine + #25 BLE Simulator
 | 2026-03-05 | Implemented Tamper-Evident Audit Ledger (v0.2 Phase 2)
+| 2026-03-05 | Implemented Integrations Webhooks v1 (admin CRUD, signed events, retries, DLQ)
+| 2026-03-05 | Implemented Policy Engine v1 (rule evaluation, admin API, session integration)
