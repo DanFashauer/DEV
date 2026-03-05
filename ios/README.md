@@ -22,8 +22,22 @@ Enterprise Shell provides a secure kiosk-style interface for shared devices in e
 ### Platform Support
 - iPadOS 15.0+ (primary target)
 - iOS 15.0+ (secondary)
+- Android (mobile companion app - future)
+- macOS (desktop companion - future)
 - Supervised devices only
 - MDM-managed environments
+
+### Security & Authentication
+- **WebAuthn/FIDO2 Support**: Admin step-up authentication for high-risk operations
+- **YubiKey Support**: Hardware security keys for sensitive admin actions
+- **Step-Up Authentication**: Time-limited 2FA for operations like:
+  - Webhook secret rotation
+  - Integration credential changes
+  - Policy editing/enabling
+  - Device quarantine
+  - Allowlist toggling
+  - Admin deletion
+- Windows/OneSign-style PC SSO: Future optional feature
 
 ## Project Structure
 
@@ -394,6 +408,10 @@ The platform includes a production-grade **webhook integrations system** that en
 | `badge.delete` | Badge mapping removed |
 | `auth.failure` | Authentication failed |
 | `asset.location.observed` | Location signal received |
+| `policy.matched` | Policy evaluation matched |
+| `policy.action.executed` | Policy action dispatched |
+| `itsm.ticket.created` | ITSM ticket created |
+| `itsm.ticket.failed` | ITSM ticket creation failed |
 
 ### API Endpoints
 
@@ -435,7 +453,7 @@ curl -X POST https://api.example.com/api/admin/integrations/webhooks \
 
 - **Cisco ISE / Aruba ClearPass (NAC)**: Consume session events → drive NAC policies or SIEM correlation
 - **SIEM (Splunk / Microsoft Sentinel)**: Ingest webhook stream for security analytics
-- **ServiceNow**: Open incidents on anomaly events (replay attempts, auth failures)
+- **ServiceNow / Jira / Zendesk / Freshservice / BMC Helix / Ivanti / ManageEngine (ITSM)**: Open tickets on policy events
 - **MDM/UEM (Workspace ONE / Intune / Jamf)**: They become consumers of your events, not your dependency
 
 ### Security
