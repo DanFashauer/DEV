@@ -15,8 +15,6 @@ on:
       - 'ios/**'
       - '.swiftlint.yml'
 
-env:
-  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
 
 jobs:
   build-and-test:
