@@ -13,7 +13,8 @@
     "sim:location": "bun run scripts/sim-location.ts",
     "test:audit": "bun run scripts/audit-verify.ts",
     "audit:verify": "bun run scripts/audit-verify.ts",
-    "test:webhooks": "bun run scripts/webhook-test.ts"
+    "test:webhooks": "bun run scripts/webhook-test.ts",
+    "seed:policies": "bun run scripts/seed-policies.ts"
   },
   "dependencies": {
     "ioredis": "^5.10.0",

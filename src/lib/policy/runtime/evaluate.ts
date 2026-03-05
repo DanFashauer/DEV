@@ -1,5 +1,5 @@
 import { listPolicies } from "../store/policyStore";
-import { Policy, Action, PolicyContext } from "../types";
+import { Policy, Action, PolicyContext, PolicyAction } from "../types";
 
 function evaluateConditionField(ctx: PolicyContext, field: string): unknown {
   const parts = field.split(".");
@@ -42,14 +42,28 @@ function checkPolicy(policy: Policy, ctx: PolicyContext): boolean {
   });
 }
 
-export function evaluatePolicies(ctx: PolicyContext): Action[] {
-  const actions: Action[] = [];
+/**
+ * Evaluate policies against context and return matched actions
+ * with policy metadata attached
+ */
+export function evaluatePolicies(ctx: PolicyContext): PolicyAction[] {
+  const actions: PolicyAction[] = [];
 
-  for (const policy of listPolicies()) {
+  // Sort policies by priority
+  const policies = listPolicies().sort((a, b) => a.priority - b.priority);
+
+  for (const policy of policies) {
     if (!policy.enabled) continue;
 
     if (checkPolicy(policy, ctx)) {
-      actions.push(...policy.actions);
+      // Attach policy metadata to each action
+      for (const action of policy.actions) {
+        actions.push({
+          ...action,
+          policyId: policy.id,
+          policyName: policy.name,
+        });
+      }
     }
   }
 

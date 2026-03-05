@@ -16,6 +16,9 @@ export const ActionSchema = z.object({
     "notify_admin",
   ]),
   params: z.record(z.any()).optional(),
+  // Populated by the evaluation engine when returning matched actions
+  policyId: z.string().optional(),
+  policyName: z.string().optional(),
 });
 
 export const PolicySchema = z.object({
@@ -30,4 +33,5 @@ export const PolicySchema = z.object({
 export type Policy = z.infer<typeof PolicySchema>;
 export type Condition = z.infer<typeof ConditionSchema>;
 export type Action = z.infer<typeof ActionSchema>;
+export type PolicyAction = Action; // Alias for clarity in dispatcher
 export type PolicyContext = Record<string, unknown>;
