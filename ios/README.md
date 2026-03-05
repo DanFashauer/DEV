@@ -262,11 +262,17 @@ See `Models/SessionData.swift` for detailed API models.
 
 ## Limitations (MVP)
 
+### iOS App
 - No NFC badge reading
 - No offline authentication
 - No biometric fallback
 - No Apple ID integration
 - No OS-level user switching
+
+### Backend / API
+- **Replay attack nonce cache**: In-memory only (not durable across server restarts or multi-instance deployments). Needs Redis or shared DB + per-device nonce window for production.
+- **adminAuth**: Hardcoded API key (`dev-admin-key-12345` in dev). Needs real RBAC with OIDC/Entra ID + JWT + role-based permissions.
+- **Device enrollment endpoint**: Returns mock/stub data. Needs real device registry model and database persistence.
 
 ## Dependencies
 
