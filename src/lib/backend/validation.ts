@@ -9,7 +9,7 @@
 
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { nonceStore } from './nonceStore';
+import { nonceStore, CONFIG } from './nonceStore';
 
 /**
  * Configuration for request signing
@@ -155,8 +155,13 @@ export async function validateAndAuthorizeSessionStart(
       error: 'Missing required security headers: x-signature, x-timestamp, x-nonce',
     };
   }
-  
-  // 2. Validate timestamp is within window
+
+  // 2. Validate nonce length (minimum 16 characters)
+  if (nonce.length < CONFIG.minNonceLength) {
+    return { valid: false, error: `Nonce must be at least ${CONFIG.minNonceLength} characters` };
+  }
+
+  // 3. Validate timestamp is within window
   const requestTime = parseInt(timestamp, 10);
   if (isNaN(requestTime)) {
     return { valid: false, error: 'Invalid timestamp format' };
@@ -167,17 +172,8 @@ export async function validateAndAuthorizeSessionStart(
   if (timeDiff > SIGNING_CONFIG.validityWindowMs) {
     return { valid: false, error: 'Request timestamp outside valid window' };
   }
-  
-  // 3. Check replay prevention (nonce) - per-device isolation
-  const deviceId = body && typeof body === 'object' && 'device' in body 
-    ? (body as { device?: { deviceId?: string } }).device?.deviceId ?? 'unknown'
-    : 'unknown';
-  
-  if (!(await isNonceValid(deviceId, nonce))) {
-    return { valid: false, error: 'Nonce already used or invalid' };
-  }
-  
-  // 4. Validate schema
+
+  // 4. Validate schema BEFORE signature verification (to get deviceId safely)
   const parseResult = BadgeEventSchema.safeParse(body);
   if (!parseResult.success) {
     return {
@@ -187,8 +183,8 @@ export async function validateAndAuthorizeSessionStart(
   }
   
   const event = parseResult.data;
-  
-  // 5. Verify signature
+
+  // 5. Verify HMAC signature FIRST (before any stateful operations)
   const bodyString = JSON.stringify(body);
   const signatureBase = generateSignatureBase(
     method,
@@ -201,7 +197,14 @@ export async function validateAndAuthorizeSessionStart(
   if (!verifySignature(signatureBase, SIGNING_CONFIG.secretKey, signature)) {
     return { valid: false, error: 'Invalid signature' };
   }
+
+  // 6. Check replay prevention (nonce) - per-device isolation (LAST, after signature verified)
+  const deviceId = event.device?.deviceId ?? 'unknown';
   
+  if (!(await isNonceValid(deviceId, nonce))) {
+    return { valid: false, error: 'Nonce already used or invalid' };
+  }
+
   // All validations passed
   return {
     valid: true,

@@ -15,9 +15,14 @@ const CONFIG = {
   /** Redis connection URL (optional - uses in-memory if not set) */
   redisUrl: process.env.REDIS_URL,
   /** Nonce TTL in seconds (default: 300 = 5 minutes) */
-  nonceTtlSeconds: parseInt(process.env.NONCE_TTL_SECONDS ?? '300', 10),
+  nonceTtlSeconds: (() => {
+    const parsed = parseInt(process.env.NONCE_TTL_SECONDS ?? '300', 10);
+    return isNaN(parsed) || parsed < 60 ? 300 : parsed;
+  })(),
   /** Key prefix for Redis keys */
   keyPrefix: 'nonce',
+  /** Minimum nonce length */
+  minNonceLength: 16,
 };
 
 /**
@@ -110,7 +115,9 @@ class RedisNonceStore implements NonceStore {
   }
   
   private makeKey(deviceId: string, nonce: string): string {
-    return `${CONFIG.keyPrefix}:${deviceId}:${nonce}`;
+    // Sanitize deviceId to prevent injection: replace spaces/colons with underscores
+    const safeDeviceId = deviceId.replace(/[\s:]/g, '_');
+    return `${CONFIG.keyPrefix}:${safeDeviceId}:${nonce}`;
   }
   
   async setNonce(deviceId: string, nonce: string): Promise<boolean> {
