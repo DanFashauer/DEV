@@ -54,6 +54,20 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - USBCBadgeReaderProvider for transport parity
   - ProviderConfigurationService BLE preset
   - Acceptance tests documentation
+- [x] **OIDC/JWT RBAC**:
+  - JWT verification with JWKS (jose library)
+  - Role-based access control (admin/operator/viewer)
+  - API key fallback for development
+  - Environment-gated dev bypass
+- [x] **Device Registry**:
+  - Device enrollment and lookup
+  - Allowlist mode support
+  - Redis-backed for production, in-memory for dev
+- [x] **Observability**:
+  - Request ID tracking and propagation
+  - Structured JSON logging
+  - Latency tracking per request
+  - Secret filtering in logs
 
 ## Current Structure
 
@@ -82,6 +96,10 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `ios/EnterpriseShell/Services/BLEBadgeReaderProvider.swift` | BLE badge reader provider | ✅ New |
 | `ios/EnterpriseShell/Services/USBCBadgeReaderProvider.swift` | USB-C badge reader provider | ✅ New |
 | `ios/BLE_MVP_ACCEPTANCE_TESTS.md` | BLE MVP acceptance tests | ✅ New |
+| `src/lib/auth.ts` | OIDC/JWT authentication | ✅ New |
+| `src/lib/deviceRegistry.ts` | Device enrollment and lookup | ✅ New |
+| `src/lib/observability.ts` | Request tracing and logging | ✅ New |
+| `scripts/replay-test.ts` | Replay protection test | ✅ New |
 
 ## Current Focus
 
@@ -153,3 +171,4 @@ export async function GET() {
 | 2026-02-17 | Admin GUI: Auth flow visualization + MDM persona builder + provider config |
 | 2026-02-17 | Security: Add SECURITY.md and CI workflows for web and iOS |
 | 2026-02-20 | BLE-First MVP: BadgeEvent schema + backend validation + BLE provider + USB-C parity |
+| 2026-03-05 | OIDC/JWT RBAC skeleton + device registry + observability middleware |
