@@ -162,6 +162,7 @@ export async function GET() {
 - [ ] Add more recipes (auth, email, etc.)
 - [ ] Add example components
 - [ ] Add testing setup recipe
+- [ ] **v0.2.0 - Tap-to-Login for Shared iOS Devices** (see GitHub milestone)
 
 ## Session History
 
@@ -176,3 +177,4 @@ export async function GET() {
 | 2026-02-17 | Security: Add SECURITY.md and CI workflows for web and iOS |
 | 2026-02-20 | BLE-First MVP: BadgeEvent schema + backend validation + BLE provider + USB-C parity |
 | 2026-03-05 | OIDC/JWT RBAC skeleton + device registry + observability middleware |
+| 2026-03-05 | Created v0.2.0 milestone with 7 issues (GitHub)
