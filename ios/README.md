@@ -260,6 +260,43 @@ See `Models/SessionData.swift` for detailed API models.
 2. Export as .ipa
 3. Distribute via MDM
 
+## Production Deployment Checklist
+
+The MVP is secure-by-default but requires proper configuration before production use.
+
+### Required Configuration
+
+- [ ] **Secret Management**: Use a secret manager (GitHub Actions secrets, AWS Secrets Manager, HashiCorp Vault) for all secrets. Never commit secrets to version control.
+- [ ] **OIDC Configuration**: Register an application with your OIDC provider (Microsoft Entra ID, Okta, Auth0) and configure:
+  - `OIDC_ISSUER_URL`: Your OIDC provider's issuer URL
+  - `OIDC_CLIENT_ID`: Application client ID
+  - `OIDC_AUDIENCE`: Expected audience claim
+- [ ] **Redis Provisioning**: Deploy Redis with TLS support for:
+  - Nonce cache (prevents replay attacks)
+  - Device registry (device enrollment/allowlist)
+  - Set `REDIS_URL` environment variable
+- [ ] **Admin API Key**: Generate a secure random key (`openssl rand -hex 32`) and store securely. Set `ADMIN_API_KEY` environment variable.
+- [ ] **Backend Signing Secret**: Generate a secure HMAC key (`openssl rand -base64 32`) and store securely. Set `BACKEND_SIGNING_SECRET`.
+
+### Recommended Enhancements
+
+- [ ] **Rate Limiting**: Add rate limiting to `/api/session/start` and admin routes (e.g., `upstash/ratelimit` or API gateway-level)
+- [ ] **Device Allowlist**: Enable `DEVICE_ALLOWLIST_MODE=true` for restricted rollouts
+- [ ] **Monitoring**: Integrate with monitoring/observability platform (Datadog, New Relic, Grafana Cloud)
+- [ ] **TLS**: Ensure all Redis connections use `rediss://` protocol
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `BACKEND_SIGNING_SECRET` | HMAC signing key | Yes |
+| `ADMIN_API_KEY` | Admin API key | Yes |
+| `OIDC_ISSUER_URL` | OIDC provider URL | Yes |
+| `OIDC_CLIENT_ID` | OIDC client ID | Yes |
+| `REDIS_URL` | Redis connection URL | Yes (production) |
+| `OIDC_AUDIENCE` | JWT audience | No |
+| `DEVICE_ALLOWLIST_MODE` | Enable device allowlist | No |
+
 ## Limitations (MVP)
 
 ### iOS App
@@ -270,9 +307,9 @@ See `Models/SessionData.swift` for detailed API models.
 - No OS-level user switching
 
 ### Backend / API
-- **Replay attack nonce cache**: In-memory only (not durable across server restarts or multi-instance deployments). Needs Redis or shared DB + per-device nonce window for production.
-- **adminAuth**: Hardcoded API key (`dev-admin-key-12345` in dev). Needs real RBAC with OIDC/Entra ID + JWT + role-based permissions.
-- **Device enrollment endpoint**: Returns mock/stub data. Needs real device registry model and database persistence.
+- **Replay attack nonce cache**: In-memory only in dev. Production uses Redis (configure via `REDIS_URL`).
+- **Admin auth**: Supports JWT and API key fallback. Set `ADMIN_API_KEY` in production.
+- **Device enrollment**: Uses Redis for persistence. Ensure Redis is provisioned for production.
 
 ## Dependencies
 
