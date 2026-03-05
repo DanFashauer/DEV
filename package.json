@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:replay": "bun run scripts/replay-test.ts"
+    "test:replay": "bun run scripts/replay-test.ts",
+    "sim:badge": "bun run scripts/sim-badge.ts"
   },
   "dependencies": {
     "ioredis": "^5.10.0",

@@ -3,13 +3,20 @@
  * 
  * POST /api/session/start
  * 
- * Validates BadgeEvent v1 payload from iOS kiosk app and returns session token.
+ * Validates BadgeEvent v1 payload from iOS kiosk app and returns session directive.
+ * 
+ * Flow:
+ * 1. Validate BadgeEvent v1 payload
+ * 2. Look up badgeUID -> userId mapping
+ * 3. Create session
+ * 4. Return session directive (LAUNCH_APP, UNLOCK_DEVICE, etc.)
  * 
  * Security:
  * - HMAC-SHA256 request signature verification
  * - Timestamp validation (5-min window)
  * - Replay attack prevention (nonce)
  * - Schema validation
+ * - Rate limiting per deviceId + IP
  */
 
 // Force Node.js runtime to access Node crypto module
@@ -17,20 +24,23 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { validateAndAuthorizeSessionStart, generateRandomHex } from '@/lib/backend/validation';
+import { badgeRegistry } from '@/lib/badgeRegistry';
+import { sessionStore, SessionDirective } from '@/lib/sessionStore';
 
 /**
- * Simple in-memory rate limiter
+ * Simple in-memory rate limiter for session start
  */
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const deviceRateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const ipRateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT = 30; // requests per window
 const RATE_WINDOW_MS = 60 * 1000; // 1 minute
 
-function checkRateLimit(identifier: string): boolean {
+function checkRateLimit(map: Map<string, { count: number; resetTime: number }>, identifier: string): boolean {
   const now = Date.now();
-  const record = rateLimitMap.get(identifier);
+  const record = map.get(identifier);
   
   if (!record || now > record.resetTime) {
-    rateLimitMap.set(identifier, { count: 1, resetTime: now + RATE_WINDOW_MS });
+    map.set(identifier, { count: 1, resetTime: now + RATE_WINDOW_MS });
     return true;
   }
   
@@ -47,14 +57,19 @@ function checkRateLimit(identifier: string): boolean {
  */
 export async function POST(request: Request) {
   try {
-    // Rate limiting
-    const clientIp = request.headers.get('x-forwarded-for') ?? 'unknown';
-    if (!checkRateLimit(clientIp)) {
+    // Get identifiers for rate limiting
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    
+    // Rate limiting - check both device and IP
+    if (!checkRateLimit(ipRateLimitMap, clientIp)) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded' },
+        { error: 'Rate limit exceeded for IP' },
         { status: 429 }
       );
     }
+    
+    // Get device ID from body for device-specific rate limiting (after validation)
+    let deviceId = 'unknown';
     
     // Get full URL for signature verification
     const url = new URL(request.url);
@@ -87,46 +102,113 @@ export async function POST(request: Request) {
     }
     
     const event = validation.event!;
+    deviceId = event.device.deviceId;
+    
+    // Device-specific rate limiting
+    if (!checkRateLimit(deviceRateLimitMap, deviceId)) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded for device' },
+        { status: 429 }
+      );
+    }
     
     // Log badge scan event
     console.log('[SessionStart] Badge scan event:', {
       eventId: event.eventId,
       badgeId: event.badge.badgeId,
       readerType: event.reader.readerType,
+      deviceId: deviceId,
       timestamp: event.timestamp,
     });
     
-    // TODO: Validate badge against backend database
-    // TODO: Check enrollment status
-    // TODO: Generate session token
+    // Step 1: Look up badge UID -> userId mapping
+    const badgeMapping = await badgeRegistry.get(event.badge.badgeId);
     
-    // For now, return a mock response for development
-    const sessionToken = generateRandomHex(32);
-    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(); // 8 hours
+    if (!badgeMapping) {
+      console.warn('[SessionStart] Unknown badge:', event.badge.badgeId);
+      return NextResponse.json(
+        { 
+          error: 'Badge not enrolled',
+          code: 'BADGE_NOT_ENROLLED',
+          hint: 'Contact administrator to enroll your badge',
+        },
+        { status: 404 }
+      );
+    }
+    
+    if (!badgeMapping.active) {
+      console.warn('[SessionStart] Inactive badge:', event.badge.badgeId);
+      return NextResponse.json(
+        { 
+          error: 'Badge is deactivated',
+          code: 'BADGE_INACTIVE',
+          hint: 'Contact administrator to reactivate your badge',
+        },
+        { status: 403 }
+      );
+    }
+    
+    // Update last used timestamp
+    await badgeRegistry.updateLastUsed(event.badge.badgeId);
+    
+    // Step 2: Check if there's an existing active session for this device
+    const existingSessions = await sessionStore.getByDeviceId(deviceId);
+    const existingActiveSession = existingSessions.find(s => s.status === 'active');
+    
+    if (existingActiveSession && new Date(existingActiveSession.expiresAt) > new Date()) {
+      // Return existing session directive (extend expiry)
+      const directive: SessionDirective = {
+        sessionId: existingActiveSession.sessionId,
+        userId: existingActiveSession.userId,
+        nextAction: (existingActiveSession.nextAction as SessionDirective['nextAction']) || 'LAUNCH_APP',
+        bundleId: existingActiveSession.bundleId,
+        expiresAt: existingActiveSession.expiresAt,
+      };
+      
+      return NextResponse.json({
+        success: true,
+        session: directive,
+        message: 'Existing session extended',
+      });
+    }
+    
+    // Step 3: Create new session
+    // Get app to launch from persona attributes (if available)
+    const defaultBundleId = process.env.DEFAULT_LAUNCH_BUNDLE_ID ?? 'com.example.enterpriseapp';
+    
+    const session = await sessionStore.create({
+      userId: badgeMapping.userId,
+      badgeUid: event.badge.badgeId,
+      deviceId: deviceId,
+      nextAction: 'LAUNCH_APP',
+      bundleId: defaultBundleId,
+      metadata: {
+        employeeId: event.badge.employeeId,
+        cardSerialNumber: event.badge.cardSerialNumber,
+        readerType: event.reader.readerType,
+        locationId: event.context?.locationId,
+      },
+    });
+    
+    // Build session directive
+    const directive: SessionDirective = {
+      sessionId: session.sessionId,
+      userId: session.userId,
+      nextAction: 'LAUNCH_APP',
+      bundleId: session.bundleId,
+      expiresAt: session.expiresAt,
+    };
+    
+    console.log('[SessionStart] Session created:', {
+      sessionId: session.sessionId,
+      userId: session.userId,
+      deviceId: deviceId,
+      expiresAt: session.expiresAt,
+    });
     
     return NextResponse.json({
       success: true,
-      sessionToken,
-      persona: {
-        roleId: 'role-001',
-        roleName: 'Standard User',
-        permissions: ['read', 'write'],
-        workspaceConfig: {
-          layout: 'grid',
-          visibleModules: ['dashboard', 'apps', 'settings'],
-          theme: {
-            primaryColor: '#007bff',
-            accentColor: '#6610f2',
-          },
-        },
-        appLaunchConfig: {
-          apps: [
-            { bundleId: 'com.example.app1', name: 'App 1' },
-            { bundleId: 'com.example.app2', name: 'App 2' },
-          ],
-        },
-      },
-      expiresAt,
+      session: directive,
     });
   } catch (error) {
     console.error('[SessionStart] Error:', error);
