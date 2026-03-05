@@ -162,16 +162,21 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `src/lib/auditLedger.ts` | Tamper-evident audit ledger | ✅ New |
 | `src/app/api/admin/audit/export/route.ts` | Audit export API | ✅ New |
 | `src/app/api/admin/audit/verify/route.ts` | Audit verify API | ✅ New |
+| `src/lib/auth/stepUpStore.ts` | Step-up session store | ✅ New |
+| `src/lib/adminAuth.ts` | Step-up auth middleware | ✅ New |
 
 ## Current Focus
 
-The project now includes a complete backend for tap-to-login badge authentication. The system supports:
+The project now includes WebAuthn/FIDO2 step-up authentication for high-risk admin operations:
 
 1. Badge-based authentication with BadgeEvent v1 schema
 2. Badge identity mapping (badgeUID → userId)
 3. Session management with LAUNCH_APP directives
-4. BLE simulator for testing without hardware
-5. Admin APIs for badge enrollment and session control
+4. Step-up authentication for high-risk admin ops:
+   - webhook_secret_rotate, integration_credential_set/update
+   - policy_edit, policy_enable
+   - device_quarantine, allowlist_toggle
+   - admin_delete, device_unenroll
 
 ## Quick Start Guide
 
@@ -241,3 +246,4 @@ export async function GET() {
 | 2026-03-05 | Implemented Integrations Webhooks v1 (admin CRUD, signed events, retries, DLQ)
 | 2026-03-05 | Implemented Policy Engine v1 (rule evaluation, admin API, session integration)
 | 2026-03-05 | Implemented Policy Actions + Integrations v1 (ITSM/SIEM adapters, dispatcher)
+| 2026-03-05 | Implemented Step-Up Enforcement (webhook secret rotate, policy edit/enable, device quarantine, etc.)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { 
   requireAdminAuth, 
+  requireStepUpAuth,
   adminSuccess, 
   adminError,
   getSecurityHeaders 
@@ -22,6 +23,7 @@ export const dynamic = "force-dynamic";
  * - Comprehensive cache control headers
  * - Audit logging (no secrets logged)
  * - Fails closed if API key not configured in production
+ * - Step-up authentication for high-risk operations (quarantine, allowlist)
  */
 
 // GET /api/admin/devices - List all registered devices
@@ -63,7 +65,25 @@ export async function GET(request: NextRequest) {
   return adminSuccess({ devices });
 }
 
-// POST /api/admin/devices - Register a new device
+/**
+ * Check if the request is a quarantine operation
+ */
+function isQuarantineOperation(action: unknown): boolean {
+  if (!action || typeof action !== 'object') return false;
+  const obj = action as Record<string, unknown>;
+  return obj.action === 'quarantine' || obj.action === 'unquarantine';
+}
+
+/**
+ * Check if the request is an allowlist toggle operation
+ */
+function isAllowlistOperation(action: unknown): boolean {
+  if (!action || typeof action !== 'object') return false;
+  const obj = action as Record<string, unknown>;
+  return obj.action === 'toggle_allowlist' || obj.allowlist !== undefined;
+}
+
+// POST /api/admin/devices - Register a new device OR perform device action
 export async function POST(request: NextRequest) {
   // Check authentication (includes rate limiting)
   const authError = await requireAdminAuth(request);
@@ -73,23 +93,50 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, deviceId } = body;
+    const { action, deviceId, allowlist } = body;
 
-    if (!name || !deviceId) {
-      return adminError("Missing required fields: name, deviceId", 400);
+    // Check if this is a high-risk operation that requires step-up
+    if (isQuarantineOperation(body)) {
+      const stepUpError = await requireStepUpAuth(request, 'device_quarantine');
+      if (stepUpError) return stepUpError;
+    } else if (isAllowlistOperation(body)) {
+      const stepUpError = await requireStepUpAuth(request, 'allowlist_toggle');
+      if (stepUpError) return stepUpError;
     }
 
-    // In production, save to database
-    const newDevice = {
-      id: deviceId,
-      name,
-      status: "pending",
-      lastSeen: new Date().toISOString(),
-      osVersion: "unknown",
-      appVersion: "unknown",
-    };
+    // Device registration (no step-up required)
+    if (!action && deviceId) {
+      const { name } = body;
 
-    return adminSuccess({ device: newDevice });
+      if (!name) {
+        return adminError("Missing required field: name", 400);
+      }
+
+      // In production, save to database
+      const newDevice = {
+        id: deviceId,
+        name,
+        status: "pending",
+        lastSeen: new Date().toISOString(),
+        osVersion: "unknown",
+        appVersion: "unknown",
+      };
+
+      return adminSuccess({ device: newDevice });
+    }
+
+    // Device action (quarantine, allowlist, etc.)
+    if (action) {
+      // Mock action response
+      return adminSuccess({ 
+        success: true, 
+        action, 
+        deviceId,
+        message: `Action '${action}' performed successfully`
+      });
+    }
+
+    return adminError("Invalid request: must provide deviceId or action", 400);
   } catch {
     return adminError("Invalid request body", 400);
   }
