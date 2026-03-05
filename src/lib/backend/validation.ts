@@ -9,6 +9,7 @@
 
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
+import { nonceStore, CONFIG } from './nonceStore';
 
 /**
  * Configuration for request signing
@@ -18,12 +19,7 @@ const SIGNING_CONFIG = {
   secretKey: process.env.BACKEND_SIGNING_SECRET ?? 'development-secret-key',
   /** Time window for request validity (5 minutes in ms) */
   validityWindowMs: 5 * 60 * 1000,
-  /** Nonce storage TTL (10 minutes in ms) */
-  nonceTtlMs: 10 * 60 * 1000,
 };
-
-// In-memory nonce store (use Redis in production)
-const nonceStore = new Map<string, number>();
 
 /**
  * BadgeEvent v1 schema validation
@@ -114,26 +110,13 @@ function verifySignature(data: string, key: string, signature: string): boolean 
 }
 
 /**
- * Check if nonce exists and is still valid
+ * Check if nonce exists and is still valid (per-device)
+ * Uses Redis-backed store for production, in-memory for dev
  */
-function isNonceValid(nonce: string): boolean {
-  const existingTs = nonceStore.get(nonce);
-  if (existingTs) {
-    return false; // Nonce already used
-  }
-  
-  // Store nonce with current timestamp
-  nonceStore.set(nonce, Date.now());
-  
-  // Clean up old nonces
-  const now = Date.now();
-  for (const [key, ts] of nonceStore.entries()) {
-    if (now - ts > SIGNING_CONFIG.nonceTtlMs) {
-      nonceStore.delete(key);
-    }
-  }
-  
-  return true;
+async function isNonceValid(deviceId: string, nonce: string): Promise<boolean> {
+  // Try to set nonce atomically - returns false if already exists
+  const added = await nonceStore.setNonce(deviceId, nonce);
+  return added;
 }
 
 /**
@@ -172,8 +155,13 @@ export async function validateAndAuthorizeSessionStart(
       error: 'Missing required security headers: x-signature, x-timestamp, x-nonce',
     };
   }
-  
-  // 2. Validate timestamp is within window
+
+  // 2. Validate nonce length (minimum 16 characters)
+  if (nonce.length < CONFIG.minNonceLength) {
+    return { valid: false, error: `Nonce must be at least ${CONFIG.minNonceLength} characters` };
+  }
+
+  // 3. Validate timestamp is within window
   const requestTime = parseInt(timestamp, 10);
   if (isNaN(requestTime)) {
     return { valid: false, error: 'Invalid timestamp format' };
@@ -184,13 +172,8 @@ export async function validateAndAuthorizeSessionStart(
   if (timeDiff > SIGNING_CONFIG.validityWindowMs) {
     return { valid: false, error: 'Request timestamp outside valid window' };
   }
-  
-  // 3. Check replay prevention (nonce)
-  if (!isNonceValid(nonce)) {
-    return { valid: false, error: 'Nonce already used or invalid' };
-  }
-  
-  // 4. Validate schema
+
+  // 4. Validate schema BEFORE signature verification (to get deviceId safely)
   const parseResult = BadgeEventSchema.safeParse(body);
   if (!parseResult.success) {
     return {
@@ -200,8 +183,8 @@ export async function validateAndAuthorizeSessionStart(
   }
   
   const event = parseResult.data;
-  
-  // 5. Verify signature
+
+  // 5. Verify HMAC signature FIRST (before any stateful operations)
   const bodyString = JSON.stringify(body);
   const signatureBase = generateSignatureBase(
     method,
@@ -214,7 +197,14 @@ export async function validateAndAuthorizeSessionStart(
   if (!verifySignature(signatureBase, SIGNING_CONFIG.secretKey, signature)) {
     return { valid: false, error: 'Invalid signature' };
   }
+
+  // 6. Check replay prevention (nonce) - per-device isolation (LAST, after signature verified)
+  const deviceId = event.device?.deviceId ?? 'unknown';
   
+  if (!(await isNonceValid(deviceId, nonce))) {
+    return { valid: false, error: 'Nonce already used or invalid' };
+  }
+
   // All validations passed
   return {
     valid: true,
