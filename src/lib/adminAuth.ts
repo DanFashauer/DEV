@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, timingSafeEqual } from "crypto";
 import { authenticateRequest, getAuthConfig } from "./auth";
+import { verifyStepUpSession, StepUpChallenge, requiresStepUp, createStepUpSession } from "./auth/stepUpStore";
 
 // In-memory rate limit store (for single-instance deployments)
 // In production with multiple instances, use Redis/Upstash
@@ -255,4 +256,136 @@ export function adminSuccess(data: unknown): NextResponse {
   return NextResponse.json(data, {
     headers: getSecurityHeaders(),
   });
+}
+
+// ============================================================================
+// Step-Up Authentication Middleware
+// ============================================================================
+
+/**
+ * Get user ID from authenticated request
+ * Returns null if not authenticated
+ */
+export function getUserIdFromRequest(request: NextRequest): string | null {
+  // Check for user ID in custom header (set after authentication)
+  const userId = request.headers.get("x-user-id");
+  if (userId) {
+    return userId;
+  }
+  
+  // For API key mode, use a derived key (not the actual key)
+  const apiKey = request.headers.get("x-admin-api-key");
+  if (apiKey) {
+    // Use a hash of the API key as a stable identifier
+    const hash = require("crypto").createHash("sha256").update(apiKey).digest("hex").substring(0, 16);
+    return `api-key-user:${hash}`;
+  }
+  
+  return null;
+}
+
+/**
+ * Get request ID from request or generate one
+ * Request ID is used to bind step-up sessions to specific requests
+ */
+export function getRequestId(request: NextRequest): string {
+  // Check if request has existing request ID
+  const existingId = request.headers.get("x-request-id");
+  if (existingId) {
+    return existingId;
+  }
+  
+  // Generate new request ID
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+}
+
+/**
+ * Require step-up authentication for high-risk operations
+ * 
+ * @param request - The incoming request
+ * @param challenge - The type of step-up challenge required
+ * @returns NextResponse with error if step-up required but not verified, null if authorized
+ */
+export async function requireStepUpAuth(
+  request: NextRequest,
+  challenge: StepUpChallenge
+): Promise<NextResponse | null> {
+  const path = new URL(request.url).pathname;
+  const userId = getUserIdFromRequest(request);
+  const requestId = getRequestId(request);
+  
+  if (!userId) {
+    // Can't require step-up if we don't know who the user is
+    return null;
+  }
+  
+  // Check for step-up session in header
+  const stepUpSessionId = request.headers.get("x-step-up-session-id");
+  
+  if (!stepUpSessionId) {
+    // No step-up session - require it
+    console.log(`[StepUp] Step-up required for ${challenge} on ${path}, no session provided`);
+    return NextResponse.json(
+      { 
+        error: "Step-up authentication required for this operation",
+        stepUpRequired: true,
+        challenge,
+      },
+      { 
+        status: 401,
+        headers: {
+          ...getSecurityHeaders(),
+          "X-Step-Up-Required": "true",
+          "X-Step-Up-Challenge": challenge,
+        },
+      }
+    );
+  }
+  
+  // Verify the step-up session
+  const session = await verifyStepUpSession(stepUpSessionId, userId, requestId, challenge);
+  
+  if (!session) {
+    // Invalid or expired step-up session
+    console.log(`[StepUp] Invalid step-up session ${stepUpSessionId} for ${challenge}`);
+    return NextResponse.json(
+      { 
+        error: "Step-up session invalid or expired. Please re-authenticate.",
+        stepUpRequired: true,
+        challenge,
+      },
+      { 
+        status: 401,
+        headers: {
+          ...getSecurityHeaders(),
+          "X-Step-Up-Required": "true",
+        },
+      }
+    );
+  }
+  
+  // Step-up verified - continue
+  console.log(`[StepUp] Step-up verified for user ${userId}, challenge: ${challenge}`);
+  return null;
+}
+
+/**
+ * Initiate step-up authentication flow
+ * This creates a pending step-up session that can be verified via WebAuthn
+ * 
+ * @param userId - The user requesting step-up
+ * @param requestId - The current request ID
+ * @param challenge - The type of step-up challenge
+ * @returns The created step-up session
+ */
+export async function initiateStepUp(
+  userId: string,
+  requestId: string,
+  challenge: StepUpChallenge
+): Promise<{ stepUpSessionId: string; expiresAt: string }> {
+  const session = await createStepUpSession(userId, requestId, challenge);
+  return {
+    stepUpSessionId: session.stepUpSessionId,
+    expiresAt: session.expiresAt,
+  };
 }

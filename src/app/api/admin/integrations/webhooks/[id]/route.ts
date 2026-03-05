@@ -4,21 +4,43 @@
  * Admin CRUD for single webhook:
  * - PATCH /api/admin/integrations/webhooks/:id (update)
  * - DELETE /api/admin/integrations/webhooks/:id (delete)
+ * 
+ * Step-up authentication required for:
+ * - Secret rotation (PATCH with secret fields)
+ * - Deletion (DELETE)
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { updateWebhook, deleteWebhook, getWebhook } from '@/lib/integrations/webhooks/store';
 import { UpdateWebhookSchema } from '@/lib/integrations/webhooks/types';
+import { requireAdminAuth, requireStepUpAuth } from '@/lib/adminAuth';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
 /**
- * PATCH /api/admin/integrations/webhooks/:id
- * Update a webhook
+ * Check if the update request includes secret rotation
  */
+function includesSecretRotation(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false;
+  const obj = body as Record<string, unknown>;
+  return 'signingSecret' in obj || 'authHeader' in obj;
+}
+
+// ============================================================================
+// PATCH /api/admin/integrations/webhooks/:id
+// ============================================================================
+
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // First, require admin authentication
+    const authError = await requireAdminAuth(request);
+    if (authError) return authError;
+    
     const { id } = await params;
     
     // Check if webhook exists
@@ -41,6 +63,12 @@ export async function PATCH(
       );
     }
 
+    // Check if this update includes secret rotation - require step-up
+    if (includesSecretRotation(body)) {
+      const stepUpError = await requireStepUpAuth(request, 'webhook_secret_rotate');
+      if (stepUpError) return stepUpError;
+    }
+
     // Update webhook
     const webhook = await updateWebhook(id, parsed.data);
 
@@ -54,15 +82,23 @@ export async function PATCH(
   }
 }
 
-/**
- * DELETE /api/admin/integrations/webhooks/:id
- * Delete a webhook
- */
+// ============================================================================
+// DELETE /api/admin/integrations/webhooks/:id
+// ============================================================================
+
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // First, require admin authentication
+    const authError = await requireAdminAuth(request);
+    if (authError) return authError;
+    
+    // Require step-up for deletion (high-risk operation)
+    const stepUpError = await requireStepUpAuth(request, 'admin_delete');
+    if (stepUpError) return stepUpError;
+    
     const { id } = await params;
     
     // Check if webhook exists

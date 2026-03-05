@@ -7,13 +7,14 @@
  * 
  * Security:
  * - Requires admin API key authentication
+ * - Requires step-up authentication (device_unenroll)
  */
 
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { badgeRegistry } from '@/lib/badgeRegistry';
-import { requireAdminAuth } from '@/lib/adminAuth';
+import { requireAdminAuth, requireStepUpAuth } from '@/lib/adminAuth';
 import { appendAuditRecord } from '@/lib/auditLedger';
 import { emitBadgeDelete } from '@/lib/integrations/webhooks/emitter';
 
@@ -30,6 +31,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (authError) {
       return authError;
     }
+    
+    // Require step-up for device unenrollment
+    const stepUpError = await requireStepUpAuth(request, 'device_unenroll');
+    if (stepUpError) return stepUpError;
     
     const { badgeUid } = await params;
     
