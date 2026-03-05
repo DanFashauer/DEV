@@ -20,7 +20,10 @@ export type AuditEventType =
   | "telemetry.posture.missing"
   | "security.webauthn.registered"
   | "security.webauthn.step_up.success"
-  | "security.webauthn.step_up.failure";
+  | "security.webauthn.step_up.failure"
+  // Phase 5: ITSM events
+  | "itsm.ticket.created"
+  | "itsm.ticket.failed";
 
 export type Actor = {
   type: "device" | "admin" | "system" | "user";

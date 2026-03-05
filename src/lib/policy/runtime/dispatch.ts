@@ -11,6 +11,8 @@ import type {
   SIEMEventRequest,
   AdapterRegistry,
 } from '../../integrations/adapters/types';
+import { getITSMConfigByVendor, getTicketTemplate, substituteTemplate, type ITSMVendor } from '../../integrations/itsm/store';
+import { createITSMAdapter } from '../../integrations/itsm/adapter';
 
 /**
  * Result of dispatching a single action
@@ -200,21 +202,87 @@ export class PolicyActionDispatcher {
     context: PolicyContext,
     caseId: string
   ): Promise<ActionDispatchResult> {
-    const adapter = this.registry.itsm;
+    // Get vendor from params, default to first enabled vendor
+    const vendor = (action.params?.vendor as ITSMVendor) || 'servicenow';
+    
+    // Look up config by vendor
+    const config = await getITSMConfigByVendor(vendor);
+    if (!config) {
+      return {
+        action,
+        success: false,
+        error: `ITSM vendor '${vendor}' not configured`,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    
+    // Create adapter
+    const adapter = createITSMAdapter(vendor, config);
     if (!adapter) {
       return {
         action,
         success: false,
-        error: 'ITSM adapter not configured',
+        error: `Failed to create ITSM adapter for '${vendor}'`,
         timestamp: new Date().toISOString(),
       };
     }
-
+    
+    // Build variables from context for template substitution
+    const variables: Record<string, string> = {
+      timestamp: new Date().toISOString(),
+      caseId,
+      ...this.extractVariablesFromContext(context),
+      ...(action.params?.fieldsOverride as Record<string, string> || {}),
+    };
+    
+    // Get template if specified
+    const templateId = action.params?.templateId as string;
+    let title: string;
+    let description: string;
+    let severity: ITSMTicketRequest['severity'] = 'medium';
+    let category = 'policy_violation';
+    
+    if (templateId) {
+      const template = await getTicketTemplate(templateId);
+      if (!template) {
+        return {
+          action,
+          success: false,
+          error: `ITSM template '${templateId}' not found`,
+          timestamp: new Date().toISOString(),
+        };
+      }
+      
+      title = substituteTemplate(template.titleTemplate, variables);
+      description = substituteTemplate(template.descriptionTemplate, variables);
+      severity = template.severity;
+      category = template.category;
+    } else {
+      title = action.params?.title as string || `Policy Action - ${context.event?.type}`;
+      description = action.params?.description as string || this.buildDescription(context, action);
+      severity = (action.params?.severity as ITSMTicketRequest['severity']) || 'medium';
+      category = action.params?.category as string || 'policy_violation';
+    }
+    
+    // Override with explicit params if provided
+    if (action.params?.title) {
+      title = action.params.title as string;
+    }
+    if (action.params?.description) {
+      description = action.params.description as string;
+    }
+    if (action.params?.severity) {
+      severity = action.params.severity as ITSMTicketRequest['severity'];
+    }
+    if (action.params?.category) {
+      category = action.params.category as string;
+    }
+    
     const ticketRequest: ITSMTicketRequest = {
-      title: action.params?.title || `Policy Action - ${context.event?.type}`,
-      description: action.params?.description || this.buildDescription(context, action),
-      severity: (action.params?.severity as any) || 'medium',
-      category: action.params?.category || 'policy_violation',
+      title,
+      description,
+      severity,
+      category,
       source: 'EnterpriseShell-Policy',
       correlationId: caseId,
       userId: context.user?.userId,
@@ -224,15 +292,64 @@ export class PolicyActionDispatcher {
       deviceName: context.device?.hostname,
       devicePlatform: context.device?.platform,
     };
-
+    
     const result = await adapter.createTicket(ticketRequest);
-
+    
+    // Log to audit ledger
+    await appendAuditRecord(
+      'itsm.ticket.created',
+      { type: 'system', id: 'policy-engine' },
+      {
+        meta: {
+          vendor,
+          templateId: templateId || 'none',
+          ticketId: result.ticketId,
+          ticketUrl: result.ticketUrl,
+          caseId,
+        },
+        requestId: context.event?.requestId,
+      }
+    );
+    
     return {
       action,
       success: true,
-      result: { ticketId: result.ticketId, ticketUrl: result.ticketUrl },
+      result: { ticketId: result.ticketId, ticketUrl: result.ticketUrl, vendor },
       timestamp: new Date().toISOString(),
     };
+  }
+  
+  /**
+   * Extract variables from context for template substitution
+   */
+  private extractVariablesFromContext(context: PolicyContext): Record<string, string> {
+    const vars: Record<string, string> = {};
+    
+    if (context.user) {
+      vars.userId = context.user.userId || '';
+      vars.userName = context.user.name || '';
+      vars.userEmail = context.user.email || '';
+    }
+    
+    if (context.device) {
+      vars.deviceId = context.device.deviceId || '';
+      vars.deviceName = context.device.hostname || '';
+      vars.devicePlatform = context.device.platform || '';
+      vars.serialNumber = context.device.serialNumber || '';
+    }
+    
+    if (context.location) {
+      vars.location = context.location.zone || context.location.building || 'Unknown';
+      vars.zone = context.location.zone || '';
+      vars.building = context.location.building || '';
+      vars.floor = context.location.floor || '';
+    }
+    
+    if (context.event) {
+      vars.eventType = context.event.type || '';
+    }
+    
+    return vars;
   }
 
   /**

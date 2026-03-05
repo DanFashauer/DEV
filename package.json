@@ -17,7 +17,8 @@
     "seed:policies": "bun run scripts/seed-policies.ts",
     "sim:posture": "bun run scripts/sim-posture.ts",
     "test:webauthn": "bun run scripts/webauthn-smoke.ts",
-    "test:fleetdm": "bun run scripts/fleetdm-smoke.ts"
+    "test:fleetdm": "bun run scripts/fleetdm-smoke.ts",
+    "seed:itsm": "bun run scripts/seed-itsm-templates.ts"
   },
   "dependencies": {
     "ioredis": "^5.10.0",
