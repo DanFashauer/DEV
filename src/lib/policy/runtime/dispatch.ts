@@ -77,9 +77,9 @@ export class PolicyActionDispatcher {
     const deviceId = context.device?.deviceId;
     const userId = context.user?.userId;
 
-    // Write to audit ledger
+    // Write policy matched event to audit ledger
     await appendAuditRecord(
-      'session.start' as any,
+      'policy.matched',
       { type: 'system', id: 'policy-engine' },
       {
         meta: { policiesMatched: policies.length, eventType },
@@ -93,7 +93,7 @@ export class PolicyActionDispatcher {
 
       for (const actionResult of policyResult.actions) {
         await appendAuditRecord(
-          'session.start' as any,
+          'policy.action.executed',
           { type: 'system', id: 'policy-engine' },
           {
             meta: {

@@ -15,6 +15,8 @@ export const WEBHOOK_EVENTS = [
   'badge.delete',
   'auth.failure',
   'asset.location.observed',
+  'policy.matched',
+  'policy.action.executed',
 ] as const;
 
 export type WebhookEventType = typeof WEBHOOK_EVENTS[number];

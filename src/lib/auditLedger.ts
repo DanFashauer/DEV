@@ -12,7 +12,9 @@ export type AuditEventType =
   | "session.end"
   | "auth.failure"
   | "asset.location.observed"
-  | "admin.access";
+  | "admin.access"
+  | "policy.matched"
+  | "policy.action.executed";
 
 export type Actor = {
   type: "device" | "admin" | "system";
