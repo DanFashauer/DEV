@@ -72,6 +72,21 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - Integrated JWT auth into admin API routes
   - Fixed auth.ts to export getAuthConfig
   - Added authentication to /api/admin/devices route
+- [x] **Badge Identity Mapping (#22)**:
+  - badgeRegistry.ts for badgeUID -> userId mapping
+  - Admin API: POST /api/admin/badges/enroll, GET /api/admin/badges, DELETE /api/admin/badges/:badgeUid
+  - Redis-backed with in-memory fallback for dev
+- [x] **Session Engine + App Launch (#23)**:
+  - sessionStore.ts for session management (create, get, terminate)
+  - Updated /api/session/start to validate badge, lookup user, create session
+  - Added /api/session/:sessionId for polling and termination
+  - Returns session directive with LAUNCH_APP action and bundleId
+  - Rate limiting per deviceId + IP
+- [x] **BLE Simulator/Test Harness (#25)**:
+  - scripts/sim-badge.ts for simulating badge scan events
+  - Generates signed BadgeEvent v1 payloads
+  - Supports auto-enrollment with --enroll flag
+  - Added bun run sim:badge npm script
 
 ## Current Structure
 
@@ -104,16 +119,19 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `src/lib/deviceRegistry.ts` | Device enrollment and lookup | ✅ New |
 | `src/lib/observability.ts` | Request tracing and logging | ✅ New |
 | `scripts/replay-test.ts` | Replay protection test | ✅ New |
+| `src/lib/badgeRegistry.ts` | Badge UID -> userId mapping | ✅ New |
+| `src/lib/sessionStore.ts` | Session management | ✅ New |
+| `scripts/sim-badge.ts` | Badge scan simulator | ✅ New |
 
 ## Current Focus
 
-The project includes an iOS EnterpriseShell application for enterprise kiosk management. The app features:
+The project now includes a complete backend for tap-to-login badge authentication. The system supports:
 
-1. Badge-based authentication flow
-2. OIDC integration with Microsoft Entra ID
-3. Session state management
-4. Audit logging
-5. Enterprise app launching
+1. Badge-based authentication with BadgeEvent v1 schema
+2. Badge identity mapping (badgeUID → userId)
+3. Session management with LAUNCH_APP directives
+4. BLE simulator for testing without hardware
+5. Admin APIs for badge enrollment and session control
 
 ## Quick Start Guide
 
@@ -178,3 +196,4 @@ export async function GET() {
 | 2026-02-20 | BLE-First MVP: BadgeEvent schema + backend validation + BLE provider + USB-C parity |
 | 2026-03-05 | OIDC/JWT RBAC skeleton + device registry + observability middleware |
 | 2026-03-05 | Created v0.2.0 milestone with 7 issues (GitHub)
+| 2026-03-05 | Implemented #22 Badge Identity Mapping + #23 Session Engine + #25 BLE Simulator
