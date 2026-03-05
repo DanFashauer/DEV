@@ -87,6 +87,16 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - Generates signed BadgeEvent v1 payloads
   - Supports auto-enrollment with --enroll flag
   - Added bun run sim:badge npm script
+- [x] **Tamper-Evident Audit Ledger (v0.2 Phase 2)**:
+  - auditLedger.ts with SHA-256 hash chaining
+  - GET /api/admin/audit/export (NDJSON format)
+  - GET /api/admin/audit/verify (chain integrity check)
+  - Integrated ledger writes into session routes (start/end)
+  - Integrated ledger writes into admin badge routes (enroll/delete)
+  - Auth failure tracking with error codes
+  - Secret redaction to prevent logging credentials
+  - scripts/audit-verify.ts for testing
+  - npm scripts: test:audit, audit:verify
 
 ## Current Structure
 
@@ -122,6 +132,9 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 | `src/lib/badgeRegistry.ts` | Badge UID -> userId mapping | ✅ New |
 | `src/lib/sessionStore.ts` | Session management | ✅ New |
 | `scripts/sim-badge.ts` | Badge scan simulator | ✅ New |
+| `src/lib/auditLedger.ts` | Tamper-evident audit ledger | ✅ New |
+| `src/app/api/admin/audit/export/route.ts` | Audit export API | ✅ New |
+| `src/app/api/admin/audit/verify/route.ts` | Audit verify API | ✅ New |
 
 ## Current Focus
 
@@ -197,3 +210,4 @@ export async function GET() {
 | 2026-03-05 | OIDC/JWT RBAC skeleton + device registry + observability middleware |
 | 2026-03-05 | Created v0.2.0 milestone with 7 issues (GitHub)
 | 2026-03-05 | Implemented #22 Badge Identity Mapping + #23 Session Engine + #25 BLE Simulator
+| 2026-03-05 | Implemented Tamper-Evident Audit Ledger (v0.2 Phase 2)
