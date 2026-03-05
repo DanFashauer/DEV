@@ -14,7 +14,10 @@
     "test:audit": "bun run scripts/audit-verify.ts",
     "audit:verify": "bun run scripts/audit-verify.ts",
     "test:webhooks": "bun run scripts/webhook-test.ts",
-    "seed:policies": "bun run scripts/seed-policies.ts"
+    "seed:policies": "bun run scripts/seed-policies.ts",
+    "sim:posture": "bun run scripts/sim-posture.ts",
+    "test:webauthn": "bun run scripts/webauthn-smoke.ts",
+    "test:fleetdm": "bun run scripts/fleetdm-smoke.ts"
   },
   "dependencies": {
     "ioredis": "^5.10.0",

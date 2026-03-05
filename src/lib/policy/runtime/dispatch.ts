@@ -172,6 +172,12 @@ export class PolicyActionDispatcher {
         case 'notify_admin':
           return await this.dispatchNotifyAdmin(action, context, caseId);
 
+        case 'require_step_up_auth':
+          return await this.dispatchRequireStepUpAuth(action, context, caseId);
+
+        case 'enforce_posture':
+          return await this.dispatchEnforcePosture(action, context, caseId);
+
         default:
           return { 
             action, 
@@ -414,6 +420,87 @@ export class PolicyActionDispatcher {
         timestamp: new Date().toISOString(),
       };
     }
+  }
+
+  /**
+   * Dispatch require step-up auth action
+   * Returns a directive to require WebAuthn/FIDO2 verification
+   */
+  private async dispatchRequireStepUpAuth(
+    action: PolicyAction,
+    context: PolicyContext,
+    caseId: string
+  ): Promise<ActionDispatchResult> {
+    const method = action.params?.method as string || 'webauthn';
+    const ttlSeconds = action.params?.ttlSeconds as number || 300;
+
+    // This action is handled at the session/auth layer
+    // The dispatcher returns success with the step-up directive
+    return {
+      action,
+      success: true,
+      result: {
+        requireStepUp: true,
+        method,
+        ttlSeconds,
+        reason: action.params?.reason as string || `Policy requires step-up: ${action.policyName}`,
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Dispatch enforce posture action
+   * Validates device compliance and takes action based on result
+   */
+  private async dispatchEnforcePosture(
+    action: PolicyAction,
+    context: PolicyContext,
+    caseId: string
+  ): Promise<ActionDispatchResult> {
+    const deviceId = context.device?.deviceId;
+    const requireCompliant = action.params?.requireCompliant !== false;
+    const onFail = action.params?.onFail as string || 'notify_admin';
+
+    // Check current posture from context
+    const posture = context.device?.posture as { compliant?: boolean; lastCheckAt?: string } | undefined;
+    const isCompliant = posture?.compliant ?? false;
+    const hasPosture = !!posture?.lastCheckAt;
+
+    // TELEMETRY_MODE=required means no posture = non-compliant
+    const telemetryMode = process.env.TELEMETRY_MODE;
+    const postureMissing = !hasPosture && telemetryMode === 'required';
+
+    if (!isCompliant || postureMissing) {
+      // Take action on failure
+      switch (onFail) {
+        case 'quarantine_device':
+          return await this.dispatchQuarantineDevice(action, context, caseId);
+        case 'send_itsm_ticket':
+          return await this.dispatchITSMTicket(action, context, caseId);
+        case 'notify_admin':
+          return await this.dispatchNotifyAdmin(action, context, caseId);
+        default:
+          return {
+            action,
+            success: false,
+            error: `Unknown onFail action: ${onFail}`,
+            timestamp: new Date().toISOString(),
+          };
+      }
+    }
+
+    // Device is compliant or posture is optional
+    return {
+      action,
+      success: true,
+      result: {
+        postureCheck: 'passed',
+        compliant: isCompliant,
+        postureSource: posture ? 'context' : 'not_required',
+      },
+      timestamp: new Date().toISOString(),
+    };
   }
 
   /**

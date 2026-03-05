@@ -22,20 +22,37 @@ export type PolicyEventType =
   | 'policy.triggered';
 
 /**
+ * Device platform types
+ */
+export type DevicePlatform = 'ios' | 'ipados' | 'macos' | 'android' | 'linux' | 'windows' | 'chrome' | 'unknown';
+
+/**
+ * Normalized posture context from telemetry (FleetDM, UEM)
+ */
+export interface PolicyPostureContext {
+  compliant?: boolean;
+  lastCheckAt?: string;
+  signals?: Record<string, unknown>;
+  source?: 'fleetdm' | 'uem' | 'nac';
+}
+
+/**
  * Normalized device context
  */
 export interface PolicyDeviceContext {
   deviceId: string;
-  platform?: string;
+  platform?: DevicePlatform;
   ip?: string;
   mac?: string;
   hostname?: string;
   manufacturer?: string;
   model?: string;
   osVersion?: string;
+  serialNumber?: string;
   tags?: string[];
   enrollmentStatus?: 'enrolled' | 'unenrolled' | 'unknown';
   complianceStatus?: 'compliant' | 'non_compliant' | 'unknown';
+  posture?: PolicyPostureContext;
 }
 
 /**
