@@ -26,6 +26,7 @@ import { NextResponse } from 'next/server';
 import { validateAndAuthorizeSessionStart, generateRandomHex } from '@/lib/backend/validation';
 import { badgeRegistry } from '@/lib/badgeRegistry';
 import { sessionStore, SessionDirective } from '@/lib/sessionStore';
+import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
 
 /**
  * Simple in-memory rate limiter for session start
@@ -95,6 +96,12 @@ export async function POST(request: Request) {
     
     if (!validation.valid) {
       console.error('[SessionStart] Validation failed:', validation.error);
+      // Record auth failure
+      await recordAuthFailure(
+        validation.error || 'validation_failed',
+        { type: 'device', id: deviceId },
+        { meta: { reason: validation.error, code: validation.code } }
+      );
       return NextResponse.json(
         { error: validation.error },
         { status: 401 }
@@ -150,6 +157,12 @@ export async function POST(request: Request) {
     
     // Update last used timestamp
     await badgeRegistry.updateLastUsed(event.badge.badgeId);
+    
+    // Record session start in audit ledger (after badge is validated)
+    await appendAuditRecord('session.start', { type: 'device', id: deviceId }, {
+      target: { type: 'badge', id: event.badge.badgeId },
+      meta: { userId: badgeMapping.userId, readerType: event.reader.readerType },
+    });
     
     // Step 2: Check if there's an existing active session for this device
     const existingSessions = await sessionStore.getByDeviceId(deviceId);

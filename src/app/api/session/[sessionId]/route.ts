@@ -18,6 +18,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { sessionStore } from '@/lib/sessionStore';
+import { appendAuditRecord } from '@/lib/auditLedger';
 
 interface RouteParams {
   params: Promise<{
@@ -129,6 +130,12 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       sessionId,
       userId: session.userId,
       isAdmin,
+    });
+    
+    // Record session end in audit ledger
+    await appendAuditRecord('session.end', { type: isAdmin ? 'admin' : 'device', id: isAdmin ? 'admin' : session.deviceId }, {
+      target: { type: 'session', id: sessionId },
+      meta: { userId: session.userId, terminatedBy: isAdmin ? 'admin' : 'device' },
     });
     
     return NextResponse.json({

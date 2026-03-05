@@ -9,7 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:replay": "bun run scripts/replay-test.ts",
-    "sim:badge": "bun run scripts/sim-badge.ts"
+    "sim:badge": "bun run scripts/sim-badge.ts",
+    "test:audit": "bun run scripts/audit-verify.ts",
+    "audit:verify": "bun run scripts/audit-verify.ts"
   },
   "dependencies": {
     "ioredis": "^5.10.0",
@@ -17,6 +19,7 @@
     "next": "^16.1.6",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "uuid": "^13.0.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
@@ -25,6 +28,7 @@
     "@types/node": "^24.10.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^11.0.0",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.0",
     "tailwindcss": "^4.1.17",

@@ -22,6 +22,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { badgeRegistry } from '@/lib/badgeRegistry';
 import { requireAdminAuth } from '@/lib/adminAuth';
+import { appendAuditRecord, recordAdminAccess } from '@/lib/auditLedger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +57,12 @@ export async function POST(request: NextRequest) {
       userId: userId.trim(),
       userName,
       department,
+    });
+    
+    // Record badge enrollment in audit ledger
+    await appendAuditRecord('badge.enroll', { type: 'admin', id: 'admin' }, {
+      target: { type: 'badge', id: badgeUid.trim() },
+      meta: { userId: userId.trim(), userName, department },
     });
     
     return NextResponse.json({

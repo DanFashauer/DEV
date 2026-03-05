@@ -14,6 +14,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { badgeRegistry } from '@/lib/badgeRegistry';
 import { requireAdminAuth } from '@/lib/adminAuth';
+import { appendAuditRecord } from '@/lib/auditLedger';
 
 interface RouteParams {
   params: Promise<{
@@ -56,6 +57,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { status: 500 }
       );
     }
+    
+    // Record badge deletion in audit ledger
+    await appendAuditRecord('badge.delete', { type: 'admin', id: 'admin' }, {
+      target: { type: 'badge', id: badgeUid },
+      meta: { previouslyMappedTo: existing?.userId },
+    });
     
     return NextResponse.json({
       success: true,

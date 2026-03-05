@@ -125,6 +125,7 @@ async function isNonceValid(deviceId: string, nonce: string): Promise<boolean> {
 export interface ValidationResult {
   valid: boolean;
   error?: string;
+  code?: 'missing_headers' | 'invalid_nonce' | 'invalid_timestamp' | 'invalid_signature' | 'invalid_schema' | 'replay_detected';
   event?: BadgeEvent;
 }
 
@@ -153,24 +154,25 @@ export async function validateAndAuthorizeSessionStart(
     return {
       valid: false,
       error: 'Missing required security headers: x-signature, x-timestamp, x-nonce',
+      code: 'missing_headers',
     };
   }
 
   // 2. Validate nonce length (minimum 16 characters)
   if (nonce.length < CONFIG.minNonceLength) {
-    return { valid: false, error: `Nonce must be at least ${CONFIG.minNonceLength} characters` };
+    return { valid: false, error: `Nonce must be at least ${CONFIG.minNonceLength} characters`, code: 'invalid_nonce' };
   }
 
   // 3. Validate timestamp is within window
   const requestTime = parseInt(timestamp, 10);
   if (isNaN(requestTime)) {
-    return { valid: false, error: 'Invalid timestamp format' };
+    return { valid: false, error: 'Invalid timestamp format', code: 'invalid_timestamp' };
   }
   
   const now = Date.now();
   const timeDiff = Math.abs(now - requestTime);
   if (timeDiff > SIGNING_CONFIG.validityWindowMs) {
-    return { valid: false, error: 'Request timestamp outside valid window' };
+    return { valid: false, error: 'Request timestamp outside valid window', code: 'invalid_timestamp' };
   }
 
   // 4. Validate schema BEFORE signature verification (to get deviceId safely)
@@ -179,6 +181,7 @@ export async function validateAndAuthorizeSessionStart(
     return {
       valid: false,
       error: `Invalid BadgeEvent schema: ${parseResult.error.message}`,
+      code: 'invalid_schema',
     };
   }
   
@@ -195,14 +198,14 @@ export async function validateAndAuthorizeSessionStart(
   );
   
   if (!verifySignature(signatureBase, SIGNING_CONFIG.secretKey, signature)) {
-    return { valid: false, error: 'Invalid signature' };
+    return { valid: false, error: 'Invalid signature', code: 'invalid_signature' };
   }
 
   // 6. Check replay prevention (nonce) - per-device isolation (LAST, after signature verified)
   const deviceId = event.device?.deviceId ?? 'unknown';
   
   if (!(await isNonceValid(deviceId, nonce))) {
-    return { valid: false, error: 'Nonce already used or invalid' };
+    return { valid: false, error: 'Nonce already used or invalid', code: 'replay_detected' };
   }
 
   // All validations passed
