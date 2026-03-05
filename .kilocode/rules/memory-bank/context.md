@@ -68,6 +68,10 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
   - Structured JSON logging
   - Latency tracking per request
   - Secret filtering in logs
+- [x] **JWT Auth Integration**:
+  - Integrated JWT auth into admin API routes
+  - Fixed auth.ts to export getAuthConfig
+  - Added authentication to /api/admin/devices route
 
 ## Current Structure
 
