@@ -1,7 +1,37 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { 
+  requireAdminAuth, 
+  adminSuccess, 
+  adminError,
+  getSecurityHeaders 
+} from "@/lib/adminAuth";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Admin Devices API Route
+ * 
+ * Returns mock device data for the admin dashboard.
+ * In production, this would connect to actual data sources.
+ * 
+ * Security features:
+ * - JWT/OIDC authentication (primary)
+ * - API key authentication (development fallback)
+ * - Timing-safe comparison to prevent timing attacks
+ * - Rate limiting (30 requests/minute per IP)
+ * - Comprehensive cache control headers
+ * - Audit logging (no secrets logged)
+ * - Fails closed if API key not configured in production
+ */
 
 // GET /api/admin/devices - List all registered devices
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Check authentication (includes rate limiting)
+  const authError = await requireAdminAuth(request);
+  if (authError) {
+    return authError;
+  }
+
   // Mock device data - replace with database query in production
   const devices = [
     {
@@ -30,20 +60,23 @@ export async function GET() {
     },
   ];
 
-  return NextResponse.json({ devices });
+  return adminSuccess({ devices });
 }
 
 // POST /api/admin/devices - Register a new device
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Check authentication (includes rate limiting)
+  const authError = await requireAdminAuth(request);
+  if (authError) {
+    return authError;
+  }
+
   try {
     const body = await request.json();
     const { name, deviceId } = body;
 
     if (!name || !deviceId) {
-      return NextResponse.json(
-        { error: "Missing required fields: name, deviceId" },
-        { status: 400 }
-      );
+      return adminError("Missing required fields: name, deviceId", 400);
     }
 
     // In production, save to database
@@ -56,11 +89,8 @@ export async function POST(request: Request) {
       appVersion: "unknown",
     };
 
-    return NextResponse.json({ device: newDevice }, { status: 201 });
+    return adminSuccess({ device: newDevice });
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return adminError("Invalid request body", 400);
   }
 }

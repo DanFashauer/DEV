@@ -61,8 +61,9 @@ const JWKS_CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 /**
  * Get authentication configuration based on environment
+ * Export this so adminAuth can check auth mode
  */
-function getAuthConfig(): AuthConfig {
+export function getAuthConfig(): AuthConfig {
   if (authConfig) {
     return authConfig;
   }

@@ -15,7 +15,8 @@ export const dynamic = "force-dynamic";
  * In production, this would connect to actual data sources.
  * 
  * Security features:
- * - API key authentication via X-Admin-Api-Key header
+ * - JWT/OIDC authentication (primary)
+ * - API key authentication (development fallback)
  * - Timing-safe comparison to prevent timing attacks
  * - Rate limiting (30 requests/minute per IP)
  * - Comprehensive cache control headers
@@ -24,7 +25,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: NextRequest) {
   // Check authentication (includes rate limiting)
-  const authError = requireAdminAuth(request);
+  const authError = await requireAdminAuth(request);
   if (authError) {
     return authError;
   }

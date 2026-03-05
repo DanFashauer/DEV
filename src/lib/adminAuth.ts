@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, timingSafeEqual } from "crypto";
+import { authenticateRequest, getAuthConfig } from "./auth";
 
 // In-memory rate limit store (for single-instance deployments)
 // In production with multiple instances, use Redis/Upstash
@@ -142,9 +143,10 @@ export function getSecurityHeaders(): Record<string, string> {
 
 /**
  * Require admin authentication for a request
+ * Supports both JWT (OIDC) and API key authentication.
  * Returns NextResponse with error if not authorized, null if authorized
  */
-export function requireAdminAuth(request: NextRequest): NextResponse<{ error: string }> | null {
+export async function requireAdminAuth(request: NextRequest): Promise<NextResponse<{ error: string }> | null> {
   const path = new URL(request.url).pathname;
   
   // 1. Check rate limit first (before auth to prevent brute force)
@@ -163,10 +165,42 @@ export function requireAdminAuth(request: NextRequest): NextResponse<{ error: st
     );
   }
   
-  // 2. Get configured API key
+  // 2. Try JWT authentication first (if OIDC is configured)
+  const authConfig = getAuthConfig();
+  
+  if (authConfig.mode === 'jwt') {
+    const auth = await authenticateRequest(request);
+    
+    if (auth.authenticated) {
+      logAuthAttempt(request, path, true, `authorized via ${auth.method}`);
+      return null;
+    }
+    
+    // JWT failed - check if we should fall back to API key
+    const apiKey = request.headers.get("x-admin-api-key");
+    if (apiKey) {
+      // Try API key as fallback
+      const adminApiKey = getAdminApiKey();
+      if (adminApiKey && timingSafeCompare(apiKey, adminApiKey)) {
+        logAuthAttempt(request, path, true, "authorized via api-key fallback");
+        return null;
+      }
+    }
+    
+    logAuthAttempt(request, path, false, "invalid JWT");
+    return NextResponse.json(
+      { error: auth.error || "Unauthorized: Invalid or missing authentication token" },
+      { 
+        status: 401,
+        headers: getSecurityHeaders(),
+      }
+    );
+  }
+  
+  // 3. API key mode (development fallback)
   const adminApiKey = getAdminApiKey();
   
-  // 3. If no API key configured in production, fail closed
+  // If no API key configured in production, fail closed
   if (!adminApiKey) {
     logAuthAttempt(request, path, false, "misconfiguration");
     console.error(
@@ -181,10 +215,10 @@ export function requireAdminAuth(request: NextRequest): NextResponse<{ error: st
     );
   }
   
-  // 4. Get API key from request header (normalize to lowercase)
+  // Get API key from request header
   const providedKey = request.headers.get("x-admin-api-key");
   
-  // 5. Timing-safe comparison
+  // Timing-safe comparison
   if (!timingSafeCompare(providedKey, adminApiKey)) {
     logAuthAttempt(request, path, false, "invalid_key");
     return NextResponse.json(
