@@ -326,3 +326,46 @@ Proprietary - Enterprise Use Only
 ## Support
 
 For enterprise support and customization, contact your IT department.
+
+## Location Signals (Asset Presence / Auditing)
+
+This platform supports **Location Signals** as vendor-neutral events that can be fed from:
+- MDM/UEM (device attributes, compliance/location hints)
+- NAC (Cisco ISE / Aruba ClearPass) network+AP context
+- RTLS systems (optional, enterprise-controlled)
+- Device-side (BLE/Wi-Fi/GPS signals, depending on policy)
+
+### Configuration
+
+Set these environment variables in your backend:
+
+| Variable | Description | Default |
+|----------|-------------|----------|
+| `LOCATION_MODE` | Location granularity: `presence` (recommended), `coarse`, `precise` | `presence` |
+| `LOCATION_MAX_AGE_SECONDS` | Max age of location signals | `120` |
+| `LOCATION_USE_REDIS` | Use Redis for storage (production) | `true` |
+| `INTEGRATION_SIGNING_SECRET` | HMAC secret for signing outgoing webhooks | (empty) |
+
+### Privacy Posture
+
+- Default `LOCATION_MODE=presence` (zone-level). Avoids continuous tracking for pilots.
+- Asset accountability: "Last seen in ER-TRIAGE at 10:41" (presence mode)
+- Audit-grade evidence: location signal becomes a tamper-evident audit ledger event
+- Safe for healthcare pilots: no always-on consumer tracking vibe
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/location/report` | POST | Ingest location signal → audit + optional webhook dispatch |
+| `/api/admin/location?deviceId=...` | GET | Admin-only last known location |
+
+### Webhook Events
+
+When location signals are received, the system dispatches `asset.location.observed` events to configured webhook targets. Each event includes:
+- `type`: `asset.location.observed`
+- `deviceId`: The device identifier
+- `occurredAt`: Timestamp (epoch ms)
+- `payload`: Full location signal data
+
+Webhooks are signed with HMAC-SHA256 using the `INTEGRATION_SIGNING_SECRET`.

@@ -11,6 +11,7 @@ export type AuditEventType =
   | "session.poll"
   | "session.end"
   | "auth.failure"
+  | "asset.location.observed"
   | "admin.access";
 
 export type Actor = {
@@ -292,4 +293,33 @@ export async function recordAdminAccess(
     target: options?.target,
     meta: { action, ...options?.meta },
   });
+}
+
+// Helper to record location observation
+export async function recordLocationObservation(
+  deviceId: string,
+  locationData: {
+    observedAt: number;
+    source: string;
+    mode: string;
+    siteId?: string;
+    buildingId?: string;
+    floorId?: string;
+    zoneId?: string;
+    lat?: number;
+    lon?: number;
+    accuracyM?: number;
+  },
+  options?: {
+    requestId?: string;
+  }
+): Promise<AuditRecord> {
+  return appendAuditRecord(
+    "asset.location.observed",
+    { type: "device", id: deviceId },
+    {
+      requestId: options?.requestId,
+      meta: locationData,
+    }
+  );
 }

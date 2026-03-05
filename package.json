@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:replay": "bun run scripts/replay-test.ts",
     "sim:badge": "bun run scripts/sim-badge.ts",
+    "sim:location": "bun run scripts/sim-location.ts",
     "test:audit": "bun run scripts/audit-verify.ts",
     "audit:verify": "bun run scripts/audit-verify.ts"
   },
