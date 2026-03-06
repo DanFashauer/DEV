@@ -22,6 +22,7 @@ export { FreshserviceAdapter } from './freshservice';
 export { BMCHelixAdapter } from './bmc-helix';
 export { IvantiAdapter } from './ivanti';
 export { ManageEngineAdapter } from './manageengine';
+export { GenericWebhookAdapter } from './generic-webhook';
 
 /**
  * Create an ITSM adapter based on vendor and configuration

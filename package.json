@@ -19,7 +19,8 @@
     "test:webauthn": "bun run scripts/webauthn-smoke.ts",
     "test:fleetdm": "bun run scripts/fleetdm-smoke.ts",
     "seed:itsm": "bun run scripts/seed-itsm-templates.ts",
-    "demo:flow": "bun run scripts/demo-flow.ts"
+    "demo:flow": "bun run scripts/demo-flow.ts",
+    "test:redaction": "bun test scripts/test-secret-redaction.ts"
   },
   "dependencies": {
     "ioredis": "^5.10.0",
