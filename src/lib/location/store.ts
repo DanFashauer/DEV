@@ -1,7 +1,7 @@
 import type { LocationSignal } from "./types";
 import { LOCATION_USE_REDIS } from "./config";
 
-type StoreBackend = {
+export type StoreBackend = {
   upsert(signal: LocationSignal): Promise<void>;
   getLast(deviceId: string): Promise<LocationSignal | null>;
 };

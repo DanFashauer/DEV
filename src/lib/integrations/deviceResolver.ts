@@ -24,6 +24,7 @@ export interface DeviceIdentity {
  * 1. Local device registry
  * 2. UEM/MDM (Intune, Workspace ONE, Jamf)
  * 3. NAC (Cisco ISE, Aruba ClearPass)
+ * 4. FleetDM (posture/telemetry)
  */
 export class DeviceIdentityResolver {
   private uemAdapter: UEMAdapter | null = null;

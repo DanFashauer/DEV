@@ -6,6 +6,8 @@ export type LocationSource =
   | "device.ble"
   | "device.uwb"
   | "nac"
+  | "nac-radius"
+  | "nac-dhcp"
   | "mdm"
   | "rtls"
   | "manual";
@@ -31,4 +33,7 @@ export type LocationSignal = {
   ip?: string;
   wifiBssid?: string;
   apName?: string;
+
+  // Additional metadata
+  metadata?: Record<string, unknown>;
 };

@@ -593,6 +593,84 @@ export async function getTicketTemplate(id: string): Promise<TicketTemplate | nu
 }
 
 /**
+ * Create a new ticket template
+ */
+export async function createTicketTemplate(
+  template: Omit<TicketTemplate, 'id'>
+): Promise<TicketTemplate> {
+  const r = getRedis();
+  const id = `custom-${Date.now()}`;
+  const newTemplate: TicketTemplate = {
+    id,
+    name: template.name,
+    description: template.description,
+    category: template.category,
+    severity: template.severity,
+    titleTemplate: template.titleTemplate,
+    descriptionTemplate: template.descriptionTemplate,
+  };
+  
+  const templates = await getTicketTemplates();
+  templates.push(newTemplate);
+  
+  if (r) {
+    await r.set(TICKET_TEMPLATES_KEY, JSON.stringify(templates));
+  }
+  
+  return newTemplate;
+}
+
+/**
+ * Update an existing ticket template
+ */
+export async function updateTicketTemplate(
+  id: string,
+  updates: Partial<Omit<TicketTemplate, 'id'>>
+): Promise<TicketTemplate | null> {
+  const r = getRedis();
+  const templates = await getTicketTemplates();
+  
+  const index = templates.findIndex(t => t.id === id);
+  if (index === -1) {
+    return null;
+  }
+  
+  const updated: TicketTemplate = {
+    ...templates[index],
+    ...updates,
+  };
+  
+  templates[index] = updated;
+  
+  if (r) {
+    await r.set(TICKET_TEMPLATES_KEY, JSON.stringify(templates));
+  }
+  
+  return updated;
+}
+
+/**
+ * Delete a ticket template
+ */
+export async function deleteTicketTemplate(id: string): Promise<boolean> {
+  const r = getRedis();
+  const templates = await getTicketTemplates();
+  
+  const index = templates.findIndex(t => t.id === id);
+  if (index === -1) {
+    return false;
+  }
+  
+  templates.splice(index, 1);
+  
+  if (r) {
+    await r.set(TICKET_TEMPLATES_KEY, JSON.stringify(templates));
+  }
+  
+  return true;
+}
+
+/**
  * Seed default templates (for initialization)
  */
 export async function seedTicketTemplates(): Promise<void> {
