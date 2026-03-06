@@ -32,6 +32,7 @@ import { emitAuthFailure } from '@/lib/integrations/webhooks/emitter';
 import { evaluatePolicies } from '@/lib/policy/runtime/evaluate';
 import { getPostureForHost } from '@/lib/integrations/telemetry/store';
 import { getFleetDMAdapter } from '@/lib/integrations/telemetry/fleetdm';
+import { getDevicePosture } from '@/lib/integrations/uem/store';
 
 /**
  * Simple in-memory rate limiter for session start
@@ -56,6 +57,33 @@ function checkRateLimit(map: Map<string, { count: number; resetTime: number }>, 
   
   record.count++;
   return true;
+}
+
+/**
+ * Build UEM context for policy evaluation
+ * Fetches device posture from configured UEM (Intune, Jamf, Workspace ONE)
+ */
+async function getUEMContext(deviceId: string): Promise<Record<string, unknown>> {
+  try {
+    const posture = await getDevicePosture(deviceId);
+    
+    if (!posture) {
+      return { enrolled: false };
+    }
+    
+    return {
+      enrolled: posture.enrollmentStatus === 'enrolled',
+      complianceStatus: posture.complianceStatus,
+      platform: posture.platform,
+      osVersion: posture.osVersion,
+      managementId: posture.managementId,
+      attest: posture.attest,
+      signals: posture.signals,
+    };
+  } catch (error) {
+    console.error('[SessionStart] Failed to get UEM context:', error);
+    return { enrolled: false };
+  }
 }
 
 /**
@@ -296,15 +324,19 @@ export async function POST(request: Request) {
     }).catch(err => console.error('[Webhook] Failed to emit session.start:', err));
     
     // Evaluate policies and get actions
-    // Build fleet context for policy evaluation
-    const fleetContext = await getFleetContext(event.device?.deviceSerial || '');
+    // Build fleet and UEM context for policy evaluation
+    const [fleetContext, uemContext] = await Promise.all([
+      getFleetContext(event.device?.deviceSerial || ''),
+      getUEMContext(event.device?.deviceId || deviceId),
+    ]);
     
     const policyContext = {
-      device: { role: 'kiosk', deviceId },
+      device: { role: 'kiosk', deviceId, ...uemContext },
       user: { role: badgeMapping.department || 'user', userId: badgeMapping.userId, name: badgeMapping.userName },
       location: { zone: event.context?.locationId || 'unknown' },
       session: { id: session.sessionId, startedAt: session.createdAt },
       fleet: fleetContext,
+      uem: uemContext,
     };
     
     const policyActions = evaluatePolicies(policyContext);

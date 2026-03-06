@@ -29,7 +29,11 @@ export type AuditEventType =
   | "siem.event.failed"
   // Phase 5: ITSM events
   | "itsm.ticket.created"
-  | "itsm.ticket.failed";
+  | "itsm.ticket.failed"
+  // Phase 4: NAC events
+  | "nac.quarantine.applied"
+  | "nac.quarantine.cleared"
+  | "nac.quarantine.failed";
 
 export type Actor = {
   type: "device" | "admin" | "system" | "user";

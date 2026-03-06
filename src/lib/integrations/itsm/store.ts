@@ -498,6 +498,109 @@ const TICKET_TEMPLATES_KEY = 'itsm:templates';
 // Default templates
 const DEFAULT_TEMPLATES: TicketTemplate[] = [
   {
+    id: 'badge_mismatch',
+    name: 'Badge ID Mismatch',
+    description: 'Badge UID does not match expected user mapping',
+    category: 'authentication_failure',
+    severity: 'high',
+    titleTemplate: 'Badge ID Mismatch - {{badgeUid}}',
+    descriptionTemplate: `A badge scan detected a UID that does not match any enrolled user mapping.
+
+**Event Details:**
+- Badge UID: {{badgeUid}}
+- Reader Type: {{readerType}}
+- Device ID: {{deviceId}}
+- Timestamp: {{timestamp}}
+
+**Possible Causes:**
+- Unenrolled badge
+- Badge reassigned to different user
+- Badge cloned or duplicated
+
+Please investigate and take appropriate action.`,
+  },
+  {
+    id: 'repeated_auth_failure',
+    name: 'Repeated Authentication Failures',
+    description: 'Multiple consecutive authentication failures for the same device',
+    category: 'authentication_failure',
+    severity: 'medium',
+    titleTemplate: 'Repeated Auth Failures - Device {{deviceId}}',
+    descriptionTemplate: `Multiple authentication failures have occurred for the same device.
+
+**Device Information:**
+- Device ID: {{deviceId}}
+- Serial: {{serialNumber}}
+- Platform: {{devicePlatform}}
+
+**Failure Details:**
+- Failure Count: {{failureCount}}
+- Time Window: {{timeWindow}}
+- First Failure: {{firstFailureTime}}
+- Last Failure: {{lastFailureTime}}
+
+This may indicate:
+- Brute force attack attempt
+- Device configuration issue
+- Credential problems
+
+Please investigate and consider temporarily locking the device.`,
+  },
+  {
+    id: 'device_out_of_zone',
+    name: 'Device Out of Allowed Zone',
+    description: 'Device detected in location outside of allowed policy zone',
+    category: 'location_violation',
+    severity: 'medium',
+    titleTemplate: 'Zone Violation - Device {{deviceId}}',
+    descriptionTemplate: `A device has been detected in a location outside of its allowed zone.
+
+**Device Information:**
+- Device ID: {{deviceId}}
+- User: {{userName}}
+- Expected Zone: {{expectedZone}}
+
+**Location Details:**
+- Detected Location: {{detectedLocation}}
+- Location Mode: {{locationMode}}
+- Timestamp: {{timestamp}}
+
+**Policy:**
+- Policy Name: {{policyName}}
+- Policy ID: {{policyId}}
+
+Device access should be restricted until the device returns to an authorized zone.`,
+  },
+  {
+    id: 'nac_quarantine_applied',
+    name: 'NAC Quarantine Applied',
+    description: 'Network Access Control has quarantined a device',
+    category: 'network_security',
+    severity: 'high',
+    titleTemplate: 'NAC Quarantine - Device {{deviceId}}',
+    descriptionTemplate: `A device has been quarantined by Network Access Control (NAC).
+
+**Device Information:**
+- Device ID: {{deviceId}}
+- MAC Address: {{macAddress}}
+- Serial: {{serialNumber}}
+
+**Quarantine Details:**
+- NAC System: {{nacSystem}}
+- Reason: {{quarantineReason}}
+- Applied At: {{timestamp}}
+
+**Actions Taken:**
+- Network access restricted via {{nacSystem}}
+- Device moved to quarantine VLAN
+- Admin notified
+
+**Policy Trigger:**
+- Policy Name: {{policyName}}
+
+Please investigate the reason for quarantine and clear once resolved.`,
+  },
+  {
     id: 'lost_device',
     name: 'Lost Device',
     description: 'A device has been reported as lost or stolen',
