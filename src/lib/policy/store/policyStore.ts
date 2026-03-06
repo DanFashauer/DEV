@@ -2,6 +2,10 @@ import { Policy } from "../types";
 
 const policies: Policy[] = [];
 
+function generatePolicyId(): string {
+  return `policy-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
 export function listPolicies(): Policy[] {
   return [...policies].sort((a, b) => a.priority - b.priority);
 }
@@ -11,8 +15,13 @@ export function getPolicy(id: string): Policy | undefined {
 }
 
 export function createPolicy(p: Policy): Policy {
-  policies.push(p);
-  return p;
+  // Ensure policy has an ID
+  const policy = {
+    ...p,
+    id: p.id || generatePolicyId(),
+  };
+  policies.push(policy);
+  return policy;
 }
 
 export function updatePolicy(id: string, data: Partial<Policy>): Policy | null {

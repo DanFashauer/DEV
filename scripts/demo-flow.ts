@@ -58,6 +58,31 @@ This demo will run through the complete authentication and policy flow:
 6. Audit Export + Verify
   `);
 
+  // Check if server is running
+  const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
+  
+  console.log(`\n🔍 Checking server at ${SERVER_URL}...`);
+  
+  try {
+    const healthResponse = await fetch(SERVER_URL, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000),
+    });
+    
+    if (healthResponse.ok) {
+      console.log('✅ Server is running and responding');
+    } else {
+      console.log(`❌ Server responded with status ${healthResponse.status}`);
+      console.log('\n💡 Start the server with: bun run dev');
+      process.exit(1);
+    }
+  } catch (error) {
+    console.log('❌ Server is not reachable');
+    console.log(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.log('\n💡 Start the server with: bun run dev');
+    process.exit(1);
+  }
+
   const results: { step: string; success: boolean }[] = [];
 
   // Step 1: Seed policies

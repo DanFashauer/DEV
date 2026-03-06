@@ -212,6 +212,27 @@ async function simulateBadgeScan(options: BadgeSimulatorOptions): Promise<void> 
       body: JSON.stringify(payload),
     });
 
+    // Handle non-2xx responses
+    if (!response.ok) {
+      console.log('[Sim] Response:');
+      console.log(`  Status: ${response.status}`);
+      console.log('  Success: false');
+      
+      try {
+        const errorResult = await response.json();
+        console.log('\n[Sim] Error:');
+        console.log(`  Error: ${errorResult.error || 'Unknown error'}`);
+        console.log(`  Code: ${errorResult.code}`);
+      } catch {
+        console.log('\n[Sim] Error:');
+        console.log(`  Error: HTTP ${response.status}`);
+      }
+      
+      // Return non-zero exit code for failed requests
+      process.exitCode = 1;
+      return;
+    }
+
     const result = await response.json();
 
     console.log('[Sim] Response:');

@@ -65,10 +65,18 @@ async function main() {
     const verifyResult = await verifyResponse.json();
     
     if (verifyResult.ok) {
+      // Handle empty ledger case
+      if (verifyResult.count === 0) {
+        console.log('   ⚠ Ledger is empty or uninitialized');
+        console.log('   ℹ No audit records found - this is expected for a fresh system');
+        console.log('   ℹ Run demo flow to generate audit events');
+        return;
+      }
+      
       console.log('   ✓ Ledger integrity verified');
       console.log(`   - Total records: ${verifyResult.count}`);
-      console.log(`   - Head hash: ${verifyResult.headHash.slice(0, 16)}...`);
-      console.log(`   - Time range: ${verifyResult.firstTs} to ${verifyResult.lastTs}`);
+      console.log(`   - Head hash: ${verifyResult.headHash?.slice(0, 16) || 'N/A'}...`);
+      console.log(`   - Time range: ${verifyResult.firstTs || 'N/A'} to ${verifyResult.lastTs || 'N/A'}`);
     } else {
       console.log('   ✗ Ledger integrity FAILED!');
       console.log(`   - Broken at index: ${verifyResult.brokenAtIndex}`);

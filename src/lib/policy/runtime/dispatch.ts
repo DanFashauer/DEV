@@ -135,7 +135,7 @@ export class PolicyActionDispatcher {
     }
 
     return {
-      policyId: policy.id,
+      policyId: policy.id || 'unknown',
       policyName: policy.name,
       matched: true,
       actions,

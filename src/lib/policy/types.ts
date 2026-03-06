@@ -25,7 +25,7 @@ export const ActionSchema = z.object({
 });
 
 export const PolicySchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   name: z.string(),
   enabled: z.boolean().default(true),
   priority: z.number().default(100),
