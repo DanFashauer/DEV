@@ -9,6 +9,28 @@ import { deviceRegistry } from '@/lib/deviceRegistry';
 import { getPostureForHost } from '@/lib/integrations/telemetry/store';
 import { appendAuditRecord } from '@/lib/auditLedger';
 
+// Rate limiting for sync endpoint
+const syncRateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const SYNC_RATE_LIMIT = 5; // 5 syncs per window
+const SYNC_RATE_WINDOW_MS = 60 * 1000; // 1 minute
+
+function checkSyncRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const record = syncRateLimitMap.get(identifier);
+  
+  if (!record || now > record.resetTime) {
+    syncRateLimitMap.set(identifier, { count: 1, resetTime: now + SYNC_RATE_WINDOW_MS });
+    return true;
+  }
+  
+  if (record.count >= SYNC_RATE_LIMIT) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 interface SyncResult {
   success: boolean;
   synced: number;
@@ -21,6 +43,15 @@ export async function POST(request: NextRequest) {
   const authError = await requireAdminAuth(request);
   if (authError) {
     return authError;
+  }
+
+  // Rate limiting
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!checkSyncRateLimit(clientIp)) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Maximum 5 syncs per minute.' },
+      { status: 429 }
+    );
   }
 
   try {

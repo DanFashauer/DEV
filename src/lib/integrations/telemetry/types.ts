@@ -74,8 +74,52 @@ export type TelemetryMode = 'off' | 'optional' | 'required';
 export interface TelemetryConfig {
   mode: TelemetryMode;
   fleetdm?: FleetDMConfig;
+  mde?: MDEConfig;
 }
 
 export const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
   mode: 'off',
 };
+
+// ============================================================================
+// Microsoft Defender for Endpoint (MDE) Types
+// ============================================================================
+
+export interface MDEConfig {
+  enabled: boolean;
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  cloud?: 'public' | 'gov' | 'china';
+}
+
+export interface MDEDevice {
+  id: string;
+  deviceName: string;
+  operatingSystem: string;
+  osVersion: string;
+  complianceState: 'compliant' | 'non_compliant' | 'unknown';
+  deviceHealthStatus: string;
+  securityBaselineComplianceState: string;
+  threatAgentShielding: string;
+  jailBroken: string;
+  encryptionStatus: string;
+  lastSyncDateTime: string;
+  enrolledDateTime: string;
+  serialNumber: string;
+  manufacturer: string;
+  model: string;
+}
+
+export interface MDEPostureSignal {
+  deviceId: string;
+  hostname: string;
+  compliant: boolean;
+  lastCheckAt: string;
+  osVersion: string;
+  platform: string;
+  securityBaselineStatus: string;
+  threatDefenseStatus: string;
+  jailbroken: boolean;
+  encryptionStatus: string;
+}
