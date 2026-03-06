@@ -33,6 +33,8 @@ import { evaluatePolicies } from '@/lib/policy/runtime/evaluate';
 import { getPostureForHost } from '@/lib/integrations/telemetry/store';
 import { getFleetDMAdapter } from '@/lib/integrations/telemetry/fleetdm';
 import { getDevicePosture } from '@/lib/integrations/uem/store';
+import { resolveDeviceIdentity, getDeviceIdentityByDeviceId, createIdentityRef } from '@/lib/identity/deviceIdentity';
+import { calculateRiskScore, createRiskContext } from '@/lib/risk/score';
 
 /**
  * Simple in-memory rate limiter for session start
@@ -324,11 +326,36 @@ export async function POST(request: Request) {
     }).catch(err => console.error('[Webhook] Failed to emit session.start:', err));
     
     // Evaluate policies and get actions
-    // Build fleet and UEM context for policy evaluation
+    // Build fleet, UEM, identity, and risk context for policy evaluation
     const [fleetContext, uemContext] = await Promise.all([
       getFleetContext(event.device?.deviceSerial || ''),
       getUEMContext(event.device?.deviceId || deviceId),
     ]);
+    
+    // Resolve device identity from session event
+    const deviceIdentity = await resolveDeviceIdentity({
+      deviceId: event.device?.deviceId || deviceId,
+      serial: event.device?.deviceSerial,
+      platform: event.device?.deviceModel ? 'darwin' : undefined,
+      osVersion: event.device?.osVersion,
+      deviceModel: event.device?.deviceModel,
+      managementSource: 'badge_event',
+    });
+    
+    // Calculate risk score based on all available context
+    const riskScore = calculateRiskScore({
+      deviceIdentity,
+      isManaged: !!deviceIdentity.managementId,
+      correlationScore: deviceIdentity?.correlationScore,
+      postureStatus: fleetContext.status === 'compliant' ? 'compliant' : 
+                     fleetContext.status === 'non_compliant' ? 'non_compliant' : 'unknown',
+      postureLastCheckAge: typeof fleetContext.lastSeenAge === 'number' ? fleetContext.lastSeenAge : undefined,
+      locationZone: event.context?.locationId,
+      eventTimestamp: event.timestamp,
+    });
+    
+    // Create identity reference for audit trail
+    const identityRef = createIdentityRef(deviceIdentity);
     
     const policyContext = {
       device: { role: 'kiosk', deviceId, ...uemContext },
@@ -337,6 +364,8 @@ export async function POST(request: Request) {
       session: { id: session.sessionId, startedAt: session.createdAt },
       fleet: fleetContext,
       uem: uemContext,
+      ...createRiskContext(riskScore),
+      _identityRef: identityRef, // For audit linkage
     };
     
     const policyActions = evaluatePolicies(policyContext);
@@ -357,6 +386,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       session: directive,
+      riskScore: riskScore.riskScore,
+      riskLevel: riskScore.riskLevel,
+      identityId: deviceIdentity.identityId,
       policyActions: policyActions.length > 0 ? policyActions : undefined,
     });
   } catch (error) {
