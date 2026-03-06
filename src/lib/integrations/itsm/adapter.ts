@@ -12,7 +12,8 @@ import { FreshserviceAdapter } from './freshservice';
 import { BMCHelixAdapter } from './bmc-helix';
 import { IvantiAdapter } from './ivanti';
 import { ManageEngineAdapter } from './manageengine';
-import type { ITSMFullConfig, ITSMVendor } from './store';
+import { GenericWebhookAdapter } from './generic-webhook';
+import type { ITSMFullConfig, ITSMVendor, ITSMGenericWebhookConfig } from './store';
 
 export { ServiceNowAdapter } from './servicenow';
 export { JiraAdapter } from './jira';
@@ -143,6 +144,21 @@ export function createITSMAdapter(
       return new ManageEngineAdapter({
         instanceUrl: config.instanceUrl,
         technicianKey: techKey,
+      });
+    
+    case 'generic_webhook':
+      if (!config.genericWebhook) {
+        console.warn('Generic webhook adapter requires webhook configuration');
+        return null;
+      }
+      return new GenericWebhookAdapter({
+        url: config.genericWebhook.url,
+        method: config.genericWebhook.method || 'POST',
+        headers: config.genericWebhook.headers || { 'Content-Type': 'application/json' },
+        bodyTemplate: config.genericWebhook.bodyTemplate,
+        signingSecret: credentials.signingSecret,
+        signingAlgorithm: config.genericWebhook.signingAlgorithm,
+        retryPolicy: config.genericWebhook.retryPolicy,
       });
     
     default:

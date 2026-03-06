@@ -93,6 +93,20 @@ export async function emitAuthFailure(data: {
 }
 
 /**
+ * Emit siem.event event
+ */
+export async function emitSIEMEvent(data: {
+  eventType: string;
+  destination: string;
+  status: 'sent' | 'failed';
+  eventId: string;
+  timestamp: string;
+  error?: string;
+}) {
+  return emitWebhookEvent('siem.event', data);
+}
+
+/**
  * Emit asset.location.observed event
  */
 export async function emitLocationObserved(data: {

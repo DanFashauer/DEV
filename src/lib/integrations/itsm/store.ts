@@ -33,8 +33,25 @@ export const ITSMVendorSchema = z.enum([
   'bmc-helix',
   'ivanti',
   'manageengine',
+  'generic_webhook',
 ]);
 export type ITSMVendor = z.infer<typeof ITSMVendorSchema>;
+
+// Generic webhook configuration (must be defined before ITSMConfigBaseSchema)
+export const ITSMGenericWebhookConfigSchema = z.object({
+  url: z.string().url(),
+  method: z.enum(['POST', 'PUT', 'PATCH']).default('POST'),
+  headers: z.record(z.string()).optional(),
+  bodyTemplate: z.string().min(1),
+  signingAlgorithm: z.enum(['hmac-sha256', 'hmac-sha512']).optional(),
+  retryPolicy: z.object({
+    maxAttempts: z.number().min(1).max(10).default(3),
+    initialDelayMs: z.number().min(100).default(1000),
+    maxDelayMs: z.number().min(1000).default(30000),
+    backoffMultiplier: z.number().min(1).max(5).default(2),
+  }).optional(),
+});
+export type ITSMGenericWebhookConfig = z.infer<typeof ITSMGenericWebhookConfigSchema>;
 
 // Base config (non-sensitive)
 export const ITSMConfigBaseSchema = z.object({
@@ -46,6 +63,8 @@ export const ITSMConfigBaseSchema = z.object({
   table: z.string().optional(), // For ServiceNow
   projectKey: z.string().optional(), // For Jira
   subdomain: z.string().optional(), // For Zendesk, Freshservice
+  // Generic webhook config
+  genericWebhook: ITSMGenericWebhookConfigSchema.optional(),
   // Timestamps
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
@@ -66,12 +85,15 @@ export const ITSMCredentialsSchema = z.object({
   // Webhook
   webhookUrl: z.string().url().optional(),
   webhookSecret: z.string().optional(),
+  // Generic Webhook signing secret
+  signingSecret: z.string().optional(),
 });
 export type ITSMCredentials = z.infer<typeof ITSMCredentialsSchema>;
 
 // Full config (not stored directly)
 export type ITSMFullConfig = ITSMConfigBase & {
   credentials?: ITSMCredentials;
+  genericWebhook?: ITSMGenericWebhookConfig;
 };
 
 // Redis storage format
@@ -90,6 +112,7 @@ export const CreateITSMConfigSchema = z.object({
   table: z.string().optional(),
   projectKey: z.string().optional(),
   subdomain: z.string().optional(),
+  genericWebhook: ITSMGenericWebhookConfigSchema.optional(),
   credentials: ITSMCredentialsSchema.optional(),
 });
 export type CreateITSMConfigRequest = z.infer<typeof CreateITSMConfigSchema>;
@@ -101,6 +124,7 @@ export const UpdateITSMConfigSchema = z.object({
   table: z.string().optional(),
   projectKey: z.string().optional(),
   subdomain: z.string().optional(),
+  genericWebhook: ITSMGenericWebhookConfigSchema.optional(),
   credentials: ITSMCredentialsSchema.optional(),
   clearCredentials: z.boolean().optional(),
 });

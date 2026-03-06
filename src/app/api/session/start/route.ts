@@ -30,6 +30,8 @@ import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
 import { emitSessionStart } from '@/lib/integrations/webhooks/emitter';
 import { emitAuthFailure } from '@/lib/integrations/webhooks/emitter';
 import { evaluatePolicies } from '@/lib/policy/runtime/evaluate';
+import { getPostureForHost } from '@/lib/integrations/telemetry/store';
+import { getFleetDMAdapter } from '@/lib/integrations/telemetry/fleetdm';
 
 /**
  * Simple in-memory rate limiter for session start
@@ -54,6 +56,61 @@ function checkRateLimit(map: Map<string, { count: number; resetTime: number }>, 
   
   record.count++;
   return true;
+}
+
+/**
+ * Build fleet context for policy evaluation
+ * Fetches cached FleetDM posture data if available
+ */
+async function getFleetContext(deviceSerial: string): Promise<Record<string, unknown>> {
+  try {
+    const adapter = await getFleetDMAdapter();
+    
+    if (!adapter.isEnabled()) {
+      return { enrolled: false };
+    }
+    
+    // Get all hosts and find matching by serial
+    const hosts = await adapter.getHosts();
+    const host = hosts.find(h => h.serial_number === deviceSerial);
+    
+    if (!host) {
+      return { enrolled: false };
+    }
+    
+    // Get cached posture
+    const cached = await getPostureForHost(host.uuid);
+    
+    if (!cached) {
+      return {
+        enrolled: true,
+        status: 'unknown',
+        lastSeenAge: Date.now() - new Date(host.seen_time).getTime(),
+        osVersion: host.os_version,
+      };
+    }
+    
+    const posture = cached.data as {
+      platform: string;
+      compliant: boolean;
+      lastCheckAt: string;
+      policies: { id: number; name: string; response: string }[];
+      rawSignals?: Record<string, unknown>;
+    };
+    
+    return {
+      enrolled: true,
+      status: posture.compliant ? 'compliant' : 'non_compliant',
+      lastSeenAge: Date.now() - new Date(host.seen_time).getTime(),
+      osVersion: posture.rawSignals?.os_version || host.os_version,
+      platform: posture.platform,
+      policies: posture.policies,
+      labels: [], // Would need additional API call
+    };
+  } catch (error) {
+    console.error('[SessionStart] Failed to get fleet context:', error);
+    return { enrolled: false };
+  }
 }
 
 /**
@@ -239,11 +296,15 @@ export async function POST(request: Request) {
     }).catch(err => console.error('[Webhook] Failed to emit session.start:', err));
     
     // Evaluate policies and get actions
+    // Build fleet context for policy evaluation
+    const fleetContext = await getFleetContext(event.device?.deviceSerial || '');
+    
     const policyContext = {
       device: { role: 'kiosk', deviceId },
       user: { role: badgeMapping.department || 'user', userId: badgeMapping.userId, name: badgeMapping.userName },
       location: { zone: event.context?.locationId || 'unknown' },
       session: { id: session.sessionId, startedAt: session.createdAt },
+      fleet: fleetContext,
     };
     
     const policyActions = evaluatePolicies(policyContext);

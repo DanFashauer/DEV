@@ -18,9 +18,15 @@ export type AuditEventType =
   // Phase 4: Telemetry + Security events
   | "telemetry.posture.updated"
   | "telemetry.posture.missing"
+  | "telemetry.sync.completed"
+  | "telemetry.sync.completed_with_errors"
+  | "telemetry.sync.failed"
   | "security.webauthn.registered"
   | "security.webauthn.step_up.success"
   | "security.webauthn.step_up.failure"
+  // Phase 5: SIEM events
+  | "siem.event.sent"
+  | "siem.event.failed"
   // Phase 5: ITSM events
   | "itsm.ticket.created"
   | "itsm.ticket.failed";

@@ -17,6 +17,9 @@ export const WEBHOOK_EVENTS = [
   'asset.location.observed',
   'policy.matched',
   'policy.action.executed',
+  'siem.event',
+  'telemetry.sync.completed',
+  'telemetry.sync.failed',
 ] as const;
 
 export type WebhookEventType = typeof WEBHOOK_EVENTS[number];
