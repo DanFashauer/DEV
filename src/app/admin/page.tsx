@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 
+// Platform scope for documentation
+const PLATFORM_SCOPE = {
+  supported: ["iOS", "iPadOS", "macOS", "Android"],
+  future: ["Windows", "OneSign-style PC"],
+};
+
 // Flow step types
 interface FlowStep {
   id: string;
@@ -146,11 +152,12 @@ export default function AdminDashboard() {
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: "📊" },
-    { id: "flows", label: "Auth Flows", icon: "🔀" },
-    { id: "personas", label: "Personas", icon: "👥" },
-    { id: "providers", label: "Providers", icon: "🔌" },
+    { id: "integrations", label: "Integrations", icon: "🔌" },
+    { id: "policies", label: "Policies", icon: "📋" },
     { id: "devices", label: "Devices", icon: "📱" },
-    { id: "audit", label: "Audit Log", icon: "📋" },
+    { id: "security", label: "Security", icon: "🔐" },
+    { id: "receipts", label: "Receipts", icon: "📨" },
+    { id: "dlq", label: "DLQ", icon: "📥" },
   ];
 
   return (
@@ -205,23 +212,24 @@ export default function AdminDashboard() {
             {activeTab === "dashboard" && (
               <DashboardView />
             )}
-            {activeTab === "flows" && (
-              <FlowView
-                steps={authFlowSteps}
-                selectedStep={selectedFlowStep}
-                onSelectStep={setSelectedFlowStep}
-              />
+            {activeTab === "integrations" && (
+              <IntegrationsView />
             )}
-            {activeTab === "personas" && (
-              <PersonaView
-                personas={personas}
-                selectedPersona={selectedPersona}
-                onSelectPersona={setSelectedPersona}
-              />
+            {activeTab === "policies" && (
+              <PoliciesView />
             )}
-            {activeTab === "providers" && <ProviderView />}
-            {activeTab === "devices" && <DevicesView />}
-            {activeTab === "audit" && <AuditView />}
+            {activeTab === "devices" && (
+              <DevicesView />
+            )}
+            {activeTab === "security" && (
+              <SecurityView />
+            )}
+            {activeTab === "receipts" && (
+              <ReceiptsView />
+            )}
+            {activeTab === "dlq" && (
+              <DLQView />
+            )}
           </main>
         </div>
       </div>
@@ -521,102 +529,189 @@ function PersonaView({
   );
 }
 
-// Provider Configuration View
-function ProviderView() {
-  const providers = [
-    { category: "Badge Reader", options: ["USB", "Bluetooth LE", "NFC", "Serial", "Keyboard Wedge", "HTTP Webhook", "MDM Enrollment"] },
-    { category: "Identity Provider", options: ["OIDC (Microsoft Entra ID)", "OIDC (Okta)", "SAML", "MDM Linked", "MFA Required"] },
-    { category: "MDM Provider", options: ["Jamf", "Microsoft Intune", "Workspace ONE", "BlackBerry UEM", "Mosyle", "Kandji"] },
-    { category: "MFA Provider", options: ["Duo Security", "RSA SecurID", "Okta MFA", "Microsoft MFA", "None"] },
+// Integrations View
+function IntegrationsView() {
+  const webhookEndpoints = [
+    { id: "1", name: "HR System Webhook", url: "https://hr.company.com/webhooks/badge", status: "active", lastSuccess: "2 min ago", lastFailure: "-", retryCount: 0, dlqCount: 0 },
+    { id: "2", name: "SIEM Connector", url: "https://siem.company.com/ingest", status: "active", lastSuccess: "5 min ago", lastFailure: "1 hour ago", retryCount: 3, dlqCount: 1 },
+    { id: "3", name: "ITSM Integration", url: "https://servicenow.company.com/api", status: "active", lastSuccess: "10 min ago", lastFailure: "-", retryCount: 0, dlqCount: 0 },
+  ];
+
+  const itsmVendors = [
+    { name: "ServiceNow", status: "configured", type: "ITSM" },
+    { name: "Jira", status: "not_configured", type: "ITSM" },
+    { name: "Splunk", status: "configured", type: "SIEM" },
+    { name: "Microsoft Sentinel", status: "not_configured", type: "SIEM" },
+    { name: "Intune", status: "configured", type: "UEM" },
+    { name: "Jamf", status: "not_configured", type: "UEM" },
+    { name: "Aruba ClearPass", status: "configured", type: "NAC" },
+    { name: "FleetDM", status: "configured", type: "Telemetry" },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">Provider Configuration</h2>
-        <p className="text-neutral-400">Configure badge reader, identity, MDM, and MFA providers</p>
+        <h2 className="text-2xl font-semibold mb-2">Integrations</h2>
+        <p className="text-neutral-400">Configure webhooks, ITSM, SIEM, UEM, NAC, and FleetDM integrations</p>
       </div>
 
-      {providers.map((provider) => (
-        <div key={provider.category} className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4">{provider.category}</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {provider.options.map((option) => (
-              <button
-                key={option}
-                className="p-3 rounded-lg border text-sm transition-colors hover:border-emerald-500 hover:bg-emerald-500/10"
-              >
-                {option}
+      {/* Webhook Endpoints */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Webhook Endpoints</h3>
+          <button className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium">
+            + Add Endpoint
+          </button>
+        </div>
+        <table className="w-full">
+          <thead className="bg-neutral-800/50">
+            <tr>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Name</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">URL</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Status</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Last Success</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Last Failure</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Retries</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">DLQ</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-800">
+            {webhookEndpoints.map((endpoint) => (
+              <tr key={endpoint.id} className="hover:bg-neutral-800/30">
+                <td className="px-4 py-3 font-medium">{endpoint.name}</td>
+                <td className="px-4 py-3 text-neutral-400 font-mono text-xs">{endpoint.url}</td>
+                <td className="px-4 py-3">
+                  <span className="px-2 py-1 rounded text-xs bg-emerald-500/20 text-emerald-400">Active</span>
+                </td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{endpoint.lastSuccess}</td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{endpoint.lastFailure}</td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{endpoint.retryCount}</td>
+                <td className="px-4 py-3">
+                  {endpoint.dlqCount > 0 ? (
+                    <span className="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400">{endpoint.dlqCount}</span>
+                  ) : (
+                    <span className="text-neutral-500">0</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <button className="text-emerald-400 hover:text-emerald-300 text-sm">Edit</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Integration Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {itsmVendors.map((vendor) => (
+          <div key={vendor.name} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium">{vendor.name}</span>
+              <span className="text-xs text-neutral-500">{vendor.type}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={`text-xs px-2 py-1 rounded ${
+                vendor.status === "configured" 
+                  ? "bg-emerald-500/20 text-emerald-400" 
+                  : "bg-neutral-700 text-neutral-400"
+              }`}>
+                {vendor.status === "configured" ? "Configured" : "Not Configured"}
+              </span>
+              <button className="text-sm text-emerald-400 hover:text-emerald-300">
+                {vendor.status === "configured" ? "Configure" : "Set Up"}
               </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Platform Scope */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+        <h3 className="text-lg font-semibold mb-4">Platform Scope</h3>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-neutral-400">Supported:</span>
+            {PLATFORM_SCOPE.supported.map(p => (
+              <span key={p} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">{p}</span>
             ))}
           </div>
-        </div>
-      ))}
-
-      {/* Environment Variables Preview */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Environment Configuration</h3>
-        <div className="bg-neutral-950 rounded-lg p-4 font-mono text-sm">
-          <div className="text-neutral-400"># Badge Reader Configuration</div>
-          <div><span className="text-purple-400">BADGE_READER_TYPE</span>=<span className="text-emerald-400">&quot;usb&quot;</span></div>
-          <div className="mt-2 text-neutral-400"># Identity Provider Configuration</div>
-          <div><span className="text-purple-400">IDENTITY_PROVIDER_TYPE</span>=<span className="text-emerald-400">&quot;oidc&quot;</span></div>
-          <div><span className="text-purple-400">OIDC_ISSUER</span>=<span className="text-emerald-400">&quot;https://login.microsoftonline.com/your-tenant-id&quot;</span></div>
-          <div className="mt-2 text-neutral-400"># MDM Configuration</div>
-          <div><span className="text-purple-400">MDM_PROVIDER</span>=<span className="text-emerald-400">&quot;jamf&quot;</span></div>
-          <div><span className="text-purple-400">MDM_API_URL</span>=<span className="text-emerald-400">&quot;https://your-company.jamfcloud.com&quot;</span></div>
-          <div className="mt-2 text-neutral-400"># MFA Configuration</div>
-          <div><span className="text-purple-400">MFA_PROVIDER</span>=<span className="text-emerald-400">&quot;duo&quot;</span></div>
+          <div className="flex items-center gap-2">
+            <span className="text-neutral-400">Future:</span>
+            {PLATFORM_SCOPE.future.map(p => (
+              <span key={p} className="px-2 py-1 bg-neutral-700 text-neutral-400 rounded text-xs">{p}</span>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// Devices View
-function DevicesView() {
-  const devices = [
-    { name: "iPad Pro 12.9", serial: "C02X1234ABCD", status: "Active", user: "John Doe", persona: "Employee" },
-    { name: "iPad Air", serial: "C02Y5678EFGH", status: "Active", user: "Jane Smith", persona: "Executive" },
-    { name: "iPad Mini", serial: "C02Z9012IJKL", status: "Enrolling", user: "Pending", persona: "-" },
-    { name: "iPad Pro 11", serial: "C02A3456MNOP", status: "Locked", user: "Bob Wilson", persona: "Contractor" },
+// Policies View
+function PoliciesView() {
+  const policies = [
+    { id: "1", name: "Executive Access", enabled: true, priority: 1, conditions: "user.role = Executive", actions: "launch_app, set_session_ttl", lastMatched: "5 min ago", lastExecuted: "5 min ago" },
+    { id: "2", name: "Contractor Restrictions", enabled: true, priority: 2, conditions: "user.role = Contractor", actions: "set_session_ttl=60", lastMatched: "1 hour ago", lastExecuted: "1 hour ago" },
+    { id: "3", name: "High Security Zone", enabled: false, priority: 3, conditions: "location.zone = secure_area", actions: "require_step_up_auth", lastMatched: "-", lastExecuted: "-" },
   ];
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-semibold mb-2">Devices</h2>
-        <p className="text-neutral-400">Manage enrolled kiosk devices</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold mb-2">Policies</h2>
+          <p className="text-neutral-400">Manage authentication and access policies</p>
+        </div>
+        <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium">
+          + Create Policy
+        </button>
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
         <table className="w-full">
           <thead className="bg-neutral-800/50">
             <tr>
-              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Device</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Serial</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Status</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">User</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Persona</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Name</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Enabled</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Priority</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Conditions</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Actions</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Last Matched</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Last Executed</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800">
-            {devices.map((device) => (
-              <tr key={device.serial} className="hover:bg-neutral-800/30">
-                <td className="px-4 py-3 font-medium">{device.name}</td>
-                <td className="px-4 py-3 text-neutral-400 font-mono text-sm">{device.serial}</td>
+            {policies.map((policy) => (
+              <tr key={policy.id} className="hover:bg-neutral-800/30">
+                <td className="px-4 py-3 font-medium">{policy.name}</td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    device.status === "Active" ? "bg-emerald-500/20 text-emerald-400" :
-                    device.status === "Enrolling" ? "bg-blue-500/20 text-blue-400" :
-                    "bg-red-500/20 text-red-400"
+                  <button className={`w-10 h-5 rounded-full transition-colors ${
+                    policy.enabled ? "bg-emerald-500" : "bg-neutral-600"
                   }`}>
-                    {device.status}
-                  </span>
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
+                      policy.enabled ? "translate-x-5" : "translate-x-0.5"
+                    }`} />
+                  </button>
                 </td>
-                <td className="px-4 py-3 text-neutral-300">{device.user}</td>
+                <td className="px-4 py-3 text-neutral-300">
+                  <input 
+                    type="number" 
+                    defaultValue={policy.priority} 
+                    className="w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm"
+                  />
+                </td>
+                <td className="px-4 py-3 text-neutral-400 text-sm font-mono">{policy.conditions}</td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{policy.actions}</td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{policy.lastMatched}</td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{policy.lastExecuted}</td>
                 <td className="px-4 py-3">
-                  <span className="text-sm text-neutral-400">{device.persona}</span>
+                  <div className="flex gap-2">
+                    <button className="text-emerald-400 hover:text-emerald-300 text-sm">Edit</button>
+                    <button className="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -627,42 +722,273 @@ function DevicesView() {
   );
 }
 
-// Audit Log View
-function AuditView() {
-  const logs = [
-    { timestamp: "2026-02-17 10:45:23", event: "SESSION_START", user: "john.doe@company.com", details: "Persona: Employee" },
-    { timestamp: "2026-02-17 10:44:12", event: "BADGE_VALIDATED", user: "john.doe@company.com", details: "Badge: ABC123" },
-    { timestamp: "2026-02-17 10:44:10", event: "MDM_LOOKUP", user: "john.doe@company.com", details: "Jamf: Profile applied" },
-    { timestamp: "2026-02-17 10:44:08", event: "PERSONA_BUILT", user: "john.doe@company.com", details: "Attributes: department=Engineering" },
-    { timestamp: "2026-02-17 10:30:45", event: "SESSION_END", user: "jane.smith@company.com", details: "Duration: 45 min" },
+// Security View
+function SecurityView() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Security</h2>
+        <p className="text-neutral-400">WebAuthn, step-up authentication, and high-risk action protection</p>
+      </div>
+
+      {/* WebAuthn Status */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+        <h3 className="text-lg font-semibold mb-4">WebAuthn Registration</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-neutral-800 rounded-lg p-4">
+            <div className="text-3xl font-bold text-emerald-400">12</div>
+            <div className="text-neutral-400 text-sm">Registered Credentials</div>
+          </div>
+          <div className="bg-neutral-800 rounded-lg p-4">
+            <div className="text-3xl font-bold">8</div>
+            <div className="text-neutral-400 text-sm">Active Users</div>
+          </div>
+        </div>
+        <button className="mt-4 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-sm">
+          View All Credentials
+        </button>
+      </div>
+
+      {/* Step-Up Enforcement */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+        <h3 className="text-lg font-semibold mb-4">Step-Up Enforcement</h3>
+        <div className="space-y-4">
+          {[
+            { action: "webhook_secret_rotate", protected: true },
+            { action: "policy_edit", protected: true },
+            { action: "policy_enable", protected: true },
+            { action: "device_quarantine", protected: true },
+            { action: "admin_delete", protected: true },
+          ].map((item) => (
+            <div key={item.action} className="flex items-center justify-between p-3 bg-neutral-800 rounded-lg">
+              <span className="font-mono text-sm">{item.action}</span>
+              <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Protected</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* High-Risk Actions Summary */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+        <h3 className="text-lg font-semibold mb-4">High-Risk Action Summary</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-neutral-800 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-emerald-400">45</div>
+            <div className="text-neutral-400 text-sm">Actions Today</div>
+          </div>
+          <div className="bg-neutral-800 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold">43</div>
+            <div className="text-neutral-400 text-sm">Step-Up Verified</div>
+          </div>
+          <div className="bg-neutral-800 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-400">2</div>
+            <div className="text-neutral-400 text-sm">Pending Verification</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Delivery Receipts View
+function ReceiptsView() {
+  const receipts = [
+    { id: "1", type: "webhook", event: "session.start", status: "success", deviceId: "device-001", correlationId: "corr-123", timestamp: "2 min ago" },
+    { id: "2", type: "itsm.ticket", event: "ticket.created", status: "success", deviceId: "device-002", correlationId: "corr-124", timestamp: "5 min ago" },
+    { id: "3", type: "siem.event", event: "event.sent", status: "failed", deviceId: "device-003", correlationId: "corr-125", timestamp: "10 min ago" },
+    { id: "4", type: "policy.action", event: "action.executed", status: "success", deviceId: "device-001", correlationId: "corr-126", timestamp: "15 min ago" },
+    { id: "5", type: "webhook", event: "session.end", status: "success", deviceId: "device-004", correlationId: "corr-127", timestamp: "20 min ago" },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">Audit Log</h2>
-        <p className="text-neutral-400">Security and authentication events</p>
+        <h2 className="text-2xl font-semibold mb-2">Delivery Receipts</h2>
+        <p className="text-neutral-400">Webhook, ITSM, SIEM, and policy action events</p>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4">
+        <input 
+          placeholder="Filter by correlationId..." 
+          className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2"
+        />
+        <input 
+          placeholder="Filter by deviceId..." 
+          className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2"
+        />
+        <select className="bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2">
+          <option>All Types</option>
+          <option>Webhook</option>
+          <option>ITSM</option>
+          <option>SIEM</option>
+          <option>Policy</option>
+        </select>
+        <select className="bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2">
+          <option>All Status</option>
+          <option>Success</option>
+          <option>Failed</option>
+        </select>
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
         <table className="w-full">
           <thead className="bg-neutral-800/50">
             <tr>
-              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Timestamp</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Type</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Event</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">User</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Details</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Status</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Device ID</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Correlation ID</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Timestamp</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800">
-            {logs.map((log, i) => (
-              <tr key={i} className="hover:bg-neutral-800/30">
-                <td className="px-4 py-3 text-neutral-400 font-mono text-sm">{log.timestamp}</td>
+            {receipts.map((receipt) => (
+              <tr key={receipt.id} className="hover:bg-neutral-800/30">
                 <td className="px-4 py-3">
-                  <span className="px-2 py-1 bg-neutral-700 rounded text-xs font-medium">{log.event}</span>
+                  <span className="px-2 py-1 bg-neutral-700 rounded text-xs">{receipt.type}</span>
                 </td>
-                <td className="px-4 py-3 text-neutral-300">{log.user}</td>
-                <td className="px-4 py-3 text-neutral-400 text-sm">{log.details}</td>
+                <td className="px-4 py-3 text-neutral-300 font-mono text-sm">{receipt.event}</td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    receipt.status === "success" 
+                      ? "bg-emerald-500/20 text-emerald-400" 
+                      : "bg-red-500/20 text-red-400"
+                  }`}>
+                    {receipt.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-neutral-400 font-mono text-sm">{receipt.deviceId}</td>
+                <td className="px-4 py-3 text-neutral-400 font-mono text-xs">{receipt.correlationId}</td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{receipt.timestamp}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// DLQ View
+function DLQView() {
+  const dlqItems = [
+    { id: "1", webhook: "SIEM Connector", reason: "Connection timeout", payloadPreview: "{ \"event\": \"session.start\", ... }", timestamp: "1 hour ago", retryCount: 5 },
+    { id: "2", webhook: "HR System", reason: "HTTP 500", payloadPreview: "{ \"badgeId\": \"ABC123\", ... }", timestamp: "2 hours ago", retryCount: 3 },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Dead Letter Queue</h2>
+        <p className="text-neutral-400">Failed webhook deliveries pending retry or manual intervention</p>
+      </div>
+
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-neutral-800/50">
+            <tr>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Webhook</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Reason</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Payload Preview</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Timestamp</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Retries</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-800">
+            {dlqItems.map((item) => (
+              <tr key={item.id} className="hover:bg-neutral-800/30">
+                <td className="px-4 py-3 font-medium">{item.webhook}</td>
+                <td className="px-4 py-3 text-red-400 text-sm">{item.reason}</td>
+                <td className="px-4 py-3 text-neutral-400 font-mono text-xs">{item.payloadPreview}</td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{item.timestamp}</td>
+                <td className="px-4 py-3 text-neutral-400">{item.retryCount}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    <button className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-xs">Replay</button>
+                    <button className="px-2 py-1 bg-neutral-700 hover:bg-neutral-600 rounded text-xs">View</button>
+                    <button className="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Devices View (Enhanced)
+function DevicesView() {
+  const devices = [
+    { deviceId: "device-001", serial: "C02X1234ABCD", platform: "iOS", lastSeen: "2 min ago", posture: "Compliant", locationZone: "Lobby", quarantined: false, mgmtSource: "Intune" },
+    { deviceId: "device-002", serial: "C02Y5678EFGH", platform: "macOS", lastSeen: "5 min ago", posture: "Compliant", locationZone: "Office A", quarantined: false, mgmtSource: "Jamf" },
+    { deviceId: "device-003", serial: "C02Z9012IJKL", platform: "Android", lastSeen: "1 hour ago", posture: "Unknown", locationZone: "-", quarantined: true, mgmtSource: "Intune" },
+    { deviceId: "device-004", serial: "C02A3456MNOP", platform: "iPadOS", lastSeen: "10 min ago", posture: "Non-compliant", locationZone: "Office B", quarantined: false, mgmtSource: "Jamf" },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Devices</h2>
+        <p className="text-neutral-400">Manage enrolled kiosk devices, compliance, and quarantine state</p>
+      </div>
+
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-neutral-800/50">
+            <tr>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Device ID</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Serial</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Platform</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Last Seen</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Posture</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Location Zone</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Quarantine</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Mgmt Source</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-800">
+            {devices.map((device) => (
+              <tr key={device.deviceId} className="hover:bg-neutral-800/30">
+                <td className="px-4 py-3 font-mono text-sm">{device.deviceId}</td>
+                <td className="px-4 py-3 text-neutral-400 font-mono text-xs">{device.serial}</td>
+                <td className="px-4 py-3">{device.platform}</td>
+                <td className="px-4 py-3 text-neutral-400 text-sm">{device.lastSeen}</td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    device.posture === "Compliant" 
+                      ? "bg-emerald-500/20 text-emerald-400" 
+                      : device.posture === "Non-compliant"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-neutral-700 text-neutral-400"
+                  }`}>
+                    {device.posture}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-neutral-400">{device.locationZone}</td>
+                <td className="px-4 py-3">
+                  {device.quarantined ? (
+                    <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">Quarantined</span>
+                  ) : (
+                    <span className="text-neutral-500">-</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-neutral-400">{device.mgmtSource}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    {device.quarantined ? (
+                      <button className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-xs">Clear</button>
+                    ) : (
+                      <button className="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs">Quarantine</button>
+                    )}
+                    <button className="px-2 py-1 bg-neutral-700 hover:bg-neutral-600 rounded text-xs">Sync</button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
