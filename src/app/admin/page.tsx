@@ -246,11 +246,71 @@ function DashboardView() {
     { label: "Failed Attempts", value: "3", change: "-50%", icon: "⚠️" },
   ];
 
+  // Executive summary cards for demo/pilot readiness
+  const executiveSummary = [
+    { label: "High-Risk Devices", value: "3", change: "+1", icon: "🚨", color: "red" },
+    { label: "Incidents Created", value: "7", change: "+2", icon: "🏥", color: "amber" },
+    { label: "SIEM Events Sent", value: "156", change: "+24", icon: "📡", color: "blue" },
+    { label: "Quarantined", value: "2", change: "0", icon: "🚫", color: "amber" },
+  ];
+
+  // Demo scenarios for screenshots
+  const demoScenarios = [
+    { 
+      name: "Healthcare - Shared iPad", 
+      description: "Nurse station tablet with shared badge access",
+      riskLevel: "medium",
+      riskColor: "amber"
+    },
+    { 
+      name: "Retail - POS Tablet", 
+      description: "Store checkout tablet with inventory access",
+      riskLevel: "low",
+      riskColor: "emerald"
+    },
+    { 
+      name: "Logistics - Warehouse Android", 
+      description: "Warehouse device with shipping permissions",
+      riskLevel: "high",
+      riskColor: "red"
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-semibold mb-2">Dashboard</h2>
         <p className="text-neutral-400">Overview of your EnterpriseShell kiosk deployment</p>
+      </div>
+
+      {/* Executive Summary Cards */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Executive Summary</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {executiveSummary.map((stat) => (
+            <div
+              key={stat.label}
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-2xl">{stat.icon}</span>
+                <span
+                  className={`text-sm ${
+                    stat.change.startsWith("+")
+                      ? stat.color === "red" ? "text-red-400" : "text-amber-400"
+                      : stat.change.startsWith("-")
+                      ? "text-red-400"
+                      : "text-neutral-400"
+                  }`}
+                >
+                  {stat.change}
+                </span>
+              </div>
+              <div className="text-3xl font-bold mb-1">{stat.value}</div>
+              <div className="text-sm text-neutral-400">{stat.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -276,6 +336,29 @@ function DashboardView() {
             <div className="text-sm text-neutral-400">{stat.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Demo Scenarios */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+        <h3 className="text-lg font-semibold mb-4">Demo Scenarios</h3>
+        <p className="text-sm text-neutral-400 mb-4">Pre-configured scenarios for sales demos and pilot testing</p>
+        <div className="grid gap-4 md:grid-cols-3">
+          {demoScenarios.map((scenario) => (
+            <div key={scenario.name} className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium">{scenario.name}</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  scenario.riskColor === "red" ? "bg-red-500/20 text-red-400" :
+                  scenario.riskColor === "amber" ? "bg-amber-500/20 text-amber-400" :
+                  "bg-emerald-500/20 text-emerald-400"
+                }`}>
+                  {scenario.riskLevel.toUpperCase()}
+                </span>
+              </div>
+              <p className="text-sm text-neutral-400">{scenario.description}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Recent Activity */}
@@ -792,19 +875,112 @@ function SecurityView() {
 
 // Delivery Receipts View
 function ReceiptsView() {
+  // Demo-friendly receipts that tell a story for executive demos
   const receipts = [
-    { id: "1", type: "webhook", event: "session.start", status: "success", deviceId: "device-001", correlationId: "corr-123", timestamp: "2 min ago" },
-    { id: "2", type: "itsm.ticket", event: "ticket.created", status: "success", deviceId: "device-002", correlationId: "corr-124", timestamp: "5 min ago" },
-    { id: "3", type: "siem.event", event: "event.sent", status: "failed", deviceId: "device-003", correlationId: "corr-125", timestamp: "10 min ago" },
-    { id: "4", type: "policy.action", event: "action.executed", status: "success", deviceId: "device-001", correlationId: "corr-126", timestamp: "15 min ago" },
-    { id: "5", type: "webhook", event: "session.end", status: "success", deviceId: "device-004", correlationId: "corr-127", timestamp: "20 min ago" },
+    { 
+      id: "1", 
+      type: "webhook", 
+      event: "session.start", 
+      status: "success", 
+      deviceId: "iPad-Nurse-Station-01", 
+      user: "jane.nurse@hospital.org",
+      correlationId: "evt-20240315-001", 
+      timestamp: "2 min ago" 
+    },
+    { 
+      id: "2", 
+      type: "siem.event", 
+      event: "session.start", 
+      status: "success", 
+      deviceId: "iPad-Nurse-Station-01", 
+      user: "jane.nurse@hospital.org",
+      correlationId: "evt-20240315-001", 
+      timestamp: "2 min ago" 
+    },
+    { 
+      id: "3", 
+      type: "itsm.ticket", 
+      event: "policy.violation.detected", 
+      status: "success", 
+      deviceId: "iPad-Nurse-Station-01", 
+      user: "jane.nurse@hospital.org",
+      correlationId: "evt-20240315-002", 
+      timestamp: "3 min ago" 
+    },
+    { 
+      id: "4", 
+      type: "policy.action", 
+      event: "device.quarantine", 
+      status: "success", 
+      deviceId: "iPad-Nurse-Station-01", 
+      user: "System",
+      correlationId: "evt-20240315-002", 
+      timestamp: "3 min ago" 
+    },
+    { 
+      id: "5", 
+      type: "nac.command", 
+      event: "quarantine.issued", 
+      status: "success", 
+      deviceId: "iPad-Nurse-Station-01", 
+      user: "System",
+      correlationId: "evt-20240315-003", 
+      timestamp: "4 min ago" 
+    },
+    { 
+      id: "6", 
+      type: "webhook", 
+      event: "session.end", 
+      status: "success", 
+      deviceId: "POS-Tablet-Store-42", 
+      user: "bob.cashier@retail.com",
+      correlationId: "evt-20240315-010", 
+      timestamp: "15 min ago" 
+    },
+    { 
+      id: "7", 
+      type: "webhook", 
+      event: "session.end", 
+      status: "success", 
+      deviceId: "Android-Warehouse-07", 
+      user: "mike.warehouse@logistics.com",
+      correlationId: "evt-20240315-015", 
+      timestamp: "20 min ago" 
+    },
   ];
+
+  // Demo story explanation for executives
+  const demoStory = {
+    title: "Demo Story: Shared Device Policy Violation",
+    steps: [
+      "1. Nurse badges into shared iPad at nurse station",
+      "2. FleetDM reports device out of compliance (jailbroken)",
+      "3. Policy triggers: quarantine_device + create_itsm_ticket",
+      "4. SIEM event sent to security team",
+      "5. NAC enforces network quarantine"
+    ]
+  };
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-semibold mb-2">Delivery Receipts</h2>
         <p className="text-neutral-400">Webhook, ITSM, SIEM, and policy action events</p>
+      </div>
+
+      {/* Demo Story Card */}
+      <div className="bg-emerald-900/20 border border-emerald-800 rounded-xl p-6">
+        <h3 className="text-lg font-semibold mb-3 text-emerald-400">{demoStory.title}</h3>
+        <div className="space-y-2">
+          {demoStory.steps.map((step, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm shrink-0 mt-0.5">
+                {i + 1}
+              </div>
+              <span className="text-neutral-300">{step}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}
@@ -838,6 +1014,7 @@ function ReceiptsView() {
               <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Type</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Event</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Status</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">User</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Device ID</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Correlation ID</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-neutral-400">Timestamp</th>
@@ -859,6 +1036,7 @@ function ReceiptsView() {
                     {receipt.status}
                   </span>
                 </td>
+                <td className="px-4 py-3 text-neutral-300 font-mono text-sm">{(receipt as any).user || '-'}</td>
                 <td className="px-4 py-3 text-neutral-400 font-mono text-sm">{receipt.deviceId}</td>
                 <td className="px-4 py-3 text-neutral-400 font-mono text-xs">{receipt.correlationId}</td>
                 <td className="px-4 py-3 text-neutral-400 text-sm">{receipt.timestamp}</td>

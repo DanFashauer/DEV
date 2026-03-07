@@ -20,7 +20,8 @@
     "test:fleetdm": "bun run scripts/fleetdm-smoke.ts",
     "seed:itsm": "bun run scripts/seed-itsm-templates.ts",
     "demo:flow": "bun run scripts/demo-flow.ts",
-    "test:redaction": "bun test scripts/test-secret-redaction.ts"
+    "test:redaction": "bun test scripts/test-secret-redaction.ts",
+    "demo:seed": "bun run scripts/demo-seed.ts"
   },
   "dependencies": {
     "ioredis": "^5.10.0",
