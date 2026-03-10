@@ -8,6 +8,17 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:demo": "vitest run tests/demo",
+    "test:api": "vitest run tests/api",
+    "test:e2e": "playwright test",
+    "test:security": "vitest run tests/security",
+    "test:semgrep": "semgrep --config=auto tests src scripts --json --output=semgrep-report.json",
+    "test:load": "k6 run tests/load/*.js --json --output-json=load-report.json",
+    "test:summary": "bun run scripts/summarize-failures.ts",
+    "demo:validate": "bun run scripts/demo-validate.ts",
+    "test:ci": "bun run typecheck && bun run lint && bun run build && bun run test:run",
     "test:replay": "bun run scripts/replay-test.ts",
     "sim:badge": "bun run scripts/sim-badge.ts",
     "sim:location": "bun run scripts/sim-location.ts",
@@ -33,6 +44,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/ioredis": "^5.0.0",
     "@types/node": "^24.10.2",
@@ -42,6 +54,7 @@
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.0",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
   }
 }

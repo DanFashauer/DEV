@@ -1,0 +1,78 @@
+name: Load Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - session-start
+          - location-report
+          - webhooks
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Start server
+        run: bun run start &
+        env:
+          PORT: 3000
+
+      - name: Wait for server
+        run: sleep 5
+
+      - name: Setup k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run session-start load test
+        if: inputs.test_type == 'all' || inputs.test_type == 'session-start'
+        run: k6 run tests/load/session-start.js --json session-load-report.json
+        env:
+          SERVER_URL: http://localhost:3000
+
+      - name: Run location-report load test
+        if: inputs.test_type == 'all' || inputs.test_type == 'location-report'
+        run: k6 run tests/load/location-report.js --json location-load-report.json
+        env:
+          SERVER_URL: http://localhost:3000
+
+      - name: Run webhooks load test
+        if: inputs.test_type == 'all' || inputs.test_type == 'webhooks'
+        run: k6 run tests/load/webhooks.js --json webhook-load-report.json
+        env:
+          SERVER_URL: http://localhost:3000
+          WEBHOOK_URL: https://httpbin.org/post
+
+      - name: Upload load test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-reports
+          path: |
+            *-load-report.json
+          retention-days: 30

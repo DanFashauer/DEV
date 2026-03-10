@@ -1,0 +1,55 @@
+name: Nightly Demo Validation
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  demo-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Start server
+        run: bun run start &
+        env:
+          PORT: 3000
+
+      - name: Wait for server
+        run: sleep 5
+
+      - name: Run demo validation
+        run: bun run demo:validate
+        env:
+          SERVER_URL: http://localhost:3000
+
+      - name: Run demo flow
+        run: bun run demo:flow
+        env:
+          SERVER_URL: http://localhost:3000
+
+      - name: Verify audit ledger
+        run: bun run audit:verify
+
+      - name: Upload demo reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-reports
+          path: scripts/reports/
+          retention-days: 30
