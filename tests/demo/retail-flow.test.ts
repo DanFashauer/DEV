@@ -7,7 +7,8 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3010';
+const HEALTH_URL = `${SERVER_URL}/api/health`;
 
 // Demo scenario configuration
 const retailScenario = {
@@ -23,12 +24,12 @@ describe('Retail Demo Flow', () => {
   let sessionId: string | null = null;
 
   beforeAll(async () => {
-    // Verify server is running
+    // Verify server is running via health endpoint
     try {
-      const response = await fetch(SERVER_URL);
+      const response = await fetch(HEALTH_URL);
       expect(response.ok).toBe(true);
     } catch (error) {
-      throw new Error(`Server not reachable at ${SERVER_URL}. Start with: bun run dev`);
+      throw new Error(`Server not reachable at ${SERVER_URL}. Start with: bun run scripts/test-server.ts start`);
     }
   });
 
