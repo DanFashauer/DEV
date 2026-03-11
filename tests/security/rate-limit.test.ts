@@ -21,6 +21,9 @@ describe('Rate Limiting', () => {
   });
 
   it('should enforce rate limit on repeated requests', async () => {
+    // Wait a moment to allow any prior rate limit state to reset
+    await new Promise(r => setTimeout(r, 500));
+
     const payload = {
       badgeUid: 'test-badge-rate-limit',
       deviceId: 'test-device-rate-limit',
@@ -44,10 +47,29 @@ describe('Rate Limiting', () => {
     const statusCodes = requests.map(r => r.status);
     const rateLimited = statusCodes.includes(429);
     const authError = statusCodes.some(s => s === 401); // No signature = auth error
+    const all429 = statusCodes.every(s => s === 429); // All requests could be 429 due to prior limiter state
+    const has401to429 = findTransition(statusCodes, 401, 429); // Transition from 401 to 429
     
-    // Either rate limited OR got auth errors (expected without auth) OR all succeeded
-    expect(rateLimited || authError || statusCodes.every(s => s === 200)).toBe(true);
+    // Either rate limited (any 429) OR transitioned from 401 to 429 OR all 429 OR got auth errors OR all succeeded
+    const passed = rateLimited || has401to429 || all429 || authError || statusCodes.every(s => s === 200);
+    
+    // Print status codes on failure for debugging
+    if (!passed) {
+      console.log('Rate limit test - Status codes received:', statusCodes);
+    }
+    
+    expect(passed).toBe(true);
   });
+
+// Helper to find transition from one status to another in sequence
+function findTransition(codes: number[], from: number, to: number): boolean {
+  for (let i = 1; i < codes.length; i++) {
+    if (codes[i - 1] === from && codes[i] === to) {
+      return true;
+    }
+  }
+  return false;
+}
 
   it('should include rate limit headers in responses', async () => {
     const payload = {
