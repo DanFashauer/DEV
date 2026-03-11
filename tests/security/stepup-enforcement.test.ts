@@ -49,12 +49,16 @@ describe('Step-Up Enforcement', () => {
   });
 
   it('should require step-up for sensitive operations', async () => {
-    // Test webhook secret rotation (requires step-up)
+    // Test webhook secret rotation (requires step-up) - uses PATCH with signingSecret
     const response = await fetch(
-      `${SERVER_URL}/api/admin/integrations/webhooks/test-id/rotate`,
+      `${SERVER_URL}/api/admin/integrations/webhooks/test-id`,
       {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Test Webhook',
+          signingSecret: 'new-secret',
+        }),
       }
     );
 

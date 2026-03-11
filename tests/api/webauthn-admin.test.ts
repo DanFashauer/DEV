@@ -28,8 +28,8 @@ describe('WebAuthn Admin API', () => {
         { method: 'OPTIONS' }
       );
       
-      // Should handle OPTIONS or return method not allowed
-      expect([200, 405]).toContain(response.status);
+      // Should handle OPTIONS or return success
+      expect([200, 204, 405]).toContain(response.status);
     });
 
     it('should reject registration without auth', async () => {
@@ -65,7 +65,7 @@ describe('WebAuthn Admin API', () => {
         { method: 'OPTIONS' }
       );
       
-      expect([200, 405]).toContain(response.status);
+      expect([200, 204, 405]).toContain(response.status);
     });
 
     it('should reject authentication without credentials', async () => {

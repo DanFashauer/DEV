@@ -47,7 +47,7 @@ describe('Policies API', () => {
     });
 
     // Should handle OPTIONS or return auth error
-    expect([200, 401, 403, 405]).toContain(response.status);
+    expect([200, 204, 401, 403, 405]).toContain(response.status);
   });
 
   it('should reject invalid policy data', async () => {

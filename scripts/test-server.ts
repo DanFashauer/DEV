@@ -92,10 +92,28 @@ async function waitForHealth(): Promise<boolean> {
 }
 
 /**
- * Start the Next.js dev server
+ * Check if server is already healthy
+ */
+async function isServerHealthy(): Promise<boolean> {
+  try {
+    const response = await fetch(`${HOST}${HEALTH_ENDPOINT}`);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Start the Next.js dev server (idempotent)
  */
 async function startServer(): Promise<void> {
-  await killExistingServers();
+  // Check if server is already healthy - if so, reuse it
+  if (await isServerHealthy()) {
+    console.log(`✅ Server already running and healthy at ${HOST}`);
+    console.log(`SERVER_URL=${HOST}`);
+    console.log(`\nTo stop: bun run scripts/test-server.ts stop`);
+    return;
+  }
   
   console.log(`Starting Next.js dev server on port ${PORT}...`);
   

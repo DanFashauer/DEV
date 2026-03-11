@@ -15,7 +15,7 @@
  */
 
 const API_BASE = process.env.API_BASE_URL || 'http://localhost:3000';
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'test-admin-key';
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'dev-admin-key-12345';
 
 // Helper to make authenticated admin requests
 async function adminRequest(endpoint: string, options: RequestInit = {}) {
@@ -23,7 +23,7 @@ async function adminRequest(endpoint: string, options: RequestInit = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${ADMIN_API_KEY}`,
+      'x-admin-api-key': ADMIN_API_KEY,
       ...options.headers,
     },
   });

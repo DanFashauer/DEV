@@ -149,8 +149,25 @@ export async function validateAndAuthorizeSessionStart(
 ): Promise<ValidationResult> {
   const { 'x-signature': signature, 'x-timestamp': timestamp, 'x-nonce': nonce } = headers;
   
-  // 1. Check required headers
+  // DEV BYPASS: In development mode, allow requests without security headers
+  // This enables easier testing without needing to compute HMAC signatures
+  const isDevMode = process.env.NODE_ENV !== 'production';
+  
+  // 1. Check required headers (skip in dev mode for easier testing)
   if (!signature || !timestamp || !nonce) {
+    if (isDevMode && process.env.ENABLE_DEV_BYPASS === 'true') {
+      // In dev mode with bypass enabled, skip security validation
+      // Parse and return the body as-is
+      const parseResult = BadgeEventSchema.safeParse(body);
+      if (!parseResult.success) {
+        return {
+          valid: false,
+          error: `Invalid BadgeEvent schema: ${parseResult.error.message}`,
+          code: 'invalid_schema',
+        };
+      }
+      return { valid: true, event: parseResult.data };
+    }
     return {
       valid: false,
       error: 'Missing required security headers: x-signature, x-timestamp, x-nonce',

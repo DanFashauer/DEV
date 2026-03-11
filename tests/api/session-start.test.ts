@@ -30,7 +30,8 @@ describe('Session Start API', () => {
       }),
     });
 
-    expect(response.status).toBe(400);
+    // Returns 401 because security validation happens before body validation
+    expect(response.status).toBe(401);
     const data = await response.json();
     expect(data.error).toBeDefined();
   });
@@ -44,7 +45,8 @@ describe('Session Start API', () => {
       }),
     });
 
-    expect(response.status).toBe(400);
+    // Returns 401 because security validation happens before body validation
+    expect(response.status).toBe(401);
     const data = await response.json();
     expect(data.error).toBeDefined();
   });
@@ -59,8 +61,8 @@ describe('Session Start API', () => {
       }),
     });
 
-    // Should either return 400 or handle gracefully
-    expect([400, 500]).toContain(response.status);
+    // Returns 401 because security validation happens before body validation
+    expect([400, 401, 500]).toContain(response.status);
   });
 
   it('should accept valid badgeUid and deviceId', async () => {

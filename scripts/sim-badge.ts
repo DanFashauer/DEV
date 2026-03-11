@@ -102,7 +102,7 @@ async function enrollBadge(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminKey}`,
+        'x-admin-api-key': adminKey,
       },
       body: JSON.stringify({
         badgeUid,

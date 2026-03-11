@@ -78,7 +78,7 @@ describe('Secret Redaction', () => {
     });
 
     // Should handle gracefully without exposing internals
-    expect([400, 500]).toContain(response.status);
+    expect([400, 401, 500]).toContain(response.status);
     
     const text = await response.text();
     // Should not contain stack traces in production

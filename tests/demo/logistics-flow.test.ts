@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createSignedSessionRequest } from '../helpers/signedRequest';
 
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3010';
 const HEALTH_URL = `${SERVER_URL}/api/health`;
@@ -31,6 +32,28 @@ describe('Logistics Demo Flow', () => {
     } catch (error) {
       throw new Error(`Server not reachable at ${SERVER_URL}. Start with: bun run scripts/test-server.ts start`);
     }
+
+    // Enroll badge first so session start will work
+    const DEV_API_KEY = 'dev-admin-key-12345';
+    try {
+      const enrollResponse = await fetch(`${SERVER_URL}/api/admin/badges/enroll`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-api-key': DEV_API_KEY,
+        },
+        body: JSON.stringify({
+          badgeUid: logisticsScenario.badgeUid,
+          userId: logisticsScenario.user,
+        }),
+      });
+      // Accept success or already enrolled (409)
+      if (!enrollResponse.ok && enrollResponse.status !== 409) {
+        console.warn('Badge enrollment warning:', enrollResponse.status);
+      }
+    } catch (e) {
+      console.warn('Badge enrollment skipped:', e);
+    }
   });
 
   afterAll(async () => {
@@ -47,20 +70,24 @@ describe('Logistics Demo Flow', () => {
   });
 
   it('should complete logistics badge scan and session start', async () => {
-    // Simulate badge scan → session start
-    const sessionResponse = await fetch(`${SERVER_URL}/api/session/start`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        badgeUid: logisticsScenario.badgeUid,
-        deviceId: logisticsScenario.deviceId,
-      }),
+    // Simulate badge scan → session start with properly signed request
+    const signedRequest = await createSignedSessionRequest(SERVER_URL, {
+      badgeUid: logisticsScenario.badgeUid,
+      deviceId: logisticsScenario.deviceId,
+      deviceSerial: logisticsScenario.deviceId,
+      deviceModel: 'Samsung Galaxy Tab Active4',
+      readerType: 'ble',
+      userId: logisticsScenario.user,
+      userName: 'Mike Warehouse',
     });
+
+    const sessionResponse = await fetch(`${SERVER_URL}/api/session/start`, signedRequest);
 
     expect(sessionResponse.ok).toBe(true);
     const sessionData = await sessionResponse.json();
-    expect(sessionData.sessionId).toBeDefined();
-    sessionId = sessionData.sessionId;
+    // API returns { success: true, session: { sessionId, nextAction, ... } }
+    expect(sessionData.session?.sessionId).toBeDefined();
+    sessionId = sessionData.session.sessionId;
   });
 
   it('should trigger FleetDM posture sync with high-risk violations', async () => {
