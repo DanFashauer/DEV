@@ -1,0 +1,43 @@
+{
+  "suite": "demo-validate",
+  "status": "fail",
+  "startedAt": "2026-03-12T20:18:31.214Z",
+  "checks": [
+    {
+      "name": "server-health",
+      "status": "pass",
+      "duration": 0
+    },
+    {
+      "name": "demo:seed",
+      "status": "pass",
+      "duration": 1663
+    },
+    {
+      "name": "demo:flow",
+      "status": "fail",
+      "duration": 4132
+    },
+    {
+      "name": "audit:verify",
+      "status": "fail",
+      "duration": 54
+    }
+  ],
+  "failures": [
+    {
+      "name": "demo:flow",
+      "error": "Exit code: 1"
+    },
+    {
+      "name": "audit:verify",
+      "error": "Exit code: 1"
+    }
+  ],
+  "correlationIds": [],
+  "recommendations": [
+    "Investigate: demo:flow - Exit code: 1",
+    "Investigate: audit:verify - Exit code: 1"
+  ],
+  "finishedAt": "2026-03-12T20:18:37.076Z"
+}

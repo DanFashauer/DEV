@@ -16,7 +16,7 @@ function arg(name: string, fallback?: string): string | undefined {
   return process.argv[idx + 1] ?? fallback;
 }
 
-const baseUrl = arg("baseUrl", "http://localhost:3000");
+const baseUrl = arg("baseUrl", process.env.SERVER_URL ?? process.env.BACKEND_URL ?? "http://localhost:3000");
 const deviceId = arg("deviceId", "dev-device-001");
 const mode = (arg("mode", "presence") as "presence" | "coarse" | "precise");
 const source = arg("source", "device.wifi");
