@@ -187,7 +187,7 @@ const DEMO_POLICIES = [
   {
     name: 'Quarantine High-Risk Device',
     description: 'Quarantine device if compliance status is non-compliant',
-    enabled: false, // Disabled by default
+    enabled: true, // Enabled for demo
     priority: 100,
     conditions: [
       {
