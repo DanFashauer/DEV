@@ -282,7 +282,112 @@ export async function POST(request: Request) {
       });
     }
     
-    // Step 3: Create new session
+    // Step 3: Check device posture BEFORE creating session
+    // Get fleet and UEM context to evaluate compliance
+    const [fleetContext, uemContext] = await Promise.all([
+      getFleetContext(event.device?.deviceSerial || ''),
+      getUEMContext(event.device?.deviceId || deviceId),
+    ]);
+
+    // Check if device is compliant before allowing session
+    const isFleetCompliant = fleetContext.status === 'compliant';
+    const isUEMCompliant = uemContext.complianceStatus === 'compliant';
+    const isDeviceCompliant = isFleetCompliant || isUEMCompliant;
+
+    // Record compliance check in audit
+    await appendAuditRecord('session.start', { type: 'device', id: deviceId }, {
+      target: { type: 'badge', id: event.badge.badgeId },
+      meta: { 
+        userId: badgeMapping.userId, 
+        readerType: event.reader.readerType,
+        complianceCheck: {
+          fleetCompliant: isFleetCompliant,
+          uemCompliant: isUEMCompliant,
+          overallCompliant: isDeviceCompliant,
+        },
+      },
+    });
+
+    // If device is NOT compliant, deny session and trigger policy actions
+    if (!isDeviceCompliant && (fleetContext.enrolled || uemContext.enrolled)) {
+      console.log('[SessionStart] Device non-compliant, denying session:', {
+        deviceId,
+        fleetStatus: fleetContext.status,
+        uemStatus: uemContext.complianceStatus,
+      });
+
+      // Record auth failure due to non-compliance
+      await recordAuthFailure(
+        'device_non_compliant',
+        { type: 'device', id: deviceId },
+        { 
+          meta: { 
+            reason: 'Device compliance check failed',
+            fleetStatus: fleetContext.status,
+            uemStatus: uemContext.complianceStatus,
+          },
+        }
+      );
+
+      // Build context for policy evaluation
+      const deviceIdentity = await resolveDeviceIdentity({
+        deviceId: event.device?.deviceId || deviceId,
+        serial: event.device?.deviceSerial,
+        platform: event.device?.deviceModel ? 'darwin' : undefined,
+        osVersion: event.device?.osVersion,
+        deviceModel: event.device?.deviceModel,
+        managementSource: 'badge_event',
+      });
+
+      const riskScore = calculateRiskScore({
+        deviceIdentity,
+        isManaged: !!deviceIdentity.managementId,
+        correlationScore: deviceIdentity?.correlationScore,
+        postureStatus: isFleetCompliant ? 'compliant' : 'non_compliant',
+        postureLastCheckAge: typeof fleetContext.lastSeenAge === 'number' ? fleetContext.lastSeenAge : undefined,
+        locationZone: event.context?.locationId,
+        eventTimestamp: event.timestamp,
+      });
+
+      const policyContext = {
+        device: { role: 'kiosk', deviceId, complianceStatus: isDeviceCompliant ? 'compliant' : 'non_compliant', ...uemContext },
+        user: { role: badgeMapping.department || 'user', userId: badgeMapping.userId, name: badgeMapping.userName },
+        location: { zone: event.context?.locationId || 'unknown' },
+        session: { id: 'pending', startedAt: new Date().toISOString() },
+        fleet: fleetContext,
+        uem: uemContext,
+        ...createRiskContext(riskScore),
+        event: { type: 'session.start', timestamp: event.timestamp },
+      };
+
+      // Evaluate policies (this will trigger quarantine, SIEM, ITSM actions)
+      const policyActions = evaluatePolicies(policyContext);
+      
+      // Log the policy actions that were triggered
+      for (const action of policyActions) {
+        console.log('[Policy] Action triggered (non-compliant device):', action.type, action.params);
+      }
+
+      // Return denial response
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Device compliance check failed',
+          code: 'DEVICE_NON_COMPLIANT',
+          hint: 'Device must be compliant before accessing shared resources',
+          complianceStatus: {
+            fleetCompliant: isFleetCompliant,
+            uemCompliant: isUEMCompliant,
+            fleetDetails: fleetContext,
+            uemDetails: uemContext,
+          },
+          policyActions: policyActions.length > 0 ? policyActions : undefined,
+        },
+        { status: 403 }
+      );
+    }
+
+    // Step 4: Create new session (device is compliant or no posture data)
     // Get app to launch from persona attributes (if available)
     const defaultBundleId = process.env.DEFAULT_LAUNCH_BUNDLE_ID ?? 'com.example.enterpriseapp';
     
