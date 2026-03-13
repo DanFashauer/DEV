@@ -91,9 +91,33 @@ async function getUEMContext(deviceId: string): Promise<Record<string, unknown>>
 /**
  * Build fleet context for policy evaluation
  * Fetches cached FleetDM posture data if available
+ * Also checks posture store directly by deviceId for demo/testing
  */
 async function getFleetContext(deviceSerial: string): Promise<Record<string, unknown>> {
   try {
+    // First, check posture store directly by deviceSerial (for demo/testing)
+    const directPosture = await getPostureForHost(deviceSerial);
+    if (directPosture) {
+      const posture = directPosture.data as {
+        platform: string;
+        compliant: boolean;
+        lastCheckAt: string;
+        policies: { id: number; name: string; response: string }[];
+        rawSignals?: Record<string, unknown>;
+      };
+      
+      return {
+        enrolled: true,
+        status: posture.compliant ? 'compliant' : 'non_compliant',
+        lastSeenAge: Date.now() - new Date(posture.lastCheckAt).getTime(),
+        osVersion: posture.rawSignals?.os_version as string || 'unknown',
+        platform: posture.platform,
+        policies: posture.policies,
+        labels: [],
+      };
+    }
+    
+    // Fall back to FleetDM adapter
     const adapter = await getFleetDMAdapter();
     
     if (!adapter.isEnabled()) {
@@ -432,10 +456,7 @@ export async function POST(request: Request) {
     
     // Evaluate policies and get actions
     // Build fleet, UEM, identity, and risk context for policy evaluation
-    const [fleetContext, uemContext] = await Promise.all([
-      getFleetContext(event.device?.deviceSerial || ''),
-      getUEMContext(event.device?.deviceId || deviceId),
-    ]);
+    // (fleetContext and uemContext already fetched above for compliance check)
     
     // Resolve device identity from session event
     const deviceIdentity = await resolveDeviceIdentity({

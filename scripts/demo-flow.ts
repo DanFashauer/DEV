@@ -167,11 +167,11 @@ async function main() {
     results.push({ step: `seed:policies (${s})`, success: seedPoliciesResult });
     await new Promise(r => setTimeout(r, DEMO_DELAY_MS));
     
-    // Step 2: Simulate badge scan → session start
-    console.log(`\n📋 Step 2: Badge scan → Session start (${s})...`);
+    // Step 2: Enroll badge then simulate badge scan → session start
+    console.log(`\n📋 Step 2: Enroll badge and scan for ${s}...`);
     const simBadgeResult = await runCommand(
       `Simulating badge scan for ${scenarioConfig.name}`,
-      `bun run sim:badge --deviceId "${scenarioConfig.deviceId}" --badgeUid "${scenarioConfig.badgeUid}" --user "${scenarioConfig.user}"`
+      `bun run sim:badge --enroll --deviceId "${scenarioConfig.deviceId}" --badgeUid "${scenarioConfig.badgeUid}" --user "${scenarioConfig.user}"`
     );
     results.push({ step: `sim:badge (${s})`, success: simBadgeResult });
     await new Promise(r => setTimeout(r, DEMO_DELAY_MS));
