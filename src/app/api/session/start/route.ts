@@ -35,6 +35,7 @@ import { getFleetDMAdapter } from '@/lib/integrations/telemetry/fleetdm';
 import { getDevicePosture } from '@/lib/integrations/uem/store';
 import { resolveDeviceIdentity, getDeviceIdentityByDeviceId, createIdentityRef } from '@/lib/identity/deviceIdentity';
 import { calculateRiskScore, createRiskContext } from '@/lib/risk/score';
+import { addSecurityEvent } from '@/lib/securityEvents';
 
 /**
  * Simple in-memory rate limiter for session start
@@ -392,9 +393,74 @@ export async function POST(request: Request) {
         console.log('[Policy] Action triggered (non-compliant device):', action.type, action.params);
       }
 
-      // Return denial response
+      // Record security event for admin dashboard
+      addSecurityEvent({
+        type: 'session_denied',
+        timestamp: new Date().toISOString(),
+        actor: { type: 'badge', id: event.badge.badgeId, name: badgeMapping.userName },
+        device: { id: deviceId, complianceStatus: 'non_compliant' },
+        decision: 'DENY',
+        reason: 'DEVICE_NON_COMPLIANT',
+        actionsTriggered: policyActions.map(a => a.type),
+        riskScore: riskScore.riskScore,
+        policy: policyActions[0]?.policyName,
+      });
+
+      // Record additional events for each action triggered
+      for (const action of policyActions) {
+        if (action.type === 'quarantine_device') {
+          addSecurityEvent({
+            type: 'quarantine',
+            timestamp: new Date().toISOString(),
+            actor: { type: 'system', id: 'policy-engine' },
+            device: { id: deviceId, complianceStatus: 'non_compliant' },
+            decision: 'DENY',
+            reason: 'Device quarantined due to compliance failure',
+            actionsTriggered: [],
+            policy: action.policyName,
+          });
+        } else if (action.type === 'emit_siem_event') {
+          addSecurityEvent({
+            type: 'siem_alert',
+            timestamp: new Date().toISOString(),
+            actor: { type: 'system', id: 'policy-engine' },
+            device: { id: deviceId, complianceStatus: 'non_compliant' },
+            decision: 'DENY',
+            reason: 'SIEM alert sent',
+            actionsTriggered: [],
+            policy: action.policyName,
+          });
+        } else if (action.type === 'send_itsm_ticket') {
+          addSecurityEvent({
+            type: 'itsm_ticket',
+            timestamp: new Date().toISOString(),
+            actor: { type: 'system', id: 'policy-engine' },
+            device: { id: deviceId, complianceStatus: 'non_compliant' },
+            decision: 'DENY',
+            reason: 'ITSM incident created',
+            actionsTriggered: [],
+            policy: action.policyName,
+          });
+        }
+      }
+
+      // Build C-suite friendly decision receipt
+      const actionsTriggered = policyActions.map(a => a.type.toUpperCase().replace(/_/g, '_'));
+      
+      // Return denial response with decision receipt
       return NextResponse.json(
         {
+          // C-suite decision receipt
+          decision: 'DENY',
+          reason: 'DEVICE_NON_COMPLIANT',
+          reasonDetail: isFleetCompliant ? 'UEM compliance check failed' : 'FleetDM compliance check failed (jailbroken)',
+          actionsTriggered: policyActions.map(a => a.type),
+          policy: policyActions[0]?.policyName || 'Quarantine High-Risk Device',
+          riskScore: riskScore.riskScore,
+          riskLevel: riskScore.riskLevel,
+          timestamp: new Date().toISOString(),
+          
+          // Legacy/compatibility fields
           success: false,
           error: 'Device compliance check failed',
           code: 'DEVICE_NON_COMPLIANT',

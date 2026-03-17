@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Platform scope for documentation
 const PLATFORM_SCOPE = {
@@ -152,6 +152,7 @@ export default function AdminDashboard() {
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: "📊" },
+    { id: "events", label: "Security Events", icon: "🚨" },
     { id: "integrations", label: "Integrations", icon: "🔌" },
     { id: "policies", label: "Policies", icon: "📋" },
     { id: "devices", label: "Devices", icon: "📱" },
@@ -212,6 +213,9 @@ export default function AdminDashboard() {
             {activeTab === "dashboard" && (
               <DashboardView />
             )}
+            {activeTab === "events" && (
+              <SecurityEventsView />
+            )}
             {activeTab === "integrations" && (
               <IntegrationsView />
             )}
@@ -233,6 +237,283 @@ export default function AdminDashboard() {
           </main>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Security Events View - fetches real events from API
+
+interface SecurityEvent {
+  id: string;
+  type: string;
+  timestamp: string;
+  actor: { type: string; id: string; name?: string };
+  device?: { id: string; complianceStatus: string };
+  decision: string;
+  reason?: string;
+  actionsTriggered: string[];
+  riskScore?: number;
+  policy?: string;
+  badgeUid?: string;
+  location?: string;
+  postureSummary?: string;
+}
+
+function SecurityEventsView() {
+  const [events, setEvents] = useState<SecurityEvent[]>([]);
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Filters
+  const [filterDecision, setFilterDecision] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterDevice, setFilterDevice] = useState<string>("");
+  const [filterUser, setFilterUser] = useState<string>("");
+
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch('/api/admin/security-events?limit=50');
+        const data = await res.json();
+        setEvents(data.events || []);
+        setSummary(data.summary);
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchEvents();
+  }, []);
+
+  // Filter events
+  const filteredEvents = events.filter(e => {
+    if (filterDecision !== "all" && e.decision !== filterDecision) return false;
+    if (filterType !== "all" && e.type !== filterType) return false;
+    if (filterDevice && !e.device?.id?.toLowerCase().includes(filterDevice.toLowerCase())) return false;
+    if (filterUser && !e.actor?.name?.toLowerCase().includes(filterUser.toLowerCase()) && !e.actor?.id?.toLowerCase().includes(filterUser.toLowerCase())) return false;
+    return true;
+  });
+
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour12: false });
+  };
+
+  const formatDate = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const getDecisionColor = (decision: string) => {
+    return decision === 'DENY' ? 'text-red-400' : 'text-emerald-400';
+  };
+
+  const getEventTypeLabel = (type: string) => {
+    return type.replace(/_/g, ' ');
+  };
+
+  const getRiskBadgeClass = (score?: number) => {
+    if (!score) return '';
+    if (score >= 70) return 'bg-red-500/20 text-red-400';
+    if (score >= 40) return 'bg-amber-500/20 text-amber-400';
+    return 'bg-emerald-500/20 text-emerald-400';
+  };
+
+  const getRiskLabel = (score?: number) => {
+    if (!score) return '-';
+    if (score >= 70) return 'HIGH';
+    if (score >= 40) return 'MEDIUM';
+    return 'LOW';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold mb-2">Events</h2>
+          <p className="text-neutral-400">Security decisions and access events</p>
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-sm"
+        >
+          🔄 Refresh
+        </button>
+      </div>
+
+      {/* Summary Cards */}
+      {summary && (
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="text-2xl font-bold">{summary.totalEvents || 0}</div>
+            <div className="text-sm text-neutral-400">Total Events</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="text-2xl font-bold text-red-400">{summary.denied || 0}</div>
+            <div className="text-sm text-neutral-400">Denied</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="text-2xl font-bold text-emerald-400">{summary.allowed || 0}</div>
+            <div className="text-sm text-neutral-400">Allowed</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="text-2xl font-bold text-amber-400">{summary.quarantined || 0}</div>
+            <div className="text-sm text-neutral-400">Quarantined</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="text-2xl font-bold text-blue-400">{summary.siemAlerts || 0}</div>
+            <div className="text-sm text-neutral-400">SIEM Alerts</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="text-2xl font-bold text-purple-400">{summary.itsmTickets || 0}</div>
+            <div className="text-sm text-neutral-400">ITSM Tickets</div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div className="flex flex-wrap gap-4">
+          <div>
+            <label className="text-xs text-neutral-400 block mb-1">Decision</label>
+            <select 
+              value={filterDecision}
+              onChange={(e) => setFilterDecision(e.target.value)}
+              className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="all">All</option>
+              <option value="DENY">Denied</option>
+              <option value="ALLOW">Allowed</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-neutral-400 block mb-1">Event Type</label>
+            <select 
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="all">All Types</option>
+              <option value="session_denied">Session Denied</option>
+              <option value="session_allowed">Session Allowed</option>
+              <option value="quarantine">Quarantine</option>
+              <option value="siem_alert">SIEM Alert</option>
+              <option value="itsm_ticket">ITSM Ticket</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-neutral-400 block mb-1">Device</label>
+            <input 
+              type="text"
+              placeholder="Filter by device..."
+              value={filterDevice}
+              onChange={(e) => setFilterDevice(e.target.value)}
+              className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-40"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-neutral-400 block mb-1">User</label>
+            <input 
+              type="text"
+              placeholder="Filter by user..."
+              value={filterUser}
+              onChange={(e) => setFilterUser(e.target.value)}
+              className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-40"
+            />
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-neutral-400">Loading events...</div>
+      ) : filteredEvents.length === 0 ? (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 text-center">
+          <div className="text-4xl mb-4">📭</div>
+          <div className="text-lg font-medium mb-2">No Security Events</div>
+          <div className="text-neutral-400 text-sm">
+            Run <code className="bg-neutral-800 px-2 py-1 rounded">bun run demo:exec</code> to generate events
+          </div>
+        </div>
+      ) : (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-neutral-800/50">
+              <tr>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Date</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Time</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Event</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">User</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Device</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Location</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Posture</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Risk</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Decision</th>
+                <th className="text-left px-3 py-3 text-xs font-medium text-neutral-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-800">
+              {filteredEvents.map((event) => (
+                <tr key={event.id} className="hover:bg-neutral-800/30">
+                    <td className="px-3 py-3 text-neutral-400 text-sm">
+                      {formatDate(event.timestamp)}
+                    </td>
+                    <td className="px-3 py-3 text-neutral-300 font-mono text-sm">
+                      {formatTime(event.timestamp)}
+                    </td>
+                    <td className="px-3 py-3 text-neutral-300 text-sm capitalize">
+                      {getEventTypeLabel(event.type)}
+                    </td>
+                    <td className="px-3 py-3 text-neutral-300 text-sm">
+                      {event.actor?.name || event.actor?.id?.split('@')[0] || '-'}
+                    </td>
+                    <td className="px-3 py-3 text-neutral-400 font-mono text-sm">
+                      {event.device?.id || '-'}
+                    </td>
+                    <td className="px-3 py-3 text-neutral-400 text-sm">
+                      {event.location || '-'}
+                    </td>
+                    <td className="px-3 py-3">
+                      {event.device?.complianceStatus ? (
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          event.device.complianceStatus === 'compliant' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {event.device.complianceStatus}
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td className="px-3 py-3">
+                      {event.riskScore ? (
+                        <a href={`/admin/events/${event.id}`}>
+                          <span className={`px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-80 ${getRiskBadgeClass(event.riskScore)}`}>
+                            {event.riskScore}
+                          </span>
+                        </a>
+                      ) : '-'}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className={`font-semibold text-sm ${getDecisionColor(event.decision)}`}>
+                        {event.decision}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {event.actionsTriggered?.slice(0, 2).map((action, i) => (
+                          <span key={i} className="px-2 py-0.5 bg-neutral-700 rounded text-xs">
+                            {action.replace('_', ' ')}
+                          </span>
+                        ))}
+                        {event.actionsTriggered?.length > 2 && (
+                          <span className="text-xs text-neutral-500">+{event.actionsTriggered.length - 2}</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
