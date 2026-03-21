@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminAuth } from '@/lib/adminAuth';
+import { checkApiKey } from '@/lib/utils/apiKeyAuth';
 import { deviceRegistry } from '@/lib/deviceRegistry';
 
 export const dynamic = 'force-dynamic';

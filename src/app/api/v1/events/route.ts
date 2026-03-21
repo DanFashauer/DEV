@@ -24,22 +24,22 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const type = searchParams.get('type');
 
-    // Get paginated events
-    const result = getSecurityEvents(limit, offset);
+    // Get all events (we'll paginate after filtering)
+    const allEvents = getSecurityEvents(1000, 0).events;
 
     // Apply type filter if provided
-    let events = result.events;
+    let filteredEvents = allEvents;
     if (type) {
-      events = events.filter(e => e.type === type);
+      filteredEvents = allEvents.filter(e => e.type === type);
     }
 
-    // Re-calculate pagination after filtering
-    const total = events.length;
-    const filtered = events.slice(offset, offset + limit);
+    // Apply pagination to filtered events
+    const total = filteredEvents.length;
+    const paginatedEvents = filteredEvents.slice(offset, offset + limit);
 
     return NextResponse.json(
       {
-        events: filtered.map(event => ({
+        events: paginatedEvents.map(event => ({
           id: event.id,
           type: event.type,
           timestamp: event.timestamp,
