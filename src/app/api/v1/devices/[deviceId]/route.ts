@@ -16,7 +16,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ deviceId: string }> }
 ) {
-  const authError = await requireAdminAuth(request);
+  const authError = checkApiKey(request);
   if (authError) {
     return authError;
   }

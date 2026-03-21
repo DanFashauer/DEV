@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminAuth } from '@/lib/adminAuth';
+import { checkApiKey } from '@/lib/utils/apiKeyAuth';
 import { deviceRegistry } from '@/lib/deviceRegistry';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  * List devices with pagination
  */
 export async function GET(request: NextRequest) {
-  const authError = await requireAdminAuth(request);
+  const authError = checkApiKey(request);
   if (authError) {
     return authError;
   }

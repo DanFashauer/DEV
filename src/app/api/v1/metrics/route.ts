@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminAuth } from '@/lib/adminAuth';
+import { checkApiKey } from '@/lib/utils/apiKeyAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +43,7 @@ function calculatePercentile(arr: number[], percentile: number): number {
 }
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdminAuth(request);
+  const authError = checkApiKey(request);
   if (authError) {
     return authError;
   }
