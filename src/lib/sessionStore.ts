@@ -68,6 +68,17 @@ const CONFIG = {
 };
 
 // ============================================================================
+// Production Redis Requirement Check
+// ============================================================================
+
+if (process.env.NODE_ENV === 'production' && !CONFIG.redisUrl) {
+  throw new Error(
+    'REDIS_URL environment variable is required in production. ' +
+    'Session store must be Redis-backed for multi-instance deployments.'
+  );
+}
+
+// ============================================================================
 // Redis Client (lazy initialization)
 // ============================================================================
 
@@ -340,7 +351,7 @@ class SessionStoreImpl implements SessionStore {
       
       for (const [sessionId, session] of memoryStore) {
         if (new Date(session.expiresAt) < now) {
-          session.status = 'expired';
+          memoryStore.delete(sessionId);
           count++;
         }
       }

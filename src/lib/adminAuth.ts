@@ -2,34 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, timingSafeEqual } from "crypto";
 import { authenticateRequest, getAuthConfig } from "./auth";
 import { verifyStepUpSession, StepUpChallenge, requiresStepUp, createStepUpSession } from "./auth/stepUpStore";
+import { checkRateLimit, rateLimitPresets } from "./utils/rateLimit";
 
-// In-memory rate limit store (for single-instance deployments)
-// In production with multiple instances, use Redis/Upstash
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
+// Rate limiting configuration
 const RATE_LIMIT_MAX = 30; // max requests per window
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
 
 /**
  * Get the admin API key from environment
- * - In development: allows a dev default
- * - In production: fails if not configured
+ * Both development and production require explicit configuration
  */
-function getAdminApiKey(): string | null {
-  const envKey = process.env.ADMIN_API_KEY;
+function getAdminApiKey(): string {
+  const envKey = process.env.ADMIN_API_KEY?.trim();
   
-  if (envKey && envKey.length > 0) {
-    return envKey;
+  if (!envKey || envKey.length === 0) {
+    const errorMsg = process.env.NODE_ENV === "production"
+      ? "[SECURITY] CRITICAL: ADMIN_API_KEY must be set in production"
+      : "[SECURITY] ADMIN_API_KEY must be explicitly set (export ADMIN_API_KEY='your-key')";
+    throw new Error(errorMsg);
   }
   
-  // No key configured
-  if (process.env.NODE_ENV === "production") {
-    // In production, require explicit configuration
-    return null;
+  if (envKey.length < 32) {
+    console.warn("[SECURITY] WARNING: ADMIN_API_KEY should be 32+ characters");
   }
   
-  // In development, allow fallback (but warn)
-  return "dev-admin-key-12345";
+  return envKey;
 }
 
 /**
@@ -56,48 +53,52 @@ function timingSafeCompare(a: string | null, b: string | null): boolean {
 }
 
 /**
- * Get client IP from request (handles proxies)
+ * Get client IP from request with proxy trust validation
+ * 
+ * Only trusts x-forwarded-for if running behind a trusted proxy.
+ * This prevents IP spoofing attacks used to bypass rate limiting.
+ * 
+ * Set TRUSTED_PROXIES environment variable to comma-separated list of trusted proxy IPs
  */
 function getClientIp(request: NextRequest): string {
-  // Check common proxy headers
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
+  const trustedProxies = process.env.TRUSTED_PROXIES?.split(',').map(ip => ip.trim()) || [];
+  
+  // If trust-proxy is configured, use x-forwarded-for
+  if (trustedProxies.length > 0) {
+    const forwarded = request.headers.get("x-forwarded-for");
+    if (forwarded) {
+      // Get the first IP (original client), others are proxy IPs
+      const clientIp = forwarded.split(",")[0].trim();
+      // Basic IP format validation
+      if (/^[\d.]+$/.test(clientIp) || /^[\da-f:]+$/.test(clientIp)) {
+        return clientIp;
+      }
+    }
+    
+    const realIp = request.headers.get("x-real-ip");
+    if (realIp && (/^[\d.]+$/.test(realIp) || /^[\da-f:]+$/.test(realIp))) {
+      return realIp;
+    }
   }
   
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) {
-    return realIp;
-  }
-  
-  // Fallback - this might be the server IP in some configs
-  return "unknown";
+  // Fallback to direct connection IP
+  const directIp = request.ip || request.headers.get("cf-connecting-ip");
+  return directIp || "unknown";
 }
 
 /**
  * Rate limiting check
  * Returns true if request is allowed, false if rate limited
  */
-function checkRateLimit(key: string): boolean {
-  const now = Date.now();
-  const record = rateLimitStore.get(key);
-  
-  if (!record || now > record.resetTime) {
-    // New window
-    rateLimitStore.set(key, {
-      count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW_MS,
-    });
+async function checkRateLimit(clientIp: string): Promise<boolean> {
+  try {
+    const result = await rateLimitPresets.normal.check(clientIp);
+    return result.success;
+  } catch (error) {
+    console.error('[RateLimit] Error checking rate limit:', error);
+    // Allow request on rate limit check failure to avoid blocking legitimate users
     return true;
   }
-  
-  if (record.count >= RATE_LIMIT_MAX) {
-    // Rate limited
-    return false;
-  }
-  
-  record.count++;
-  return true;
 }
 
 /**
@@ -152,7 +153,7 @@ export async function requireAdminAuth(request: NextRequest): Promise<NextRespon
   
   // 1. Check rate limit first (before auth to prevent brute force)
   const rateLimitKey = `admin:${getClientIp(request)}`;
-  if (!checkRateLimit(rateLimitKey)) {
+  if (!(await checkRateLimit(rateLimitKey))) {
     logAuthAttempt(request, path, false, "rate_limited");
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },

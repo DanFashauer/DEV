@@ -511,14 +511,33 @@ export async function POST(request: Request) {
       expiresAt: session.expiresAt,
     });
     
-    // Emit webhook event (best-effort, non-blocking)
-    emitSessionStart({
-      sessionId: session.sessionId,
-      userId: session.userId,
-      deviceId: deviceId,
-      badgeId: event.badge.badgeId,
-      timestamp: new Date().toISOString(),
-    }).catch(err => console.error('[Webhook] Failed to emit session.start:', err));
+    // Emit webhook event
+    if (process.env.WEBHOOK_DELIVERY_REQUIRED === 'true') {
+      try {
+        await emitSessionStart({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          deviceId: deviceId,
+          badgeId: event.badge.badgeId,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error('[Webhook] Mandatory webhook delivery failed:', error);
+        return NextResponse.json(
+          { error: 'Event delivery failed' },
+          { status: 502 }
+        );
+      }
+    } else {
+      // Best-effort delivery for non-critical webhooks
+      emitSessionStart({
+        sessionId: session.sessionId,
+        userId: session.userId,
+        deviceId: deviceId,
+        badgeId: event.badge.badgeId,
+        timestamp: new Date().toISOString(),
+      }).catch(err => console.error('[Webhook] Async webhook delivery failed:', err));
+    }
     
     // Evaluate policies and get actions
     // Build fleet, UEM, identity, and risk context for policy evaluation
@@ -562,17 +581,38 @@ export async function POST(request: Request) {
     
     const policyActions = evaluatePolicies(policyContext);
     
-    // Process policy actions
-    for (const action of policyActions) {
-      console.log('[Policy] Action triggered:', action.type, action.params);
-      // Handle specific action types
-      if (action.type === 'set_session_ttl' && action.params?.seconds) {
-        // Extend session TTL
-        await sessionStore.update(session.sessionId, {
-          expiresAt: new Date(Date.now() + action.params.seconds * 1000).toISOString(),
-        });
-        directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
+    // Process policy actions with error boundary
+    try {
+      for (const action of policyActions) {
+        console.log('[Policy] Action triggered:', action.type, action.params);
+        // Handle specific action types
+        if (action.type === 'set_session_ttl' && action.params?.seconds) {
+          // Extend session TTL
+          await sessionStore.update(session.sessionId, {
+            expiresAt: new Date(Date.now() + action.params.seconds * 1000).toISOString(),
+          });
+          directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
+        }
       }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Policy] Action processing failed:', errorMessage);
+      
+      // Record audit failure
+      await recordAuthFailure({
+        type: 'policy_dispatch_failed',
+        sessionId: session.sessionId,
+        userId: badgeMapping.userId,
+        deviceId,
+        reason: `Policy action processing failed: ${errorMessage}`,
+        riskScore: riskScore.riskScore,
+      });
+      
+      // Return error response
+      return NextResponse.json(
+        { error: 'Policy execution failed' },
+        { status: 500 }
+      );
     }
     
     return NextResponse.json({

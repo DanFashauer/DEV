@@ -23,16 +23,17 @@ export async function GET(
 
   const { correlationId } = await params;
   const searchParams = request.nextUrl.searchParams;
-  const limit = parseInt(searchParams.get('limit') || '20', 10);
+  const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100); // Max 100
+  const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-  // Get all events
-  const allEvents = getSecurityEvents(100);
+  // Get paginated events
+  const result = getSecurityEvents(limit, offset);
 
   // Build timeline - ordered sequence of events
-  const timeline = allEvents
+  const timeline = result.events
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     .map((event, index) => ({
-      order: index + 1,
+      order: offset + index + 1,
       time: new Date(event.timestamp).toISOString(),
       timeFormatted: new Date(event.timestamp).toLocaleTimeString('en-US', { 
         hour12: false,
@@ -55,8 +56,13 @@ export async function GET(
 
   return NextResponse.json({
     correlationId,
-    totalEvents: timeline.length,
+    totalEvents: result.total,
     timeline,
+    pagination: {
+      offset: result.offset,
+      limit: result.limit,
+      hasMore: result.hasMore,
+    },
   });
 }
 

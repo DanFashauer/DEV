@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { JWK, jwtVerify, createRemoteJWKSet } from "jose";
 import { randomBytes, timingSafeEqual } from "crypto";
+import { fetchWithTimeout, TIMEOUT_PRESETS } from "./utils/fetchWithTimeout";
 
 // ============================================================================
 // Types
@@ -57,7 +58,16 @@ export interface AuthConfig {
 let authConfig: AuthConfig | null = null;
 let jwks: JWK[] | null = null;
 let jwksCacheTime = 0;
-const JWKS_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const JWKS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes (reduced from 1 hour)
+
+/**
+ * Invalidate JWKS cache - call when verification fails due to key rotation
+ */
+function invalidateJWKSCache(): void {
+  jwks = null;
+  jwksCacheTime = 0;
+  console.log('[AUTH] JWKS cache invalidated - will refresh on next request');
+}
 
 /**
  * Get authentication configuration based on environment
@@ -101,7 +111,7 @@ export function getAuthConfig(): AuthConfig {
 // ============================================================================
 
 /**
- * Fetch and cache JWKS from the OIDC provider
+ * Fetch and cache JWKS from the OIDC provider with timeout protection
  */
 async function fetchJWKS(jwksUri: string): Promise<JWK[]> {
   const now = Date.now();
@@ -111,7 +121,8 @@ async function fetchJWKS(jwksUri: string): Promise<JWK[]> {
   }
   
   try {
-    const response = await fetch(jwksUri, {
+    const response = await fetchWithTimeout(jwksUri, {
+      timeoutMs: TIMEOUT_PRESETS.jwks,
       headers: { 'Accept': 'application/json' },
     });
     
@@ -174,7 +185,17 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
     
     return payload;
   } catch (error) {
-    console.error('[AUTH] JWT verification failed:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[AUTH] JWT verification failed:', errorMessage);
+    
+    // Check for "kid not found" errors indicating key rotation
+    if (errorMessage.includes('kid not found') || errorMessage.includes('Unable to find key')) {
+      console.warn('[AUTH] Key rotation detected - invalidating JWKS cache');
+      invalidateJWKSCache();
+      // Record audit event for monitoring
+      console.log('[AUDIT] JWKS cache invalidated due to key rotation');
+    }
+    
     return null;
   }
 }

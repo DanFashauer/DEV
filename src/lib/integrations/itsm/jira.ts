@@ -1,4 +1,5 @@
 import type { ITSMAdapter, ITSMTicketRequest, ITSMTicketResponse } from '../adapters/types';
+import { fetchWithTimeout, TIMEOUT_PRESETS } from '../../utils/fetchWithTimeout';
 
 /**
  * Jira Service Management Adapter Configuration
@@ -79,7 +80,7 @@ export class JiraAdapter implements ITSMAdapter {
       },
     };
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,6 +88,7 @@ export class JiraAdapter implements ITSMAdapter {
         'Authorization': `Basic ${Buffer.from(`${this.config.email}:${this.config.apiToken}`).toString('base64')}`,
       },
       body: JSON.stringify(payload),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -152,7 +154,7 @@ export class JiraAdapter implements ITSMAdapter {
       // This is a simplified version
     }
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -160,6 +162,7 @@ export class JiraAdapter implements ITSMAdapter {
         'Authorization': `Basic ${Buffer.from(`${this.config.email}:${this.config.apiToken}`).toString('base64')}`,
       },
       body: JSON.stringify(payload),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -192,12 +195,13 @@ export class JiraAdapter implements ITSMAdapter {
   async healthCheck(): Promise<boolean> {
     try {
       const url = `${this.config.baseUrl}/rest/api/3/myself`;
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${Buffer.from(`${this.config.email}:${this.config.apiToken}`).toString('base64')}`,
           'Accept': 'application/json',
         },
+        timeoutMs: TIMEOUT_PRESETS.short,
       });
       
       return response.ok;

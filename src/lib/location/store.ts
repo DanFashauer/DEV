@@ -8,8 +8,34 @@ export type StoreBackend = {
 
 class InMemoryLocationStore implements StoreBackend {
   private lastByDevice = new Map<string, LocationSignal>();
-  async upsert(signal: LocationSignal) { this.lastByDevice.set(signal.deviceId, signal); }
-  async getLast(deviceId: string) { return this.lastByDevice.get(deviceId) ?? null; }
+  private maxAge = 24 * 60 * 60 * 1000; // 24 hours
+  
+  async upsert(signal: LocationSignal) { 
+    this.lastByDevice.set(signal.deviceId, signal);
+    this.cleanup();
+  }
+  
+  async getLast(deviceId: string) { 
+    const signal = this.lastByDevice.get(deviceId);
+    if (!signal) return null;
+    
+    // Check if signal is too old
+    if (Date.now() - new Date(signal.observedAt).getTime() > this.maxAge) {
+      this.lastByDevice.delete(deviceId);
+      return null;
+    }
+    
+    return signal;
+  }
+  
+  private cleanup() {
+    const cutoff = Date.now() - this.maxAge;
+    for (const [deviceId, signal] of this.lastByDevice) {
+      if (new Date(signal.observedAt).getTime() < cutoff) {
+        this.lastByDevice.delete(deviceId);
+      }
+    }
+  }
 }
 
 class RedisLocationStore implements StoreBackend {

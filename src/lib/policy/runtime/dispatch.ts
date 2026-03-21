@@ -14,6 +14,46 @@ import type {
 import { getITSMConfigByVendor, getTicketTemplate, substituteTemplate, type ITSMVendor } from '../../integrations/itsm/store';
 import { createITSMAdapter } from '../../integrations/itsm/adapter';
 
+// ============================================================================
+// Type Validators - Safe type coercion with validation
+// ============================================================================
+
+/**
+ * Validate and coerce severity level
+ * Returns undefined if value is invalid
+ */
+function validateSeverity(value: unknown): 'low' | 'medium' | 'high' | undefined {
+  const validValues = ['low', 'medium', 'high'];
+  if (typeof value === 'string' && validValues.includes(value)) {
+    return value as 'low' | 'medium' | 'high';
+  }
+  return undefined;
+}
+
+/**
+ * Validate and coerce notification channel
+ * Returns undefined if value is invalid
+ */
+function validateChannel(value: unknown): 'webhook' | 'email' | 'siem' | undefined {
+  const validValues = ['webhook', 'email', 'siem'];
+  if (typeof value === 'string' && validValues.includes(value)) {
+    return value as 'webhook' | 'email' | 'siem';
+  }
+  return undefined;
+}
+
+/**
+ * Validate and coerce priority level
+ * Returns undefined if value is invalid
+ */
+function validatePriority(value: unknown): 'low' | 'medium' | 'high' | undefined {
+  const validValues = ['low', 'medium', 'high'];
+  if (typeof value === 'string' && validValues.includes(value)) {
+    return value as 'low' | 'medium' | 'high';
+  }
+  return undefined;
+}
+
 /**
  * Result of dispatching a single action
  */
@@ -90,24 +130,55 @@ export class PolicyActionDispatcher {
     );
 
     for (const policy of policies) {
-      const policyResult = await this.dispatchPolicy(policy, context, caseId);
-      results.push(policyResult);
+      try {
+        const policyResult = await this.dispatchPolicy(policy, context, caseId);
+        results.push(policyResult);
 
-      for (const actionResult of policyResult.actions) {
+        for (const actionResult of policyResult.actions) {
+          await appendAuditRecord(
+            'policy.action.executed',
+            { type: 'system', id: 'policy-engine' },
+            {
+              meta: {
+                policyId: policy.id,
+                policyName: policy.name,
+                actionType: actionResult.action.type,
+                success: actionResult.success,
+                error: actionResult.error,
+              },
+              requestId: context.event?.requestId,
+            }
+          );
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Record policy dispatch failure
         await appendAuditRecord(
-          'policy.action.executed',
+          'policy.dispatch.failed',
           { type: 'system', id: 'policy-engine' },
           {
             meta: {
               policyId: policy.id,
               policyName: policy.name,
-              actionType: actionResult.action.type,
-              success: actionResult.success,
-              error: actionResult.error,
+              error: errorMessage,
             },
             requestId: context.event?.requestId,
           }
         );
+        
+        // Add failed result
+        results.push({
+          policyId: policy.id || 'unknown',
+          policyName: policy.name,
+          matched: true,
+          actions: [],
+          timestamp: new Date().toISOString(),
+          durationMs: Date.now() - startTime,
+          error: errorMessage,
+        });
+        
+        console.error(`[PolicyDispatch] Failed to dispatch policy ${policy.name}:`, error);
       }
     }
 
@@ -372,7 +443,7 @@ export class PolicyActionDispatcher {
 
     const eventRequest: SIEMEventRequest = {
       type: action.params?.eventType || 'policy.matched',
-      severity: (action.params?.severity as any) || 'medium',
+      severity: validateSeverity(action.params?.severity) || 'medium',
       timestamp: new Date().toISOString(),
       actor: context.user ? {
         userId: context.user.userId,
@@ -514,11 +585,11 @@ export class PolicyActionDispatcher {
 
     try {
       const result = await adapter.notify({
-        channel: (action.params?.channel as any) || 'webhook',
+        channel: validateChannel(action.params?.channel) || 'webhook',
         recipients: (action.params?.recipients as string[]) || [],
         subject: action.params?.subject as string || `Policy Alert: ${action.policyName || context.event?.type}`,
         message: this.buildDescription(context, action),
-        priority: (action.params?.priority as any) || 'high',
+        priority: validatePriority(action.params?.priority) || 'high',
         correlationId: context.event?.requestId,
         caseId,
       });

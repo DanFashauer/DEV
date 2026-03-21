@@ -5,6 +5,7 @@ import type {
   UEMQuarantineRequest, 
   UEMCommandResponse 
 } from '../adapters/types';
+import { fetchWithTimeout, TIMEOUT_PRESETS } from '../../utils/fetchWithTimeout';
 
 /**
  * Jamf Pro (formerly Casper Suite) Adapter Configuration
@@ -222,9 +223,10 @@ export class JamfAdapter implements UEMAdapter {
     // Use Jamf remote commands - lock device
     const url = `${this.config.instanceUrl}/JSSResource/computercommands/command/LockDevice/id/${request.deviceId}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: this.getAuthHeaders(),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -263,9 +265,10 @@ export class JamfAdapter implements UEMAdapter {
     // Send "Update Inventory" command
     const url = `${this.config.instanceUrl}/JSSResource/computercommandscommand/InventoryCollection/id/${deviceId}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: this.getAuthHeaders(),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -290,9 +293,10 @@ export class JamfAdapter implements UEMAdapter {
       await this.ensureAuthenticated();
       
       const url = `${this.config.instanceUrl}/JSSResource/machines`;
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
         headers: this.getAuthHeaders(),
+        timeoutMs: TIMEOUT_PRESETS.short,
       });
       
       return response.ok;
@@ -320,12 +324,13 @@ export class JamfAdapter implements UEMAdapter {
     // Get OAuth token using password
     const tokenUrl = `${this.config.instanceUrl}/api/v1/auth/token`;
     
-    const response = await fetch(tokenUrl, {
+    const response = await fetchWithTimeout(tokenUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${Buffer.from(`${this.config.username}:${this.config.password}`).toString('base64')}`,
         'Accept': 'application/json',
       },
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {

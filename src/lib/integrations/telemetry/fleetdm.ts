@@ -9,6 +9,7 @@ import {
   FleetDMPostureSignal,
 } from './types';
 import { getFleetDMConfig, setPostureForHost } from './store';
+import { fetchWithTimeout, TIMEOUT_PRESETS } from '../../utils/fetchWithTimeout';
 
 export class FleetDMAdapter {
   private config: FleetDMConfig | null = null;
@@ -46,9 +47,10 @@ export class FleetDMAdapter {
       return [];
     }
 
-    const response = await fetch(`${this.getBaseUrl()}/api/v1/fleet/hosts`, {
+    const response = await fetchWithTimeout(`${this.getBaseUrl()}/api/v1/fleet/hosts`, {
       method: 'GET',
       headers: this.getHeaders(),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -68,11 +70,12 @@ export class FleetDMAdapter {
       return null;
     }
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${this.getBaseUrl()}/api/v1/fleet/hosts/${hostUuid}`,
       {
         method: 'GET',
         headers: this.getHeaders(),
+        timeoutMs: TIMEOUT_PRESETS.normal,
       }
     );
 
@@ -100,9 +103,10 @@ export class FleetDMAdapter {
       ? `${this.getBaseUrl()}/api/v1/fleet/teams/${this.config.teamId}/policies`
       : `${this.getBaseUrl()}/api/v1/fleet/policies`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'GET',
       headers: this.getHeaders(),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -122,11 +126,12 @@ export class FleetDMAdapter {
       return [];
     }
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${this.getBaseUrl()}/api/v1/fleet/hosts/${hostUuid}/policies`,
       {
         method: 'GET',
         headers: this.getHeaders(),
+        timeoutMs: TIMEOUT_PRESETS.normal,
       }
     );
 
@@ -197,9 +202,10 @@ export class FleetDMAdapter {
     }
 
     try {
-      const response = await fetch(`${this.getBaseUrl()}/api/v1/fleet/config`, {
+      const response = await fetchWithTimeout(`${this.getBaseUrl()}/api/v1/fleet/config`, {
         method: 'GET',
         headers: this.getHeaders(),
+        timeoutMs: TIMEOUT_PRESETS.short,
       });
 
       if (response.ok) {
@@ -224,13 +230,14 @@ export class FleetDMAdapter {
       return [];
     }
 
-    const response = await fetch(`${this.getBaseUrl()}/api/v1/fleet/queries/run`, {
+    const response = await fetchWithTimeout(`${this.getBaseUrl()}/api/v1/fleet/queries/run`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({
         query: sql,
         host_ids: hostIds,
       }),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {

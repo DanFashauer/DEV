@@ -5,6 +5,7 @@ import type {
   UEMQuarantineRequest, 
   UEMCommandResponse 
 } from '../adapters/types';
+import { fetchWithTimeout, TIMEOUT_PRESETS } from '../../utils/fetchWithTimeout';
 
 /**
  * Microsoft Intune (Microsoft Endpoint Manager) Adapter Configuration
@@ -56,12 +57,13 @@ export class IntuneAdapter implements UEMAdapter {
     // Try to find device by various identifiers
     const url = `https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=deviceId eq '${deviceId}' or id eq '${deviceId}' or serialNumber eq '${deviceId}'`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -124,7 +126,7 @@ export class IntuneAdapter implements UEMAdapter {
     // Assign device to category
     const url = `https://graph.microsoft.com/v1.0/deviceManagement/managedDevices('${request.deviceId}')/deviceCategory/$ref`;
     
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
@@ -133,6 +135,7 @@ export class IntuneAdapter implements UEMAdapter {
       body: JSON.stringify({
         '@odata.id': `https://graph.microsoft.com/v1.0/deviceManagement/deviceCategories('${categoryId}')`,
       }),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     return { success: response.ok };
@@ -157,13 +160,14 @@ export class IntuneAdapter implements UEMAdapter {
     // Use remote lock action for quarantine
     const url = `https://graph.microsoft.com/v1.0/deviceManagement/managedDevices('${request.deviceId}')/remoteLock`;
     
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({}),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -187,12 +191,13 @@ export class IntuneAdapter implements UEMAdapter {
     // Use bypass passcode to unlock (requires device to have passcode set)
     const url = `https://graph.microsoft.com/v1.0/deviceManagement/managedDevices('${deviceId}')/bypassLock`;
     
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -220,12 +225,13 @@ export class IntuneAdapter implements UEMAdapter {
     // Use sync action
     const url = `https://graph.microsoft.com/v1.0/deviceManagement/managedDevices('${deviceId}')/syncDevice`;
     
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -248,11 +254,12 @@ export class IntuneAdapter implements UEMAdapter {
       await this.ensureAuthenticated();
       
       const url = 'https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$top=1';
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.accessToken}`,
         },
+        timeoutMs: TIMEOUT_PRESETS.short,
       });
       
       return response.ok;
@@ -284,12 +291,13 @@ export class IntuneAdapter implements UEMAdapter {
       grant_type: 'client_credentials',
     });
 
-    const response = await fetch(tokenUrl, {
+    const response = await fetchWithTimeout(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: params.toString(),
+      timeoutMs: TIMEOUT_PRESETS.short,
     });
 
     if (!response.ok) {
@@ -314,10 +322,11 @@ export class IntuneAdapter implements UEMAdapter {
       throw new Error('Managed identity not available');
     }
 
-    const response = await fetch(`${msiEndpoint}?resource=https://graph.microsoft.com&api-version=2017-09-01`, {
+    const response = await fetchWithTimeout(`${msiEndpoint}?resource=https://graph.microsoft.com&api-version=2017-09-01`, {
       headers: {
         'Secret': msiSecret,
       },
+      timeoutMs: TIMEOUT_PRESETS.short,
     });
 
     if (!response.ok) {
@@ -334,11 +343,12 @@ export class IntuneAdapter implements UEMAdapter {
   private async getOrCreateCategory(categoryName: string): Promise<string> {
     // First try to find existing category
     const listUrl = 'https://graph.microsoft.com/v1.0/deviceManagement/deviceCategories';
-    const listResponse = await fetch(listUrl, {
+    const listResponse = await fetchWithTimeout(listUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
       },
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (listResponse.ok) {
@@ -354,13 +364,14 @@ export class IntuneAdapter implements UEMAdapter {
 
     // Create new category
     const createUrl = 'https://graph.microsoft.com/v1.0/deviceManagement/deviceCategories';
-    const createResponse = await fetch(createUrl, {
+    const createResponse = await fetchWithTimeout(createUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ displayName: categoryName }),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!createResponse.ok) {

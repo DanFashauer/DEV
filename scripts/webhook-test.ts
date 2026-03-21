@@ -15,7 +15,14 @@
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-const ADMIN_KEY = process.env.ADMIN_API_KEY || 'test-admin-key';
+
+// Require explicit admin key - never use hardcoded defaults
+const ADMIN_KEY = process.env.ADMIN_API_KEY;
+if (!ADMIN_KEY) {
+  console.error('[ERROR] ADMIN_API_KEY environment variable is required');
+  console.error('[HELP]  export ADMIN_API_KEY="<your-api-key>"');
+  process.exit(1);
+}
 
 interface WebhookConfig {
   id: string;

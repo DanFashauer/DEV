@@ -1,4 +1,5 @@
 import type { ITSMAdapter, ITSMTicketRequest, ITSMTicketResponse } from '../adapters/types';
+import { fetchWithTimeout, TIMEOUT_PRESETS } from '../../utils/fetchWithTimeout';
 
 /**
  * ServiceNow Adapter Configuration
@@ -53,7 +54,7 @@ export class ServiceNowAdapter implements ITSMAdapter {
     const incident = this.buildIncidentPayload(request);
     const url = `${this.config.instanceUrl}/api/now/table/${this.config.table}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -61,6 +62,7 @@ export class ServiceNowAdapter implements ITSMAdapter {
         'Accept': 'application/json',
       },
       body: JSON.stringify(incident),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -103,7 +105,7 @@ export class ServiceNowAdapter implements ITSMAdapter {
     const url = `${this.config.instanceUrl}/api/now/table/${this.config.table}/${sysId}`;
     const incident = this.buildIncidentPayload(updates as ITSMTicketRequest);
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -111,6 +113,7 @@ export class ServiceNowAdapter implements ITSMAdapter {
         'Accept': 'application/json',
       },
       body: JSON.stringify(incident),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -143,12 +146,13 @@ export class ServiceNowAdapter implements ITSMAdapter {
       await this.ensureAuthenticated();
       
       const url = `${this.config.instanceUrl}/api/now/table/${this.config.table}?sysparm_limit=1`;
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.accessToken}`,
           'Accept': 'application/json',
         },
+        timeoutMs: TIMEOUT_PRESETS.short,
       });
       
       return response.ok;
@@ -187,13 +191,14 @@ export class ServiceNowAdapter implements ITSMAdapter {
       client_secret: this.config.auth.clientSecret || '',
     });
 
-    const response = await fetch(tokenUrl, {
+    const response = await fetchWithTimeout(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json',
       },
       body: params.toString(),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -216,12 +221,13 @@ export class ServiceNowAdapter implements ITSMAdapter {
   private async getSysIdByNumber(ticketNumber: string): Promise<string | null> {
     const url = `${this.config.instanceUrl}/api/now/table/${this.config.table}?sysparm_query=number=${ticketNumber}&sysparm_fields=sys_id`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
         'Accept': 'application/json',
       },
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {

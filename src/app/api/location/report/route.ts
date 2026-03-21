@@ -56,21 +56,47 @@ export async function POST(request: Request) {
     payload: { ...body },
   });
 
-  // Emit webhook event (best-effort, non-blocking)
-  emitLocationObserved({
-    deviceId: body.deviceId,
-    badgeId: '', // Location signals don't include badgeId
-    location: {
-      mode: body.mode,
-      zone: body.zoneId,
-      building: body.buildingId,
-      floor: body.floorId,
-      coordinates: body.lat && body.lon ? { lat: body.lat!, lon: body.lon! } : undefined,
-      accuracy: body.accuracyM,
-      source: body.source,
-    },
-    timestamp: new Date(body.observedAt).toISOString(),
-  }).catch(err => console.error('[Webhook] Failed to emit asset.location.observed:', err));
+  // Emit webhook event
+  if (process.env.WEBHOOK_DELIVERY_REQUIRED === 'true') {
+    try {
+      await emitLocationObserved({
+        deviceId: body.deviceId,
+        badgeId: '', // Location signals don't include badgeId
+        location: {
+          mode: body.mode,
+          zone: body.zoneId,
+          building: body.buildingId,
+          floor: body.floorId,
+          coordinates: body.lat && body.lon ? { lat: body.lat!, lon: body.lon! } : undefined,
+          accuracy: body.accuracyM,
+          source: body.source,
+        },
+        timestamp: new Date(body.observedAt).toISOString(),
+      });
+    } catch (error) {
+      console.error('[Webhook] Mandatory webhook delivery failed:', error);
+      return NextResponse.json(
+        { error: 'Event delivery failed' },
+        { status: 502 }
+      );
+    }
+  } else {
+    // Best-effort delivery for non-critical webhooks
+    emitLocationObserved({
+      deviceId: body.deviceId,
+      badgeId: '', // Location signals don't include badgeId
+      location: {
+        mode: body.mode,
+        zone: body.zoneId,
+        building: body.buildingId,
+        floor: body.floorId,
+        coordinates: body.lat && body.lon ? { lat: body.lat!, lon: body.lon! } : undefined,
+        accuracy: body.accuracyM,
+        source: body.source,
+      },
+      timestamp: new Date(body.observedAt).toISOString(),
+    }).catch(err => console.error('[Webhook] Async webhook delivery failed:', err));
+  }
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }

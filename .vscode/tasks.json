@@ -1,0 +1,430 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 DEMO: Full Flow (with setup)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:server:start", "&&", "bun", "run", "demo:flow", "&&", "bun", "run", "test:server:stop"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🎬 DEMO: Executive Presentation",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:server:start", "&&", "bun", "run", "demo:exec", "&&", "bun", "run", "test:server:stop"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "✅ DEMO: Validate Features",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:server:start", "&&", "bun", "run", "demo:validate", "&&", "bun", "run", "test:server:stop"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🌱 DEMO: Seed Data",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "demo:seed"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧪 TEST: All Tests (with local server)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:run:local"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$vitest"],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "🧪 TEST: API Tests",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:api"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$vitest"]
+    },
+    {
+      "label": "🧪 TEST: Demo Tests",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:demo:local"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$vitest"]
+    },
+    {
+      "label": "🧪 TEST: E2E Tests (Playwright)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:e2e"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔒 TEST: Security Tests",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:security:local"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$vitest"]
+    },
+    {
+      "label": "⚡ TEST: Load Tests",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:load"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔍 TEST: Static Analysis (Semgrep)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:semgrep"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📋 TEST: Summary of Failures",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:summary"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🛠️ DEBUG: Start Dev Server",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "dev"],
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": [
+        {
+          "pattern": "$tsc",
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^\\s*▲\\s+Next\\.js",
+            "endsPattern": "^\\s*✓\\s+Ready"
+          }
+        }
+      ]
+    },
+    {
+      "label": "🛠️ DEBUG: Start Test Server",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:server:start"],
+      "isBackground": false,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🛠️ DEBUG: Stop Test Server",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:server:stop"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🛠️ DEBUG: Typecheck Only",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "typecheck"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$tsc"],
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "🛠️ DEBUG: Lint Check",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "lint"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$eslint"]
+    },
+    {
+      "label": "🐛 BUG FIX: Verify After Fix (Quick)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "typecheck", "&&", "bun", "run", "lint", "&&", "bun", "run", "test:demo:local"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$tsc", "$eslint", "$vitest"],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🐛 BUG FIX: Full Verification (Comprehensive)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "typecheck", "&&", "bun", "run", "lint", "&&", "bun", "run", "build", "&&", "bun", "run", "test:run:local"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$tsc", "$eslint", "$vitest"],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🐛 BUG FIX: Validation Suite",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:server:start", "&&", "bun", "run", "test:run:local", "&&", "bun", "run", "test:e2e", "&&", "bun", "run", "test:server:stop"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$vitest"],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "📦 BUILD: Development Build",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "build"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$tsc"],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "label": "🚀 CI: Full Test Suite (Pre-merge)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:ci"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": ["$tsc", "$eslint", "$vitest"],
+      "group": {
+        "kind": "test"
+      }
+    },
+    {
+      "label": "🌐 INTEGRATION: Audit Verification",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "audit:verify"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🌐 INTEGRATION: Webhooks Test",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:webhooks"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🌐 INTEGRATION: WebAuthn Smoke Test",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:webauthn"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🌐 INTEGRATION: FleetDM Smoke Test",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "test:fleetdm"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📱 SIM: Badge Simulation",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "sim:badge"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📱 SIM: Location Simulation",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "sim:location"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📱 SIM: Posture Simulation",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "sim:posture"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

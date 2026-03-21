@@ -111,7 +111,44 @@ class InMemoryDeviceRegistry implements DeviceRegistry {
     return `${CONFIG.keyPrefix}:${deviceId}`;
   }
   
+  /**
+   * Validate hardware ID format
+   * Accepts alphanumeric characters, hyphens, underscores, and colons
+   * Must be between 4-64 characters
+   */
+  private validateHardwareId(id: string): boolean {
+    if (!id || typeof id !== 'string') {
+      return false;
+    }
+    
+    // Check length
+    if (id.length < 4 || id.length > 64) {
+      return false;
+    }
+    
+    // Check format - alphanumeric, hyphens, underscores, colons only
+    const hardwareIdRegex = /^[a-zA-Z0-9\-_:]+$/;
+    return hardwareIdRegex.test(id);
+  }
+  
   async enroll(request: EnrollmentRequest): Promise<Device> {
+    // Validate hardware IDs
+    if (!this.validateHardwareId(request.deviceId)) {
+      throw new Error(`Invalid device ID format: ${request.deviceId}`);
+    }
+    
+    if (!this.validateHardwareId(request.deviceSerial)) {
+      throw new Error(`Invalid device serial format: ${request.deviceSerial}`);
+    }
+    
+    if (!request.deviceModel || request.deviceModel.length === 0) {
+      throw new Error('Device model is required');
+    }
+    
+    if (!request.osVersion || request.osVersion.length === 0) {
+      throw new Error('OS version is required');
+    }
+    
     const now = new Date().toISOString();
     const existing = this.devices.get(request.deviceId);
     

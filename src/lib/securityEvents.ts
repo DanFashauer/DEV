@@ -40,8 +40,18 @@ export function addSecurityEvent(event: Omit<SecurityEvent, 'id'>) {
   console.log('[SecurityEvent] Recorded:', event.type, event.decision, event.reason);
 }
 
-export function getSecurityEvents(limit = 10): SecurityEvent[] {
-  return securityEvents.slice(0, limit);
+export function getSecurityEvents(limit: number = 50, offset: number = 0) {
+  const total = securityEvents.length;
+  const events = securityEvents.slice(offset, offset + limit);
+  const hasMore = offset + limit < total;
+  
+  return {
+    events,
+    total,
+    hasMore,
+    offset,
+    limit,
+  };
 }
 
 export function getSecurityEventsByType(type: SecurityEvent['type']): SecurityEvent[] {

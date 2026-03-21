@@ -5,6 +5,7 @@ import type {
   UEMQuarantineRequest, 
   UEMCommandResponse 
 } from '../adapters/types';
+import { fetchWithTimeout, TIMEOUT_PRESETS } from '../../utils/fetchWithTimeout';
 
 /**
  * Omnissa Workspace ONE UEM (formerly VMware Workspace ONE UEM) Adapter Configuration
@@ -59,13 +60,14 @@ export class WorkspaceONEAdapter implements UEMAdapter {
     // Search by device UUID or serial number
     const url = `${this.config.baseUrl}/api/v1/mdm/devices?searchBy=${deviceId}&id=${deviceId}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${this.config.tenantId}:${this.accessToken}`,
         'Accept': 'application/json',
         'aw-tenant-identifier': this.config.tenantId,
       },
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -122,7 +124,7 @@ export class WorkspaceONEAdapter implements UEMAdapter {
       value: request.tag,
     };
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.config.tenantId}:${this.accessToken}`,
@@ -130,6 +132,7 @@ export class WorkspaceONEAdapter implements UEMAdapter {
         'aw-tenant-identifier': this.config.tenantId,
       },
       body: JSON.stringify(attribute),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     return { success: response.ok };
@@ -144,12 +147,13 @@ export class WorkspaceONEAdapter implements UEMAdapter {
     // Delete custom attribute
     const url = `${this.config.baseUrl}/api/v1/mdm/devices/${request.deviceId}/customattribute/EnterpriseShellTag`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.config.tenantId}:${this.accessToken}`,
         'aw-tenant-identifier': this.config.tenantId,
       },
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     return { success: response.ok || response.status === 404 };
@@ -169,7 +173,7 @@ export class WorkspaceONEAdapter implements UEMAdapter {
       commandId: 'quarantine',
     };
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.config.tenantId}:${this.accessToken}`,
@@ -177,6 +181,7 @@ export class WorkspaceONEAdapter implements UEMAdapter {
         'aw-tenant-identifier': this.config.tenantId,
       },
       body: JSON.stringify(command),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -205,7 +210,7 @@ export class WorkspaceONEAdapter implements UEMAdapter {
       commandId: 'unquarantine',
     };
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.config.tenantId}:${this.accessToken}`,
@@ -213,6 +218,7 @@ export class WorkspaceONEAdapter implements UEMAdapter {
         'aw-tenant-identifier': this.config.tenantId,
       },
       body: JSON.stringify(command),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -244,7 +250,7 @@ export class WorkspaceONEAdapter implements UEMAdapter {
       commandId: 'sync',
     };
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.config.tenantId}:${this.accessToken}`,
@@ -252,6 +258,7 @@ export class WorkspaceONEAdapter implements UEMAdapter {
         'aw-tenant-identifier': this.config.tenantId,
       },
       body: JSON.stringify(command),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {
@@ -274,12 +281,13 @@ export class WorkspaceONEAdapter implements UEMAdapter {
       await this.ensureAuthenticated();
       
       const url = `${this.config.baseUrl}/api/v1/mdm/devices?page=1&pageSize=1`;
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.config.tenantId}:${this.accessToken}`,
           'aw-tenant-identifier': this.config.tenantId,
         },
+        timeoutMs: TIMEOUT_PRESETS.short,
       });
       
       return response.ok;
@@ -304,13 +312,14 @@ export class WorkspaceONEAdapter implements UEMAdapter {
       client_secret: this.config.clientSecret,
     });
 
-    const response = await fetch(tokenUrl, {
+    const response = await fetchWithTimeout(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'aw-tenant-identifier': this.config.tenantId,
       },
       body: params.toString(),
+      timeoutMs: TIMEOUT_PRESETS.normal,
     });
 
     if (!response.ok) {

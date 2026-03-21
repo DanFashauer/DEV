@@ -26,6 +26,7 @@ import {
   recordDelivery,
   addToDLQ,
 } from './store';
+import { fetchWithTimeout, TIMEOUT_PRESETS } from '../../utils/fetchWithTimeout';
 
 // Environment checks
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -131,17 +132,12 @@ async function dispatchToEndpoint(
   const headers = createSignedHeaders(payloadStr, secret, payload.deliveryId, payload.id);
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
-
-    const response = await fetch(webhook.url, {
+    const response = await fetchWithTimeout(webhook.url, {
       method: 'POST',
       headers,
       body: payloadStr,
-      signal: controller.signal,
+      timeoutMs: config.timeoutMs,
     });
-
-    clearTimeout(timeoutId);
 
     const responseBody = await response.text().catch(() => undefined);
 
