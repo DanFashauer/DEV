@@ -9,6 +9,24 @@ describe('API v1 - Public Endpoints', () => {
   const baseUrl = 'http://localhost:3000/api/v1';
   const apiKey = process.env.ADMIN_API_KEY || 'test-api-key';
 
+  beforeAll(async () => {
+    // Wait for server to be ready
+    let retries = 10;
+    while (retries > 0) {
+      try {
+        const response = await fetch(`${baseUrl}/health`);
+        if (response.ok) break;
+      } catch (error) {
+        // Server not ready yet
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      retries--;
+    }
+    if (retries === 0) {
+      throw new Error('Server did not start within timeout');
+    }
+  });
+
   describe('Health Check', () => {
     it('should return healthy status', async () => {
       const response = await fetch(`${baseUrl}/health`);

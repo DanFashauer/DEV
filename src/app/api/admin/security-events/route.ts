@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '10', 10);
   const type = searchParams.get('type') as SecurityEvent['type'] | null;
 
-  let events = getSecurityEvents(100);
+  let events = getSecurityEvents(100, 0).events;
   
   if (type) {
     events = events.filter(e => e.type === type);

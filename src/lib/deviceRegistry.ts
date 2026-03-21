@@ -107,6 +107,49 @@ interface DeviceRegistry {
 class InMemoryDeviceRegistry implements DeviceRegistry {
   private devices = new Map<string, Device>();
   
+  constructor() {
+    // Initialize test data
+    this.initializeTestData();
+  }
+  
+  private initializeTestData(): void {
+    const testDevices: Device[] = [
+      {
+        deviceId: 'test-device-001',
+        deviceSerial: 'SN001234',
+        deviceModel: 'iPhone 14',
+        osVersion: 'iOS 17.0',
+        enrolled: true,
+        enrolledAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+        lastSeenAt: new Date().toISOString(),
+      },
+      {
+        deviceId: 'test-device-002',
+        deviceSerial: 'SN005678',
+        deviceModel: 'Samsung Galaxy S23',
+        osVersion: 'Android 13',
+        enrolled: true,
+        enrolledAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+        lastSeenAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+      },
+      {
+        deviceId: 'test-device-003',
+        deviceSerial: 'SN009876',
+        deviceModel: 'iPad Pro',
+        osVersion: 'iOS 16.5',
+        enrolled: false,
+        enrolledAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+        lastSeenAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+      },
+    ];
+    
+    testDevices.forEach(device => {
+      this.devices.set(device.deviceId, device);
+    });
+    
+    console.log(`[DeviceRegistry] Initialized with ${testDevices.length} test devices`);
+  }
+  
   private makeKey(deviceId: string): string {
     return `${CONFIG.keyPrefix}:${deviceId}`;
   }

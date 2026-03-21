@@ -27,19 +27,24 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const enrolledFilter = searchParams.get('enrolled');
 
+    console.log('[DevicesAPI] Getting devices, limit:', limit, 'offset:', offset, 'enrolledFilter:', enrolledFilter);
+    
     // Get all devices
     const allDevices = await deviceRegistry.list();
+    console.log('[DevicesAPI] Found devices:', allDevices.length);
 
     // Apply filters
     let filtered = allDevices;
     if (enrolledFilter !== null) {
       const enrolled = enrolledFilter === 'true';
       filtered = allDevices.filter(d => d.enrolled === enrolled);
+      console.log('[DevicesAPI] After filtering enrolled=' + enrolled + ':', filtered.length);
     }
 
     // Apply pagination
     const total = filtered.length;
     const devices = filtered.slice(offset, offset + limit);
+    console.log('[DevicesAPI] After pagination:', devices.length, 'total:', total);
 
     return NextResponse.json(
       {
@@ -59,14 +64,15 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
+    console.error('[DevicesAPI] Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[DevicesAPI] Error:', message);
     
     return NextResponse.json(
       {
         error: 'Failed to list devices',
         code: 'LIST_DEVICES_ERROR',
         requestId: request.headers.get('x-request-id'),
+        details: message,
       },
       { status: 500 }
     );

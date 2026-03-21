@@ -3,13 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false, // Don't expose Next.js version
   
-  // Request size limits (10MB for API, 5MB for pages)
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-  
   // CORS configuration
   async headers() {
     return [
