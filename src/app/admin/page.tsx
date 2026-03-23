@@ -32,58 +32,37 @@ interface Persona {
 const authFlowSteps: FlowStep[] = [
   {
     id: "badge",
-    label: "Badge Scan",
+    label: "Badge",
     description: "User presents badge to reader",
     icon: "🪪",
     status: "active",
   },
   {
-    id: "validate",
-    label: "Validate Badge",
-    description: "Verify badge format and security",
-    icon: "✓",
+    id: "security",
+    label: "Device Security Check",
+    description: "Verify device compliance posture",
+    icon: "🔒",
     status: "pending",
   },
   {
-    id: "mdm",
-    label: "MDM Lookup",
-    description: "Query MDM for user profile",
-    icon: "🔍",
+    id: "policy",
+    label: "Security Policy",
+    description: "Evaluate access policies",
+    icon: "📋",
     status: "pending",
   },
   {
-    id: "persona",
-    label: "Build Persona",
-    description: "Create access persona from MDM",
-    icon: "👤",
+    id: "decision",
+    label: "Access Decision",
+    description: "Grant or deny access",
+    icon: "⚖️",
     status: "pending",
   },
   {
-    id: "auth",
-    label: "Authenticate",
-    description: "Verify identity with IdP",
-    icon: "🔐",
-    status: "pending",
-  },
-  {
-    id: "mfa",
-    label: "MFA Check",
-    description: "Optional MFA verification",
-    icon: "🛡️",
-    status: "pending",
-  },
-  {
-    id: "session",
-    label: "Create Session",
-    description: "Establish kiosk session",
-    icon: "📱",
-    status: "pending",
-  },
-  {
-    id: "launch",
-    label: "Launch Apps",
-    description: "Start permitted applications",
-    icon: "🚀",
+    id: "actions",
+    label: "Automated Security Actions",
+    description: "Trigger policy actions if needed",
+    icon: "⚡",
     status: "pending",
   },
 ];
@@ -384,11 +363,11 @@ function SecurityEventsView() {
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
             <div className="text-2xl font-bold text-red-400">{summary.denied || 0}</div>
-            <div className="text-sm text-neutral-400">Denied</div>
+            <div className="text-sm text-neutral-400">Access Denied</div>
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
             <div className="text-2xl font-bold text-emerald-400">{summary.allowed || 0}</div>
-            <div className="text-sm text-neutral-400">Allowed</div>
+            <div className="text-sm text-neutral-400">Access Granted</div>
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
             <div className="text-2xl font-bold text-amber-400">{summary.quarantined || 0}</div>
@@ -416,8 +395,8 @@ function SecurityEventsView() {
               className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm"
             >
               <option value="all">All</option>
-              <option value="DENY">Denied</option>
-              <option value="ALLOW">Allowed</option>
+              <option value="DENY">Access Denied</option>
+              <option value="ALLOW">Access Granted</option>
             </select>
           </div>
           <div>
@@ -629,14 +608,14 @@ function DashboardView() {
               <span className="text-2xl">🚨</span>
             </div>
             <div className="text-3xl font-bold text-red-400">{summary?.denied || 0}</div>
-            <div className="text-sm text-neutral-400">Sessions Denied</div>
+            <div className="text-sm text-neutral-400">Access Denied</div>
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
               <span className="text-2xl">✅</span>
             </div>
             <div className="text-3xl font-bold text-emerald-400">{summary?.allowed || 0}</div>
-            <div className="text-sm text-neutral-400">Sessions Allowed</div>
+            <div className="text-sm text-neutral-400">Access Granted</div>
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">

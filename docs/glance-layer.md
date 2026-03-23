@@ -6,6 +6,20 @@
 
 **Core Principle**: One-glance readable, privacy-aware, policy-driven, location-aware, return-oriented, brandable per tenant.
 
+**Scope**: Glance Layer focuses on identity and session context, NOT device management. MDM provides full device health; Glance Layer shows only compliance and return status.
+
+**What Glance Layer Shows**:
+- Who has the device (user + role)
+- Where it belongs (return location)
+- When it's due back
+- Whether it's compliant
+
+**What Glance Layer Does NOT Show** (use MDM instead):
+- Full device health telemetry
+- OS update status
+- Storage capacity
+- Detailed location tracking (use NAC/RTLS)
+
 ---
 
 ## Design Principles
@@ -232,7 +246,8 @@ interface GlanceConfig {
     notifyOnDock: boolean;        // Notify IT when device docked
   };
 
-  // Location & Zone Settings
+  // Location & Zone Settings (SIMPLIFIED - Use NAC/RTLS for detailed location, Glance Layer shows zone only)
+  // @deprecated Deep location tracking is handled by NAC/RTLS. Glance Layer shows zone for return context.
   location: {
     enabled: boolean;              // Enable location tracking
     mode: 'gps' | 'wifi' | 'beacon' | 'manual';  // Location detection method
@@ -259,7 +274,8 @@ interface GlanceConfig {
     qrCodeUrl?: string;
   };
 
-  // Battery & Power
+  // Battery & Power (DEPRECATED - MDM tracks battery, Glance Layer shows only if critical)
+  // @deprecated Use MDM for detailed battery telemetry. Glance Layer shows only critical status.
   battery: {
     enabled: boolean;
     lowThresholdPercent: number;    // Warn below this (default: 20)
@@ -270,7 +286,8 @@ interface GlanceConfig {
     chargingLocationRequired: boolean; // Must be at charging location when critical
   };
 
-  // Device Health
+  // Device Health (DEPRECATED - MDM manages device health, Glance Layer shows compliance only)
+  // @deprecated MDM provides full device health. Glance Layer shows only compliance status.
   deviceHealth: {
     enabled: boolean;
     showStorage: boolean;        // Show available storage
@@ -280,7 +297,8 @@ interface GlanceConfig {
     warnOnOSOutdated: boolean;   // Warn if OS > 30 days outdated
   };
 
-  // Time-Based Policies
+  // Time-Based Policies (DEPRECATED - Use SignalGrid policy engine instead)
+  // @deprecated Time-based access control is handled by SignalGrid policies.
   timeBased: {
     enabled: boolean;
     allowedHours: {              // Business hours

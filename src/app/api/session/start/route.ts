@@ -505,14 +505,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           // C-suite decision receipt
-          decision: 'DENY',
-          reason: 'DEVICE_NON_COMPLIANT',
-          reasonDetail: isFleetCompliant ? 'UEM compliance check failed' : 'FleetDM compliance check failed (jailbroken)',
-          actionsTriggered: policyActions.map(a => a.type),
-          policy: policyActions[0]?.policyName || 'Quarantine High-Risk Device',
-          riskScore: riskScore.riskScore,
-          riskLevel: riskScore.riskLevel,
-          timestamp: new Date().toISOString(),
+          decision: 'ACCESS_DENIED',
+          reason: isFleetCompliant ? 'UEM compliance check failed' : 'FleetDM compliance check failed (jailbroken)',
+          actions: policyActions.map(a => ({ type: a.type, params: a.params })),
+          devicePosture: {
+            fleetCompliant: isFleetCompliant,
+            uemCompliant: isUEMCompliant,
+            fleetDetails: fleetContext,
+            uemDetails: uemContext,
+          },
           
           // Legacy/compatibility fields
           success: false,
@@ -630,11 +631,20 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json({
+      decision: 'ACCESS_GRANTED',
+      reason: 'Device compliant and policy allows access',
       success: true,
       session: directive,
       riskScore: riskScore.riskScore,
       riskLevel: riskScore.riskLevel,
       identityId: deviceIdentity.identityId,
+      devicePosture: {
+        fleetCompliant: isFleetCompliant,
+        uemCompliant: isUEMCompliant,
+        fleetDetails: fleetContext,
+        uemDetails: uemContext,
+      },
+      actions: policyActions.map(a => ({ type: a.type, params: a.params })),
       policyActions: policyActions.length > 0 ? policyActions : undefined,
     });
   } catch (error) {
