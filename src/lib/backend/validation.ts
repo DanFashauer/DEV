@@ -14,9 +14,27 @@ import { nonceStore, CONFIG } from './nonceStore';
 /**
  * Configuration for request signing
  */
+function getSigningSecret(): string {
+  const secret = process.env.BACKEND_SIGNING_SECRET;
+  
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[SECURITY] BACKEND_SIGNING_SECRET must be set in production');
+    }
+    console.warn('[SECURITY] Using insecure default secret in development - set BACKEND_SIGNING_SECRET for production');
+    return 'development-secret-key-do-not-use-in-production';
+  }
+  
+  if (secret.length < 32) {
+    console.warn('[SECURITY] BACKEND_SIGNING_SECRET should be 32+ characters');
+  }
+  
+  return secret;
+}
+
 const SIGNING_CONFIG = {
-  /** Secret key for HMAC-SHA256 - in production, use environment variable */
-  secretKey: process.env.BACKEND_SIGNING_SECRET ?? 'development-secret-key',
+  /** Secret key for HMAC-SHA256 - must be set in production */
+  secretKey: getSigningSecret(),
   /** Time window for request validity (5 minutes in ms) */
   validityWindowMs: 5 * 60 * 1000,
 };
@@ -149,13 +167,15 @@ export async function validateAndAuthorizeSessionStart(
 ): Promise<ValidationResult> {
   const { 'x-signature': signature, 'x-timestamp': timestamp, 'x-nonce': nonce } = headers;
   
-  // DEV BYPASS: In development mode, allow requests without security headers
-  // This enables easier testing without needing to compute HMAC signatures
-  const isDevMode = process.env.NODE_ENV !== 'production';
+  // DEV BYPASS: Only allow bypass in development with explicit opt-in
+  // Never bypass in production or staging
+  const isDevMode = process.env.NODE_ENV === 'development';
+  const devBypassEnabled = process.env.ENABLE_DEV_BYPASS === 'true';
+  const canBypass = isDevMode && devBypassEnabled;
   
-  // 1. Check required headers (skip in dev mode for easier testing)
+  // 1. Check required headers (skip in dev mode only with explicit bypass enabled)
   if (!signature || !timestamp || !nonce) {
-    if (isDevMode && process.env.ENABLE_DEV_BYPASS === 'true') {
+    if (canBypass) {
       // In dev mode with bypass enabled, skip security validation
       // Parse and return the body as-is
       const parseResult = BadgeEventSchema.safeParse(body);
