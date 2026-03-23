@@ -24,8 +24,9 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { validateAndAuthorizeSessionStart, generateRandomHex } from '@/lib/backend/validation';
-import { badgeRegistry } from '@/lib/badgeRegistry';
-import { sessionStore, SessionDirective } from '@/lib/sessionStore';
+import { getBadgeRegistry } from '@/lib/tenant/badgeRegistry';
+import { getSessionStore, SessionDirective } from '@/lib/tenant/sessionStore';
+import { resolveTenantId } from '@/lib/tenant/tenantContext';
 import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
 import { emitSessionStart } from '@/lib/integrations/webhooks/emitter';
 import { emitAuthFailure } from '@/lib/integrations/webhooks/emitter';
@@ -197,6 +198,11 @@ async function getFleetContext(deviceSerial: string, deviceId?: string): Promise
  */
 export async function POST(request: Request) {
   try {
+    // Resolve tenant ID for multi-tenant isolation
+    const tenantId = resolveTenantId(request);
+    const badgeRegistry = getBadgeRegistry(tenantId);
+    const sessionStore = getSessionStore(tenantId);
+    
     // Get identifiers for rate limiting
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     

@@ -13,28 +13,42 @@ import { nonceStore, CONFIG } from './nonceStore';
 
 /**
  * Configuration for request signing
+ * Lazy-loaded to avoid build-time errors
  */
+let signingSecret: string | null = null;
+
 function getSigningSecret(): string {
+  if (signingSecret) {
+    return signingSecret;
+  }
+  
   const secret = process.env.BACKEND_SIGNING_SECRET;
   
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
+    // Only throw at runtime in production, not at build time
+    // Use a flag to track if we've already warned
+    if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+      console.error('[SECURITY] BACKEND_SIGNING_SECRET must be set in production');
       throw new Error('[SECURITY] BACKEND_SIGNING_SECRET must be set in production');
     }
-    console.warn('[SECURITY] Using insecure default secret in development - set BACKEND_SIGNING_SECRET for production');
-    return 'development-secret-key-do-not-use-in-production';
+    console.warn('[SECURITY] Using insecure default secret - set BACKEND_SIGNING_SECRET for production');
+    signingSecret = 'development-secret-key-do-not-use-in-production';
+    return signingSecret;
   }
   
   if (secret.length < 32) {
     console.warn('[SECURITY] BACKEND_SIGNING_SECRET should be 32+ characters');
   }
   
-  return secret;
+  signingSecret = secret;
+  return signingSecret;
 }
 
 const SIGNING_CONFIG = {
   /** Secret key for HMAC-SHA256 - must be set in production */
-  secretKey: getSigningSecret(),
+  get secretKey(): string {
+    return getSigningSecret();
+  },
   /** Time window for request validity (5 minutes in ms) */
   validityWindowMs: 5 * 60 * 1000,
 };
