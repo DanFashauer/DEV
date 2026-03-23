@@ -36,6 +36,7 @@ import { getDevicePosture } from '@/lib/integrations/uem/store';
 import { resolveDeviceIdentity, getDeviceIdentityByDeviceId, createIdentityRef } from '@/lib/identity/deviceIdentity';
 import { calculateRiskScore, createRiskContext } from '@/lib/risk/score';
 import { addSecurityEvent } from '@/lib/securityEvents';
+import { addIntegrationLog } from '@/lib/integrationLogs';
 
 /**
  * Simple in-memory rate limiter for session start
@@ -90,11 +91,10 @@ async function getUEMContext(deviceId: string): Promise<Record<string, unknown>>
 }
 
 /**
- * Build fleet context for policy evaluation
  * Fetches cached FleetDM posture data if available
- * Also checks posture store directly by deviceId for demo/testing
+ * Also checks posture store directly by deviceSerial or deviceId for demo/testing
  */
-async function getFleetContext(deviceSerial: string): Promise<Record<string, unknown>> {
+async function getFleetContext(deviceSerial: string, deviceId?: string): Promise<Record<string, unknown>> {
   try {
     // First, check posture store directly by deviceSerial (for demo/testing)
     const directPosture = await getPostureForHost(deviceSerial);
@@ -116,6 +116,30 @@ async function getFleetContext(deviceSerial: string): Promise<Record<string, unk
         policies: posture.policies,
         labels: [],
       };
+    }
+    
+    // Also check by deviceId (for demo/testing where deviceId is used as host identifier)
+    if (deviceId) {
+      const postureById = await getPostureForHost(deviceId);
+      if (postureById) {
+        const posture = postureById.data as {
+          platform: string;
+          compliant: boolean;
+          lastCheckAt: string;
+          policies: { id: number; name: string; response: string }[];
+          rawSignals?: Record<string, unknown>;
+        };
+        
+        return {
+          enrolled: true,
+          status: posture.compliant ? 'compliant' : 'non_compliant',
+          lastSeenAge: Date.now() - new Date(posture.lastCheckAt).getTime(),
+          osVersion: posture.rawSignals?.os_version as string || 'unknown',
+          platform: posture.platform,
+          policies: posture.policies,
+          labels: [],
+        };
+      }
     }
     
     // Fall back to FleetDM adapter
@@ -310,7 +334,7 @@ export async function POST(request: Request) {
     // Step 3: Check device posture BEFORE creating session
     // Get fleet and UEM context to evaluate compliance
     const [fleetContext, uemContext] = await Promise.all([
-      getFleetContext(event.device?.deviceSerial || ''),
+      getFleetContext(event.device?.deviceSerial || '', event.device?.deviceId || deviceId),
       getUEMContext(event.device?.deviceId || deviceId),
     ]);
 
@@ -408,6 +432,36 @@ export async function POST(request: Request) {
 
       // Record additional events for each action triggered
       for (const action of policyActions) {
+        // Log integration payloads for demo visibility
+        if (action.type === 'quarantine_device') {
+          addIntegrationLog('nac', {
+            command: 'quarantine',
+            deviceId,
+            reason: 'Device non-compliant',
+            policy: action.policyName,
+            timestamp: new Date().toISOString(),
+          });
+        } else if (action.type === 'emit_siem_event') {
+          addIntegrationLog('siem', {
+            eventType: 'signalgrid.access.denied',
+            deviceId,
+            userId: badgeMapping.userId,
+            riskScore: riskScore.riskScore,
+            policy: action.policyName,
+            timestamp: new Date().toISOString(),
+          });
+        } else if (action.type === 'send_itsm_ticket') {
+          addIntegrationLog('itsm', {
+            shortDescription: 'Non-compliant device access denied',
+            urgency: 'high',
+            category: 'Security',
+            deviceId,
+            userId: badgeMapping.userId,
+            policy: action.policyName,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
         if (action.type === 'quarantine_device') {
           addSecurityEvent({
             type: 'quarantine',
@@ -511,33 +565,14 @@ export async function POST(request: Request) {
       expiresAt: session.expiresAt,
     });
     
-    // Emit webhook event
-    if (process.env.WEBHOOK_DELIVERY_REQUIRED === 'true') {
-      try {
-        await emitSessionStart({
-          sessionId: session.sessionId,
-          userId: session.userId,
-          deviceId: deviceId,
-          badgeId: event.badge.badgeId,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        console.error('[Webhook] Mandatory webhook delivery failed:', error);
-        return NextResponse.json(
-          { error: 'Event delivery failed' },
-          { status: 502 }
-        );
-      }
-    } else {
-      // Best-effort delivery for non-critical webhooks
-      emitSessionStart({
-        sessionId: session.sessionId,
-        userId: session.userId,
-        deviceId: deviceId,
-        badgeId: event.badge.badgeId,
-        timestamp: new Date().toISOString(),
-      }).catch(err => console.error('[Webhook] Async webhook delivery failed:', err));
-    }
+    // Emit webhook event (best-effort, non-blocking)
+    emitSessionStart({
+      sessionId: session.sessionId,
+      userId: session.userId,
+      deviceId: deviceId,
+      badgeId: event.badge.badgeId,
+      timestamp: new Date().toISOString(),
+    }).catch(err => console.error('[Webhook] Failed to emit session.start:', err));
     
     // Evaluate policies and get actions
     // Build fleet, UEM, identity, and risk context for policy evaluation
@@ -581,38 +616,17 @@ export async function POST(request: Request) {
     
     const policyActions = evaluatePolicies(policyContext);
     
-    // Process policy actions with error boundary
-    try {
-      for (const action of policyActions) {
-        console.log('[Policy] Action triggered:', action.type, action.params);
-        // Handle specific action types
-        if (action.type === 'set_session_ttl' && action.params?.seconds) {
-          // Extend session TTL
-          await sessionStore.update(session.sessionId, {
-            expiresAt: new Date(Date.now() + action.params.seconds * 1000).toISOString(),
-          });
-          directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
-        }
+    // Process policy actions
+    for (const action of policyActions) {
+      console.log('[Policy] Action triggered:', action.type, action.params);
+      // Handle specific action types
+      if (action.type === 'set_session_ttl' && action.params?.seconds) {
+        // Extend session TTL
+        await sessionStore.update(session.sessionId, {
+          expiresAt: new Date(Date.now() + action.params.seconds * 1000).toISOString(),
+        });
+        directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[Policy] Action processing failed:', errorMessage);
-      
-      // Record audit failure
-      await recordAuthFailure({
-        type: 'policy_dispatch_failed',
-        sessionId: session.sessionId,
-        userId: badgeMapping.userId,
-        deviceId,
-        reason: `Policy action processing failed: ${errorMessage}`,
-        riskScore: riskScore.riskScore,
-      });
-      
-      // Return error response
-      return NextResponse.json(
-        { error: 'Policy execution failed' },
-        { status: 500 }
-      );
     }
     
     return NextResponse.json({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 // Platform scope for documentation
 const PLATFORM_SCOPE = {
@@ -149,11 +150,28 @@ export default function AdminDashboard() {
   const [selectedFlowStep, setSelectedFlowStep] = useState<string | null>(null);
   const [personas, setPersonas] = useState<Persona[]>(samplePersonas);
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const [demoStatus, setDemoStatus] = useState<{ status: string; message: string } | null>(null);
+
+  useEffect(() => {
+    async function fetchDemoStatus() {
+      try {
+        const res = await fetch('/api/demo/verify');
+        const data = await res.json();
+        setDemoStatus({ status: data.status, message: data.message });
+      } catch {
+        setDemoStatus({ status: 'FAIL', message: 'Demo verification unavailable' });
+      }
+    }
+    fetchDemoStatus();
+    const interval = setInterval(fetchDemoStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: "📊" },
     { id: "events", label: "Security Events", icon: "🚨" },
     { id: "integrations", label: "Integrations", icon: "🔌" },
+    { id: "logs", label: "Integration Logs", icon: "📡" },
     { id: "policies", label: "Policies", icon: "📋" },
     { id: "devices", label: "Devices", icon: "📱" },
     { id: "security", label: "Security", icon: "🔐" },
@@ -174,6 +192,18 @@ export default function AdminDashboard() {
               <h1 className="text-xl font-semibold">EnterpriseShell Admin</h1>
             </div>
             <div className="flex items-center gap-4">
+              {demoStatus && (
+                <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-2 ${
+                  demoStatus.status === 'PASS' 
+                    ? 'bg-emerald-500/20 text-emerald-400' 
+                    : 'bg-amber-500/20 text-amber-400'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${
+                    demoStatus.status === 'PASS' ? 'bg-emerald-400' : 'bg-amber-400'
+                  }`}></span>
+                  Demo {demoStatus.status === 'PASS' ? 'Ready' : 'Not Ready'}
+                </span>
+              )}
               <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm">
                 ● Connected
               </span>
@@ -218,6 +248,9 @@ export default function AdminDashboard() {
             )}
             {activeTab === "integrations" && (
               <IntegrationsView />
+            )}
+            {activeTab === "logs" && (
+              <IntegrationLogsView />
             )}
             {activeTab === "policies" && (
               <PoliciesView />
@@ -520,160 +553,523 @@ function SecurityEventsView() {
 
 // Dashboard View
 function DashboardView() {
-  const stats = [
-    { label: "Active Sessions", value: "24", change: "+3", icon: "📱" },
-    { label: "Devices Enrolled", value: "156", change: "+12", icon: "📲" },
-    { label: "Auth Today", value: "1,247", change: "+18%", icon: "🔐" },
-    { label: "Failed Attempts", value: "3", change: "-50%", icon: "⚠️" },
-  ];
+  const [events, setEvents] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [integrationLogs, setIntegrationLogs] = useState<any>(null);
+  const [glanceState, setGlanceState] = useState<'compliant' | 'due-soon' | 'overdue'>('compliant');
+  const [glanceTemplate, setGlanceTemplate] = useState<'healthcare' | 'warehouse' | 'retail'>('healthcare');
 
-  // Executive summary cards for demo/pilot readiness
-  const executiveSummary = [
-    { label: "High-Risk Devices", value: "3", change: "+1", icon: "🚨", color: "red" },
-    { label: "Incidents Created", value: "7", change: "+2", icon: "🏥", color: "amber" },
-    { label: "SIEM Events Sent", value: "156", change: "+24", icon: "📡", color: "blue" },
-    { label: "Quarantined", value: "2", change: "0", icon: "🚫", color: "amber" },
-  ];
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [eventsRes, logsRes] = await Promise.all([
+          fetch('/api/admin/security-events?limit=20'),
+          fetch('/api/admin/integration-logs'),
+        ]);
+        const eventsData = await eventsRes.json();
+        const logsData = await logsRes.json();
+        setEvents(eventsData.events || []);
+        setSummary(eventsData.summary);
+        setIntegrationLogs(logsData);
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
-  // Demo scenarios for screenshots
-  const demoScenarios = [
-    { 
-      name: "Healthcare - Shared iPad", 
-      description: "Nurse station tablet with shared badge access",
-      riskLevel: "medium",
-      riskColor: "amber"
-    },
-    { 
-      name: "Retail - POS Tablet", 
-      description: "Store checkout tablet with inventory access",
-      riskLevel: "low",
-      riskColor: "emerald"
-    },
-    { 
-      name: "Logistics - Warehouse Android", 
-      description: "Warehouse device with shipping permissions",
-      riskLevel: "high",
-      riskColor: "red"
-    },
-  ];
+  const recentEvents = events.slice(0, 10);
+  const deniedEvents = events.filter(e => e.decision === 'DENY');
+  
+  // Top risky devices
+  const deviceRisks: Record<string, number> = {};
+  for (const e of events) {
+    if (e.device?.id && e.riskScore) {
+      deviceRisks[e.device.id] = Math.max(deviceRisks[e.device.id] || 0, e.riskScore);
+    }
+  }
+  const topRiskyDevices = Object.entries(deviceRisks)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-neutral-800 rounded w-48 mb-4"></div>
+          <div className="grid grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-24 bg-neutral-800 rounded-xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-semibold mb-2">Dashboard</h2>
-        <p className="text-neutral-400">Overview of your EnterpriseShell kiosk deployment</p>
+        <p className="text-neutral-400">Real-time security events and decisions</p>
       </div>
 
-      {/* Executive Summary Cards */}
+      {/* Executive Summary Cards - Real Data */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Executive Summary</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {executiveSummary.map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-2xl">{stat.icon}</span>
-                <span
-                  className={`text-sm ${
-                    stat.change.startsWith("+")
-                      ? stat.color === "red" ? "text-red-400" : "text-amber-400"
-                      : stat.change.startsWith("-")
-                      ? "text-red-400"
-                      : "text-neutral-400"
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-2xl">🚨</span>
+            </div>
+            <div className="text-3xl font-bold text-red-400">{summary?.denied || 0}</div>
+            <div className="text-sm text-neutral-400">Sessions Denied</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-2xl">✅</span>
+            </div>
+            <div className="text-3xl font-bold text-emerald-400">{summary?.allowed || 0}</div>
+            <div className="text-sm text-neutral-400">Sessions Allowed</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-2xl">🔒</span>
+            </div>
+            <div className="text-3xl font-bold text-amber-400">{summary?.quarantined || 0}</div>
+            <div className="text-sm text-neutral-400">Quarantined</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-2xl">📡</span>
+            </div>
+            <div className="text-3xl font-bold text-blue-400">{(summary?.siemAlerts || 0) + (summary?.itsmTickets || 0)}</div>
+            <div className="text-sm text-neutral-400">Alerts + Tickets</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Risky Devices */}
+      {topRiskyDevices.length > 0 && (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+          <h3 className="text-lg font-semibold mb-4">Top Risky Devices</h3>
+          <div className="space-y-3">
+            {topRiskyDevices.map(([deviceId, score]) => (
+              <div key={deviceId} className="flex items-center justify-between">
+                <span className="font-mono text-sm">{deviceId}</span>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  score >= 70 ? 'bg-red-500/20 text-red-400' :
+                  score >= 40 ? 'bg-amber-500/20 text-amber-400' :
+                  'bg-emerald-500/20 text-emerald-400'
+                }`}>
+                  Risk: {score}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Integration Logs Summary */}
+      {integrationLogs && integrationLogs.logs?.length > 0 && (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Integration Payloads</h3>
+            <Link href="/admin?tab=logs" className="text-emerald-400 text-sm hover:underline">
+              View All →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* SIEM */}
+            <div className="bg-neutral-950 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-blue-400">📡</span>
+                <span className="text-sm font-medium text-blue-400">SIEM Event</span>
+              </div>
+              {integrationLogs.latestPayloads?.siem ? (
+                <pre className="text-xs text-neutral-400 overflow-hidden" style={{ maxHeight: '80px' }}>
+                  {JSON.stringify(integrationLogs.latestPayloads.siem, null, 2)}
+                </pre>
+              ) : (
+                <div className="text-xs text-neutral-500">No SIEM events yet</div>
+              )}
+            </div>
+            {/* ITSM */}
+            <div className="bg-neutral-950 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-purple-400">🎫</span>
+                <span className="text-sm font-medium text-purple-400">ITSM Ticket</span>
+              </div>
+              {integrationLogs.latestPayloads?.itsm ? (
+                <pre className="text-xs text-neutral-400 overflow-hidden" style={{ maxHeight: '80px' }}>
+                  {JSON.stringify(integrationLogs.latestPayloads.itsm, null, 2)}
+                </pre>
+              ) : (
+                <div className="text-xs text-neutral-500">No ITSM tickets yet</div>
+              )}
+            </div>
+            {/* NAC */}
+            <div className="bg-neutral-950 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-amber-400">🔒</span>
+                <span className="text-sm font-medium text-amber-400">NAC Command</span>
+              </div>
+              {integrationLogs.latestPayloads?.nac ? (
+                <pre className="text-xs text-neutral-400 overflow-hidden" style={{ maxHeight: '80px' }}>
+                  {JSON.stringify(integrationLogs.latestPayloads.nac, null, 2)}
+                </pre>
+              ) : (
+                <div className="text-xs text-neutral-500">No NAC commands yet</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Glance Layer Demo - Device Card Preview */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-lg font-semibold">Glance Layer</h3>
+            <p className="text-sm text-neutral-400">Device lock screen surface — one glance to know device status</p>
+          </div>
+          <div className="flex gap-3">
+            {/* Template Toggle */}
+            <div className="flex bg-neutral-800 rounded-lg p-1">
+              {(['healthcare', 'warehouse', 'retail'] as const).map(template => (
+                <button
+                  key={template}
+                  onClick={() => setGlanceTemplate(template)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    glanceTemplate === template
+                      ? 'bg-neutral-600 text-white'
+                      : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  {stat.change}
-                </span>
-              </div>
-              <div className="text-3xl font-bold mb-1">{stat.value}</div>
-              <div className="text-sm text-neutral-400">{stat.label}</div>
+                  {template === 'healthcare' ? '🏥 Healthcare' : template === 'warehouse' ? '📦 Warehouse' : '🛒 Retail'}
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-2xl">{stat.icon}</span>
-              <span
-                className={`text-sm ${
-                  stat.change.startsWith("+")
-                    ? "text-emerald-400"
-                    : "text-red-400"
-                }`}
-              >
-                {stat.change}
-              </span>
+            {/* State Toggle */}
+            <div className="flex bg-neutral-800 rounded-lg p-1">
+              {(['compliant', 'due-soon', 'overdue'] as const).map(state => (
+                <button
+                  key={state}
+                  onClick={() => setGlanceState(state)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    glanceState === state
+                      ? state === 'compliant' ? 'bg-emerald-500 text-white' :
+                        state === 'due-soon' ? 'bg-amber-500 text-white' :
+                        'bg-red-500 text-white'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  {state === 'compliant' ? '✓' : state === 'due-soon' ? '⚠' : '✕'} {state === 'compliant' ? 'OK' : state === 'due-soon' ? 'Due Soon' : 'Overdue'}
+                </button>
+              ))}
             </div>
-            <div className="text-3xl font-bold mb-1">{stat.value}</div>
-            <div className="text-sm text-neutral-400">{stat.label}</div>
           </div>
-        ))}
-      </div>
-
-      {/* Demo Scenarios */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Demo Scenarios</h3>
-        <p className="text-sm text-neutral-400 mb-4">Pre-configured scenarios for sales demos and pilot testing</p>
-        <div className="grid gap-4 md:grid-cols-3">
-          {demoScenarios.map((scenario) => (
-            <div key={scenario.name} className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">{scenario.name}</span>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                  scenario.riskColor === "red" ? "bg-red-500/20 text-red-400" :
-                  scenario.riskColor === "amber" ? "bg-amber-500/20 text-amber-400" :
-                  "bg-emerald-500/20 text-emerald-400"
-                }`}>
-                  {scenario.riskLevel.toUpperCase()}
-                </span>
-              </div>
-              <p className="text-sm text-neutral-400">{scenario.description}</p>
-            </div>
-          ))}
         </div>
-      </div>
 
-      {/* Recent Activity */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-          {[
-            { time: "2 min ago", action: "Session started", user: "john.doe@company.com", device: "iPad Pro" },
-            { time: "5 min ago", action: "MFA verified", user: "jane.smith@company.com", device: "iPad Air" },
-            { time: "12 min ago", action: "Persona built", user: "bob.wilson@company.com", device: "iPad Mini" },
-            { time: "18 min ago", action: "Session ended", user: "alice.johnson@company.com", device: "iPad Pro" },
-            { time: "25 min ago", action: "MDM enrollment", user: "charlie.brown@company.com", device: "iPad Pro" },
-          ].map((activity, i) => (
-            <div key={i} className="flex items-center justify-between py-3 border-b border-neutral-800 last:border-0">
-              <div className="flex items-center gap-4">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                <div>
-                  <div className="font-medium">{activity.action}</div>
-                  <div className="text-sm text-neutral-400">{activity.user}</div>
+        {/* Device Card Preview */}
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Card */}
+          <div className="flex-1">
+            {glanceTemplate === 'healthcare' && (
+              <div className={`rounded-xl overflow-hidden border-2 ${
+                glanceState === 'compliant' ? 'border-emerald-500' :
+                glanceState === 'due-soon' ? 'border-amber-500' : 'border-red-500'
+              }`}>
+                <div className={`p-4 ${
+                  glanceState === 'compliant' ? 'bg-emerald-900/30' :
+                  glanceState === 'due-soon' ? 'bg-amber-900/30' : 'bg-red-900/30'
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">🏥</span>
+                    <span className="font-semibold">St. Mary&apos;s Hospital</span>
+                  </div>
+                  <div className="text-sm text-neutral-300">iPad — Nurse Station A</div>
+                </div>
+                <div className="bg-neutral-800 p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Checked out to:</span>
+                    <span className="font-medium">Dr. Sarah Chen</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Role:</span>
+                    <span className="font-medium">Emergency Medicine</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Shift:</span>
+                    <span className="font-medium">7:00 AM — 7:00 PM</span>
+                  </div>
+                </div>
+                <div className="bg-neutral-800 p-4 border-t border-neutral-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">📍</span>
+                    <span className="font-medium">Return to: Nurse Station A Cart #3</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⏰</span>
+                    <span className={`font-semibold ${
+                      glanceState === 'compliant' ? 'text-emerald-400' :
+                      glanceState === 'due-soon' ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {glanceState === 'compliant' ? 'Due back: 6:45 PM (1h 15m)' :
+                       glanceState === 'due-soon' ? 'Due back: 5:15 PM (15 min)' :
+                       'OVERDUE by 30 min'}
+                    </span>
+                  </div>
+                </div>
+                <div className={`p-3 ${
+                  glanceState === 'compliant' ? 'bg-emerald-900/50' :
+                  glanceState === 'due-soon' ? 'bg-amber-900/50' : 'bg-red-900/50'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`font-semibold ${
+                      glanceState === 'compliant' ? 'text-emerald-400' :
+                      glanceState === 'due-soon' ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {glanceState === 'compliant' ? '✅ Device OK' :
+                       glanceState === 'due-soon' ? '⚠️ Due Soon' : '❌ Needs Attention'}
+                    </span>
+                    <span className="text-xs text-neutral-400">Synced 2 min ago</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-neutral-300">{activity.device}</div>
-                <div className="text-xs text-neutral-500">{activity.time}</div>
+            )}
+
+            {glanceTemplate === 'warehouse' && (
+              <div className={`rounded-xl overflow-hidden border-2 ${
+                glanceState === 'compliant' ? 'border-emerald-500' :
+                glanceState === 'due-soon' ? 'border-amber-500' : 'border-red-500'
+              }`}>
+                <div className={`p-4 ${
+                  glanceState === 'compliant' ? 'bg-emerald-900/30' :
+                  glanceState === 'due-soon' ? 'bg-amber-900/30' : 'bg-red-900/30'
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">📦</span>
+                    <span className="font-semibold">Acme Logistics</span>
+                  </div>
+                  <div className="text-sm text-neutral-300">Handheld Scanner — Zone B</div>
+                </div>
+                <div className="bg-neutral-800 p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Checked out to:</span>
+                    <span className="font-medium">Marcus J.</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Shift:</span>
+                    <span className="font-medium">Day Shift (6A — 6P)</span>
+                  </div>
+                </div>
+                <div className="bg-neutral-800 p-4 border-t border-neutral-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">📍</span>
+                    <span className="font-medium">Return to: Zone B Charging Dock</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⏰</span>
+                    <span className={`font-semibold ${
+                      glanceState === 'compliant' ? 'text-emerald-400' :
+                      glanceState === 'due-soon' ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {glanceState === 'compliant' ? 'Shift ends: 6:00 PM (2h 30m)' :
+                       glanceState === 'due-soon' ? 'Shift ends: 5:00 PM (30 min)' :
+                       'SHIFT ENDED 1h ago'}
+                    </span>
+                  </div>
+                </div>
+                <div className={`p-3 ${
+                  glanceState === 'compliant' ? 'bg-emerald-900/50' :
+                  glanceState === 'due-soon' ? 'bg-amber-900/50' : 'bg-red-900/50'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-4">
+                      <span className="text-sm">🔋 <span className="text-emerald-400 font-medium">78%</span></span>
+                      <span className="text-sm">📶 <span className="text-emerald-400 font-medium">Strong</span></span>
+                    </div>
+                    <span className="text-xs text-neutral-400">Zone B</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {glanceTemplate === 'retail' && (
+              <div className={`rounded-xl overflow-hidden border-2 ${
+                glanceState === 'compliant' ? 'border-emerald-500' :
+                glanceState === 'due-soon' ? 'border-amber-500' : 'border-red-500'
+              }`}>
+                <div className={`p-4 ${
+                  glanceState === 'compliant' ? 'bg-emerald-900/30' :
+                  glanceState === 'due-soon' ? 'bg-amber-900/30' : 'bg-red-900/30'
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">🛒</span>
+                    <span className="font-semibold">Target Store #2847</span>
+                  </div>
+                  <div className="text-sm text-neutral-300">Handheld — Floor</div>
+                </div>
+                <div className="bg-neutral-800 p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Checked out to:</span>
+                    <span className="font-medium">Jamie K.</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Department:</span>
+                    <span className="font-medium">Electronics</span>
+                  </div>
+                </div>
+                <div className="bg-neutral-800 p-4 border-t border-neutral-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">📍</span>
+                    <span className="font-medium">Return to: Service Desk</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⏰</span>
+                    <span className={`font-semibold ${
+                      glanceState === 'compliant' ? 'text-emerald-400' :
+                      glanceState === 'due-soon' ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {glanceState === 'compliant' ? 'Due: End of shift' :
+                       glanceState === 'due-soon' ? 'Break ends: 2:00 PM (10 min)' :
+                       'OVERDUE: Shift ended'}
+                    </span>
+                  </div>
+                </div>
+                <div className={`p-3 ${
+                  glanceState === 'compliant' ? 'bg-emerald-900/50' :
+                  glanceState === 'due-soon' ? 'bg-amber-900/50' : 'bg-red-900/50'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`font-semibold ${
+                      glanceState === 'compliant' ? 'text-emerald-400' :
+                      glanceState === 'due-soon' ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {glanceState === 'compliant' ? '✅ In bounds' :
+                       glanceState === 'due-soon' ? '⚠️ Break ending' : '❌ Outside bounds'}
+                    </span>
+                    <span className="text-xs text-neutral-400">Store #2847</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Why This Matters Panel */}
+          <div className="w-full md:w-80">
+            <div className="bg-neutral-800 rounded-xl p-5 h-full">
+              <h4 className="font-semibold text-neutral-200 mb-4">Why this matters</h4>
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
+                    <span className="text-blue-400">👤</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-neutral-200">Who has the device</div>
+                    <div className="text-xs text-neutral-400 mt-1">Staff instantly know who is responsible</div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                    <span className="text-emerald-400">📍</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-neutral-200">Where it belongs</div>
+                    <div className="text-xs text-neutral-400 mt-1">Clear return location eliminates searching</div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
+                    <span className="text-amber-400">⏰</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-neutral-200">When it is due back</div>
+                    <div className="text-xs text-neutral-400 mt-1">Countdown prevents overdue devices</div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
+                    <span className="text-red-400">⚡</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-neutral-200">Whether it needs attention</div>
+                    <div className="text-xs text-neutral-400 mt-1">Color-coded status at a glance</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Insight */}
+              <div className="mt-4 pt-4 border-t border-neutral-700">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm">🧠</span>
+                  <span className="text-sm font-medium text-violet-400">AI Insight</span>
+                </div>
+                <div className="text-xs text-neutral-400">
+                  {glanceState === 'compliant' && 'Device is compliant. No action needed. User can continue session.'}
+                  {glanceState === 'due-soon' && glanceTemplate === 'healthcare' && 'Shift ends in 15 min. Recommend prompting user to return device to cart.'}
+                  {glanceState === 'due-soon' && glanceTemplate === 'warehouse' && 'Shift ending soon. Device should be returned to Zone B dock.'}
+                  {glanceState === 'due-soon' && glanceTemplate === 'retail' && 'Break ending. User should return to Service Desk.'}
+                  {glanceState === 'overdue' && glanceTemplate === 'healthcare' && 'Device is overdue. Recommend quarantine and notify IT.'}
+                  {glanceState === 'overdue' && glanceTemplate === 'warehouse' && 'Shift has ended. Device overdue - trigger NAC port disable.'}
+                  {glanceState === 'overdue' && glanceTemplate === 'retail' && 'Device outside store bounds. Alert security team immediately.'}
+                </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
+      </div>
+
+      {/* Recent Decisions */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Recent Decisions</h3>
+          <Link href="/admin/events" className="text-emerald-400 text-sm hover:underline">
+            View All →
+          </Link>
+        </div>
+        {recentEvents.length === 0 ? (
+          <div className="text-neutral-400 text-center py-8">
+            No events yet. Run <code className="bg-neutral-800 px-2 py-1 rounded">bun run demo:exec</code> to generate events.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentEvents.map((event) => (
+              <div key={event.id} className="flex items-center justify-between py-3 border-b border-neutral-800 last:border-0">
+                <div className="flex items-center gap-4">
+                  <div className={`w-2 h-2 rounded-full ${event.decision === 'DENY' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                  <div>
+                    <div className="font-medium">{event.actor?.name || event.actor?.id?.split('@')[0] || 'Unknown'}</div>
+                    <div className="text-sm text-neutral-400">{event.device?.id || 'No device'}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <Link href={`/admin/events/${event.id}`}>
+                    <span className={`font-semibold cursor-pointer hover:underline ${event.decision === 'DENY' ? 'text-red-400' : 'text-emerald-400'}`}>
+                      {event.decision}
+                    </span>
+                  </Link>
+                  <div className="text-xs text-neutral-500">
+                    {new Date(event.timestamp).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// Auth Flows View
+// Security Events View
 function FlowView({
   steps,
   selectedStep,
@@ -889,6 +1285,134 @@ function PersonaView({
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Integration Logs View - Shows mock integration payloads
+function IntegrationLogsView() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchLogs() {
+      try {
+        const res = await fetch('/api/admin/integration-logs');
+        const data = await res.json();
+        setLogs(data.logs || []);
+        setSummary(data.summary);
+      } catch (err) {
+        console.error('Failed to fetch logs:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'siem': return '📡';
+      case 'itsm': return '🎫';
+      case 'nac': return '🔒';
+      default: return '📋';
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'siem': return 'SIEM Event';
+      case 'itsm': return 'ITSM Ticket';
+      case 'nac': return 'NAC Command';
+      default: return type;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold mb-2">Integration Logs</h2>
+          <p className="text-neutral-400">Mock integration payloads (demo visibility)</p>
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-sm"
+        >
+          🔄 Refresh
+        </button>
+      </div>
+
+      {/* Summary Cards */}
+      {summary && (
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">📡</span>
+              <span className="font-semibold">SIEM Events</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-400">{summary.siem}</div>
+            <div className="text-sm text-neutral-400">Sent to SIEM</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">🎫</span>
+              <span className="font-semibold">ITSM Tickets</span>
+            </div>
+            <div className="text-2xl font-bold text-purple-400">{summary.itsm}</div>
+            <div className="text-sm text-neutral-400">Created in ITSM</div>
+          </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">🔒</span>
+              <span className="font-semibold">NAC Commands</span>
+            </div>
+            <div className="text-2xl font-bold text-amber-400">{summary.nac}</div>
+            <div className="text-sm text-neutral-400">Sent to NAC</div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center py-12 text-neutral-400">Loading logs...</div>
+      ) : logs.length === 0 ? (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 text-center">
+          <div className="text-4xl mb-4">📡</div>
+          <div className="text-lg font-medium mb-2">No Integration Logs</div>
+          <div className="text-neutral-400 text-sm">
+            Run <code className="bg-neutral-800 px-2 py-1 rounded">bun run demo:exec</code> to generate integration events
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {logs.map((log) => (
+            <div key={log.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{getTypeIcon(log.type)}</span>
+                  <span className="font-semibold">{getTypeLabel(log.type)}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${
+                    log.status === 'sent' ? 'bg-emerald-500/20 text-emerald-400' :
+                    log.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                    'bg-red-500/20 text-red-400'
+                  }`}>
+                    {log.status}
+                  </span>
+                </div>
+                <span className="text-sm text-neutral-500">
+                  {new Date(log.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              <pre className="bg-neutral-950 p-3 rounded-lg text-xs text-neutral-300 overflow-x-auto">
+                {JSON.stringify(log.payload, null, 2)}
+              </pre>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

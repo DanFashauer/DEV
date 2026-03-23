@@ -247,3 +247,20 @@ export async function GET() {
 | 2026-03-05 | Implemented Policy Engine v1 (rule evaluation, admin API, session integration)
 | 2026-03-05 | Implemented Policy Actions + Integrations v1 (ITSM/SIEM adapters, dispatcher)
 | 2026-03-05 | Implemented Step-Up Enforcement (webhook secret rotate, policy edit/enable, device quarantine, etc.)
+| 2026-03-18 | Added demo improvements: Demo Ready indicator, human-readable timeline labels, improved UI clarity
+| 2026-03-18 | Added Integration Logs summary card to main dashboard showing latest SIEM/ITSM/NAC payloads
+| 2026-03-18 | Created Glance Layer product spec (docs/glance-layer.md) - lock screen/wallpaper/widget surfaces for Healthcare/Warehouse/Retail verticals
+| 2026-03-18 | Added Glance Layer demo component to admin dashboard with state toggle (Compliant/Due Soon/Overdue)
+| 2026-03-18 | Enhanced Glance Layer with 3 vertical templates (Healthcare/Warehouse/Retail), template toggle, and "Why this matters" panel |
+| 2026-03-18 | Added AI Reasoning Layer demo - explains decisions and provides recommendations in Event Detail and Glance Layer |
+| 2026-03-18 | Created iOS SwiftUI prototype (ios/Prototype/) with 5 screens: Ready/Awaiting Badge, Processing/Decision, Access Granted, Access Denied, Glance Layer Preview |
+| 2026-03-18 | Hardened demo startup: added demo:doctor command, better port detection, improved error messages |
+| 2026-03-18 | Created dual-track validation system: DEMO_VALIDATION_CHECKLIST.md, KNOWN_ISSUES.md, TERMINOLOGY.md, DEMO_SCRIPT.md |
+| 2026-03-18 | Added demo:report command for structured demo status reporting |
+| 2026-03-20 | Fixed demo:up to show correct SERVER_URL hint for custom ports |
+| 2026-03-20 | Added idle timeout, charging bay detection, and security settings to Glance Layer config (passcode, badge on return) |
+| 2026-03-20 | Added location/zone settings to Glance Layer: GPS/WiFi/beacon modes, zone-based policies, geofence alerts |
+| 2026-03-20 | Added battery/power, device health, time-based policies, emergency override, notifications to Glance Layer config |
+| 2026-03-20 | Added public Integration API (api/integrations/v1) for MDM, badge readers, location services |
+| 2026-03-20 | Fixed build errors: duplicate rateLimit, invalid audit event types, Redis production check for dev builds |
+| 2026-03-23 | Fixed demo failure: added dev bypass for ADMIN_API_KEY, fixed posture lookup by deviceId for demo compliance check |

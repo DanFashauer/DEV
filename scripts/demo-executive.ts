@@ -227,17 +227,39 @@ async function main() {
   console.log(`Badge:  ${DEMO_CONFIG.badgeUid}`);
   
   // Check server health
+  console.log('\n🔍 Checking server health...');
   try {
     const health = await fetch(`${SERVER_URL}/api/health`);
     if (!health.ok) {
-      console.error('\n❌ Server not healthy');
+      console.error(`\n❌ Server returned error: ${health.status}`);
+      console.error('   Run: bun run demo:doctor for diagnostics');
       process.exit(1);
     }
-    console.log('\n✅ Server is healthy');
-  } catch {
-    console.error('\n❌ Server not reachable');
+    console.log('   ✅ /api/health OK');
+  } catch (e) {
+    console.error(`\n❌ Cannot connect to ${SERVER_URL}`);
+    console.error('   Is the server running? Try: bun run demo:up');
+    console.error('   Run: bun run demo:doctor for diagnostics');
     process.exit(1);
   }
+  
+  // Check demo routes
+  console.log('🔍 Checking demo routes...');
+  try {
+    const verify = await fetch(`${SERVER_URL}/api/demo/verify`);
+    if (!verify.ok) {
+      console.error(`\n❌ /api/demo/verify returned ${verify.status}`);
+      console.error('   The SignalGrid routes may not be loaded correctly');
+      process.exit(1);
+    }
+    console.log('   ✅ /api/demo/verify OK');
+  } catch (e) {
+    console.error(`\n❌ Cannot reach /api/demo/verify`);
+    console.error('   Run: bun run demo:doctor for diagnostics');
+    process.exit(1);
+  }
+  
+  console.log('✅ All checks passed\n');
   
   // Run demo steps
   await enrollDevice();

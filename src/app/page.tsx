@@ -20,7 +20,7 @@ export default function Home() {
   useEffect(() => {
     async function loadDevices() {
       try {
-        const res = await fetch('/api/v1/devices', {
+        const res = await fetch('/api/admin/devices', {
           headers: {
             'X-API-Key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'dev-admin-key-12345',
           },
@@ -31,7 +31,7 @@ export default function Home() {
         }
 
         const data = await res.json();
-        setDevices(data.devices || []);
+        setDevices(data.devices || data || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {

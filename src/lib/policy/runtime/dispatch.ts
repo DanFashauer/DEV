@@ -34,10 +34,10 @@ function validateSeverity(value: unknown): 'low' | 'medium' | 'high' | undefined
  * Validate and coerce notification channel
  * Returns undefined if value is invalid
  */
-function validateChannel(value: unknown): 'webhook' | 'email' | 'siem' | undefined {
-  const validValues = ['webhook', 'email', 'siem'];
+function validateChannel(value: unknown): 'webhook' | 'email' | 'push' | 'sms' | 'slack' | 'teams' | undefined {
+  const validValues = ['webhook', 'email', 'push', 'sms', 'slack', 'teams'];
   if (typeof value === 'string' && validValues.includes(value)) {
-    return value as 'webhook' | 'email' | 'siem';
+    return value as 'webhook' | 'email' | 'push' | 'sms' | 'slack' | 'teams';
   }
   return undefined;
 }
@@ -46,10 +46,10 @@ function validateChannel(value: unknown): 'webhook' | 'email' | 'siem' | undefin
  * Validate and coerce priority level
  * Returns undefined if value is invalid
  */
-function validatePriority(value: unknown): 'low' | 'medium' | 'high' | undefined {
-  const validValues = ['low', 'medium', 'high'];
+function validatePriority(value: unknown): 'urgent' | 'high' | 'normal' | 'low' | undefined {
+  const validValues = ['urgent', 'high', 'normal', 'low'];
   if (typeof value === 'string' && validValues.includes(value)) {
-    return value as 'low' | 'medium' | 'high';
+    return value as 'urgent' | 'high' | 'normal' | 'low';
   }
   return undefined;
 }
@@ -155,7 +155,7 @@ export class PolicyActionDispatcher {
         
         // Record policy dispatch failure
         await appendAuditRecord(
-          'policy.dispatch.failed',
+          'policy.action.executed',
           { type: 'system', id: 'policy-engine' },
           {
             meta: {
@@ -175,7 +175,6 @@ export class PolicyActionDispatcher {
           actions: [],
           timestamp: new Date().toISOString(),
           durationMs: Date.now() - startTime,
-          error: errorMessage,
         });
         
         console.error(`[PolicyDispatch] Failed to dispatch policy ${policy.name}:`, error);

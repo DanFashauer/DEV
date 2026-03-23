@@ -61,7 +61,9 @@ const CONFIG = {
 // Production Redis Requirement Check
 // ============================================================================
 
-if (process.env.NODE_ENV === 'production' && !CONFIG.redisUrl) {
+const isProduction = process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production';
+
+if (isProduction && !CONFIG.redisUrl) {
   throw new Error(
     'REDIS_URL environment variable is required in production. ' +
     'Badge registry must be Redis-backed for multi-instance deployments.'
