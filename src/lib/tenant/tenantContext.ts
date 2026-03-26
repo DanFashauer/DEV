@@ -93,3 +93,11 @@ export function isValidTenantId(tenantId: string): boolean {
   const validPattern = /^[a-z0-9][a-z0-9-]*$/;
   return validPattern.test(tenantId);
 }
+
+/**
+ * Build a namespaced key - alias for buildTenantKey
+ * Format: t:{tenantId}:{store}:{id}
+ */
+export function tenantKey(tenantId: string, store: string, id: string): string {
+  return buildTenantKey(tenantId, store, id);
+}

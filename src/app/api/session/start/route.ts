@@ -26,11 +26,11 @@ import { NextResponse } from 'next/server';
 import { validateAndAuthorizeSessionStart, generateRandomHex } from '@/lib/backend/validation';
 import { getBadgeRegistry } from '@/lib/tenant/badgeRegistry';
 import { getSessionStore, SessionDirective } from '@/lib/tenant/sessionStore';
+import { getEvaluator } from '@/lib/tenant/policyEvaluator';
 import { resolveTenantId } from '@/lib/tenant/tenantContext';
 import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
 import { emitSessionStart } from '@/lib/integrations/webhooks/emitter';
 import { emitAuthFailure } from '@/lib/integrations/webhooks/emitter';
-import { evaluatePolicies } from '@/lib/policy/runtime/evaluate';
 import { getPostureForHost } from '@/lib/integrations/telemetry/store';
 import { getFleetDMAdapter } from '@/lib/integrations/telemetry/fleetdm';
 import { getDevicePosture } from '@/lib/integrations/uem/store';
@@ -202,6 +202,7 @@ export async function POST(request: Request) {
     const tenantId = resolveTenantId(request);
     const badgeRegistry = getBadgeRegistry(tenantId);
     const sessionStore = getSessionStore(tenantId);
+    const evaluator = getEvaluator(tenantId);
     
     // Get identifiers for rate limiting
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
@@ -236,7 +237,8 @@ export async function POST(request: Request) {
       headers,
       body,
       fullUrl,
-      'POST'
+      'POST',
+      tenantId
     );
     
     if (!validation.valid) {
@@ -416,7 +418,7 @@ export async function POST(request: Request) {
       };
 
       // Evaluate policies (this will trigger quarantine, SIEM, ITSM actions)
-      const policyActions = evaluatePolicies(policyContext);
+      const policyActions = await evaluator.evaluate(policyContext);
       
       // Log the policy actions that were triggered
       for (const action of policyActions) {
@@ -621,7 +623,7 @@ export async function POST(request: Request) {
       _identityRef: identityRef, // For audit linkage
     };
     
-    const policyActions = evaluatePolicies(policyContext);
+    const policyActions = await evaluator.evaluate(policyContext);
     
     // Process policy actions
     for (const action of policyActions) {

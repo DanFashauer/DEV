@@ -10,6 +10,7 @@
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { nonceStore, CONFIG } from './nonceStore';
+import { tenantKey } from '../tenant/tenantContext';
 
 /**
  * Configuration for request signing
@@ -142,12 +143,13 @@ function verifySignature(data: string, key: string, signature: string): boolean 
 }
 
 /**
- * Check if nonce exists and is still valid (per-device)
+ * Check if nonce exists and is still valid (per-device, per-tenant)
  * Uses Redis-backed store for production, in-memory for dev
  */
-async function isNonceValid(deviceId: string, nonce: string): Promise<boolean> {
-  // Try to set nonce atomically - returns false if already exists
-  const added = await nonceStore.setNonce(deviceId, nonce);
+async function isNonceValid(deviceId: string, nonce: string, tenantId: string): Promise<boolean> {
+  // Scope nonce key by tenant to prevent cross-tenant collisions
+  const scopedDeviceId = tenantKey(tenantId, 'nonce', deviceId);
+  const added = await nonceStore.setNonce(scopedDeviceId, nonce);
   return added;
 }
 
@@ -177,7 +179,8 @@ export async function validateAndAuthorizeSessionStart(
   },
   body: unknown,
   fullUrl: string,
-  method: string
+  method: string,
+  tenantId: string = 'default'
 ): Promise<ValidationResult> {
   const { 'x-signature': signature, 'x-timestamp': timestamp, 'x-nonce': nonce } = headers;
   
@@ -252,10 +255,10 @@ export async function validateAndAuthorizeSessionStart(
     return { valid: false, error: 'Invalid signature', code: 'invalid_signature' };
   }
 
-  // 6. Check replay prevention (nonce) - per-device isolation (LAST, after signature verified)
+  // 6. Check replay prevention (nonce) - per-device, per-tenant isolation (LAST, after signature verified)
   const deviceId = event.device?.deviceId ?? 'unknown';
   
-  if (!(await isNonceValid(deviceId, nonce))) {
+  if (!(await isNonceValid(deviceId, nonce, tenantId))) {
     return { valid: false, error: 'Nonce already used or invalid', code: 'replay_detected' };
   }
 

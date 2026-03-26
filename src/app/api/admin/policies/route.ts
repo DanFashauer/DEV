@@ -4,7 +4,8 @@ import {
   adminSuccess, 
   adminError,
 } from "@/lib/adminAuth";
-import { listPolicies, createPolicy } from "@/lib/policy/store/policyStore";
+import { resolveTenantId } from "@/lib/tenant/tenantContext";
+import { getPolicyStore } from "@/lib/tenant/policyStore";
 import { PolicySchema } from "@/lib/policy/types";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 /**
  * Admin Policies API Route
  * 
- * CRUD operations for policy engine.
+ * CRUD operations for policy engine (tenant-scoped).
  * 
  * Security features:
  * - JWT/OIDC authentication (primary)
@@ -26,7 +27,10 @@ export async function GET(request: NextRequest) {
     return authError;
   }
 
-  const policies = listPolicies();
+  const tenantId = resolveTenantId(request);
+  const store = getPolicyStore(tenantId);
+  const policies = store.listPolicies();
+  
   return NextResponse.json({ policies });
 }
 
@@ -37,9 +41,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const tenantId = resolveTenantId(request);
+    const store = getPolicyStore(tenantId);
+    
     const body = await request.json();
     const parsed = PolicySchema.parse(body);
-    const created = createPolicy(parsed);
+    const created = store.createPolicy(parsed);
     return NextResponse.json({ policy: created }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Invalid policy data" }, { status: 400 });

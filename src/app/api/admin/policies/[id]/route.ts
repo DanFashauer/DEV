@@ -5,7 +5,8 @@ import {
   adminSuccess, 
   adminError,
 } from "@/lib/adminAuth";
-import { getPolicy, updatePolicy, deletePolicy } from "@/lib/policy/store/policyStore";
+import { resolveTenantId } from "@/lib/tenant/tenantContext";
+import { getPolicyStore } from "@/lib/tenant/policyStore";
 import { PolicySchema } from "@/lib/policy/types";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,11 @@ export async function GET(
     return authError;
   }
 
+  const tenantId = resolveTenantId(request);
+  const store = getPolicyStore(tenantId);
+  
   const { id } = await params;
-  const policy = getPolicy(id);
+  const policy = store.getPolicy(id);
 
   if (!policy) {
     return NextResponse.json({ error: "Policy not found" }, { status: 404 });
@@ -47,6 +51,9 @@ export async function PATCH(
     return authError;
   }
 
+  const tenantId = resolveTenantId(request);
+  const store = getPolicyStore(tenantId);
+  
   const { id } = await params;
   const body = await request.json();
 
@@ -60,7 +67,7 @@ export async function PATCH(
     if (stepUpError) return stepUpError;
   }
 
-  const updated = updatePolicy(id, body);
+  const updated = store.updatePolicy(id, body);
 
   if (!updated) {
     return NextResponse.json({ error: "Policy not found" }, { status: 404 });
@@ -82,8 +89,11 @@ export async function DELETE(
   const stepUpError = await requireStepUpAuth(request, 'policy_edit');
   if (stepUpError) return stepUpError;
 
+  const tenantId = resolveTenantId(request);
+  const store = getPolicyStore(tenantId);
+  
   const { id } = await params;
-  const deleted = deletePolicy(id);
+  const deleted = store.deletePolicy(id);
 
   if (!deleted) {
     return NextResponse.json({ error: "Policy not found" }, { status: 404 });
