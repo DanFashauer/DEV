@@ -1,78 +1,48 @@
 /**
  * Tenant-Aware Session Store
  * 
- * Wraps the base session store with multi-tenant isolation.
- * Each tenant gets their own namespace in Redis/in-memory store.
- * 
- * Usage:
- *   import { getSessionStore } from '@/lib/tenant/sessionStore';
- *   const store = getSessionStore(tenantId);
- *   const session = await store.get(sessionId);
+ * Per-tenant in-memory storage keyed by tenantId.
  */
 
 import { NextRequest } from 'next/server';
-import { 
-  Session, 
-  SessionDirective, 
-  SessionStatus,
-  sessionStore as baseSessionStore 
-} from '../sessionStore';
+import { Session, SessionDirective, SessionStatus, sessionStore as baseSessionStore } from '../sessionStore';
 import { resolveTenantId, DEFAULT_TENANT_ID } from './tenantContext';
 
-// Re-export types for consumers
 export type { Session, SessionDirective, SessionStatus };
 
-// Define the interface we need
-interface ISessionStore {
-  create(data: {
-    userId: string;
-    badgeUid: string;
-    deviceId: string;
-    nextAction?: string;
-    bundleId?: string;
-    metadata?: Record<string, unknown>;
-  }): Promise<Session>;
-  get(sessionId: string): Promise<Session | null>;
-  update(sessionId: string, data: Partial<Session>): Promise<Session | null>;
-  terminate(sessionId: string): Promise<boolean>;
-  getByUserId(userId: string): Promise<Session[]>;
-  getByDeviceId(deviceId: string): Promise<Session[]>;
-  cleanup(): Promise<number>;
+// Per-tenant in-memory session storage
+const tenantSessionStores = new Map<string, Map<string, Session>>();
+
+function generateSessionId(): string {
+  return `session-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
-// Export as ISessionStore for compatibility
-export type { ISessionStore };
+function getTenantStore(tenantId: string): Map<string, Session> {
+  if (!tenantSessionStores.has(tenantId)) {
+    tenantSessionStores.set(tenantId, new Map());
+  }
+  return tenantSessionStores.get(tenantId)!;
+}
 
-/**
- * Get a tenant-scoped session store
- * 
- * @param tenantId - Optional tenant ID (defaults to resolving from request)
- * @returns SessionStore instance scoped to the tenant
- */
-export function getSessionStore(tenantId?: string): ISessionStore {
+export function getSessionStore(tenantId?: string) {
   const resolvedTenantId = tenantId || DEFAULT_TENANT_ID;
   return new TenantSessionStore(resolvedTenantId);
 }
 
-/**
- * Get session store from request (auto-resolves tenant)
- */
-export function getSessionStoreFromRequest(request: Request | NextRequest): ISessionStore {
+export function getSessionStoreFromRequest(request: Request | NextRequest) {
   const tenantId = resolveTenantId(request);
   return getSessionStore(tenantId);
 }
 
-/**
- * Tenant-scoped session store implementation
- * 
- * In a full implementation, this would namespace all Redis keys.
- * For now, this provides the interface and logs tenant context.
- */
-class TenantSessionStore implements ISessionStore {
+class TenantSessionStore {
   private tenantId: string;
   
   constructor(tenantId: string) {
     this.tenantId = tenantId;
+  }
+  
+  private get store(): Map<string, Session> {
+    return getTenantStore(this.tenantId);
   }
   
   async create(data: {
@@ -83,41 +53,75 @@ class TenantSessionStore implements ISessionStore {
     bundleId?: string;
     metadata?: Record<string, unknown>;
   }): Promise<Session> {
-    console.log(`[Tenant:${this.tenantId}] Creating session for user: ${data.userId}`);
-    return baseSessionStore.create(data);
+    const now = new Date();
+    const ttlMs = parseInt(process.env.SESSION_TTL_SECONDS ?? '28800') * 1000;
+    
+    const session: Session = {
+      sessionId: generateSessionId(),
+      userId: data.userId,
+      badgeUid: data.badgeUid,
+      deviceId: data.deviceId,
+      status: 'active' as SessionStatus,
+      createdAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + ttlMs).toISOString(),
+      lastActivityAt: now.toISOString(),
+      nextAction: data.nextAction,
+      bundleId: data.bundleId,
+      metadata: data.metadata,
+    };
+    
+    this.store.set(session.sessionId, session);
+    return session;
   }
   
   async get(sessionId: string): Promise<Session | null> {
-    console.log(`[Tenant:${this.tenantId}] Getting session: ${sessionId}`);
-    return baseSessionStore.get(sessionId);
+    const session = this.store.get(sessionId);
+    if (!session) return null;
+    
+    if (new Date(session.expiresAt) < new Date()) {
+      session.status = 'expired';
+    }
+    
+    return session;
   }
   
   async update(sessionId: string, data: Partial<Session>): Promise<Session | null> {
-    return baseSessionStore.update(sessionId, data);
+    const session = this.store.get(sessionId);
+    if (!session) return null;
+    Object.assign(session, data);
+    return session;
   }
   
   async terminate(sessionId: string): Promise<boolean> {
-    console.log(`[Tenant:${this.tenantId}] Terminating session: ${sessionId}`);
-    return baseSessionStore.terminate(sessionId);
+    const session = this.store.get(sessionId);
+    if (!session) return false;
+    session.status = 'terminated';
+    return true;
   }
   
   async getByUserId(userId: string): Promise<Session[]> {
-    return baseSessionStore.getByUserId(userId);
+    return Array.from(this.store.values()).filter(s => s.userId === userId);
   }
   
   async getByDeviceId(deviceId: string): Promise<Session[]> {
-    return baseSessionStore.getByDeviceId(deviceId);
+    return Array.from(this.store.values()).filter(s => s.deviceId === deviceId);
   }
   
   async cleanup(): Promise<number> {
-    return baseSessionStore.cleanup();
+    const now = new Date();
+    let cleaned = 0;
+    for (const session of this.store.values()) {
+      if (session.status === 'expired' || session.status === 'terminated' || new Date(session.expiresAt) < now) {
+        session.status = 'expired';
+        this.store.delete(session.sessionId);
+        cleaned++;
+      }
+    }
+    return cleaned;
   }
 }
 
-/**
- * Get all session stores for all known tenants
- */
-export function getAllTenantSessionStores(): ISessionStore[] {
+export function getAllTenantSessionStores() {
   const envTenantId = process.env.SIGNALGRID_TENANT_ID;
   if (envTenantId) {
     return [getSessionStore(envTenantId)];
