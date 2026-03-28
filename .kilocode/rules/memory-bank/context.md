@@ -8,6 +8,13 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 
 ## Recently Completed
 
+- [x] **Session start route decomposition (no behavior change)**:
+  - Extracted rate limiting utilities to `src/app/api/session/start/services/rateLimit.ts`
+  - Extracted posture aggregation helpers to `src/app/api/session/start/services/posture.ts`
+  - Extracted policy context/side-effect helpers to `src/app/api/session/start/services/policy.ts`
+  - Extracted denial response mapping to `src/app/api/session/start/services/responses.ts`
+  - Kept `src/app/api/session/start/route.ts` as orchestration-focused flow with preserved response shapes and ordering
+
 - [x] **Admin dashboard security-events auth header fix (minimal scope)**:
   - Updated `/admin` security-events fetches to call `/api/admin/security-events` with existing browser auth source `NEXT_PUBLIC_ADMIN_API_KEY` via `x-admin-api-key` header
   - Kept `/api/demo/verify` and `/api/admin/integration-logs` unchanged
