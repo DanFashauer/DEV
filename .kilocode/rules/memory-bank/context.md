@@ -8,6 +8,10 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 
 ## Recently Completed
 
+- [x] **Admin dashboard security-events auth header fix (minimal scope)**:
+  - Updated `/admin` security-events fetches to call `/api/admin/security-events` with existing browser auth source `NEXT_PUBLIC_ADMIN_API_KEY` via `x-admin-api-key` header
+  - Kept `/api/demo/verify` and `/api/admin/integration-logs` unchanged
+
 - [x] Base Next.js 16 setup with App Router
 - [x] TypeScript configuration with strict mode
 - [x] Tailwind CSS 4 integration
