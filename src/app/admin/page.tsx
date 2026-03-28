@@ -124,6 +124,10 @@ const samplePersonas: Persona[] = [
   },
 ];
 
+const adminSecurityEventsHeaders: HeadersInit = {
+  'x-admin-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'dev-admin-key-for-testing-only-32chars',
+};
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedFlowStep, setSelectedFlowStep] = useState<string | null>(null);
@@ -285,7 +289,7 @@ function SecurityEventsView() {
   useEffect(() => {
     async function fetchEvents() {
       try {
-        const res = await fetch('/api/admin/security-events?limit=50');
+        const res = await fetch('/api/admin/security-events?limit=50', { headers: adminSecurityEventsHeaders });
         const data = await res.json();
         setEvents(data.events || []);
         setSummary(data.summary);
@@ -543,7 +547,7 @@ function DashboardView() {
     async function fetchData() {
       try {
         const [eventsRes, logsRes] = await Promise.all([
-          fetch('/api/admin/security-events?limit=20'),
+          fetch('/api/admin/security-events?limit=20', { headers: adminSecurityEventsHeaders }),
           fetch('/api/admin/integration-logs'),
         ]);
         const eventsData = await eventsRes.json();
