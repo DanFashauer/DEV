@@ -26,6 +26,22 @@ import {
 } from './services/policy';
 import { createDeniedDeviceResponse } from './services/responses';
 
+function toSessionDirective(session: {
+  sessionId: string;
+  userId: string;
+  nextAction?: string;
+  bundleId?: string;
+  expiresAt: string;
+}): SessionDirective {
+  return {
+    sessionId: session.sessionId,
+    userId: session.userId,
+    nextAction: (session.nextAction as SessionDirective['nextAction']) || 'LAUNCH_APP',
+    bundleId: session.bundleId,
+    expiresAt: session.expiresAt,
+  };
+}
+
 /**
  * POST /api/session/start
  */
@@ -142,13 +158,7 @@ export async function POST(request: Request) {
 
     if (existingActiveSession && new Date(existingActiveSession.expiresAt) > new Date()) {
       // Return existing session directive (extend expiry)
-      const directive: SessionDirective = {
-        sessionId: existingActiveSession.sessionId,
-        userId: existingActiveSession.userId,
-        nextAction: (existingActiveSession.nextAction as SessionDirective['nextAction']) || 'LAUNCH_APP',
-        bundleId: existingActiveSession.bundleId,
-        expiresAt: existingActiveSession.expiresAt,
-      };
+      const directive = toSessionDirective(existingActiveSession);
 
       return NextResponse.json({
         success: true,
@@ -249,13 +259,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const directive: SessionDirective = {
-      sessionId: session.sessionId,
-      userId: session.userId,
-      nextAction: 'LAUNCH_APP',
-      bundleId: session.bundleId,
-      expiresAt: session.expiresAt,
-    };
+    const directive = toSessionDirective(session);
 
     console.log('[SessionStart] Session created:', {
       sessionId: session.sessionId,
