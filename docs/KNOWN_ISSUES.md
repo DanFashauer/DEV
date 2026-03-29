@@ -12,7 +12,7 @@ Issues that break the demo or make validation unreliable.
 ### Issue Template
 - ID: 
 - Title: 
-- Found by: Kilo / Human / Both
+- Found by: Reviewer / Human / Both
 - Date: 
 - Environment: 
 - Severity: Critical / High
@@ -29,7 +29,7 @@ Issues that break the demo or make validation unreliable.
 
 - ID: PORT_3000_BLOCKED
 - Title: Port 3000 occupied by unknown process
-- Found by: Kilo
+- Found by: Reviewer
 - Date: 2026-03-19
 - Environment: Cloud sandbox
 - Severity: High
@@ -48,7 +48,7 @@ Issues that do not break the demo but should be improved.
 ### Issue Template
 - ID: 
 - Title: 
-- Found by: Kilo / Human / Both
+- Found by: Reviewer / Human / Both
 - Date: 
 - Severity: Medium / Low
 - Area: UI / wording / animation / spacing / consistency
@@ -80,21 +80,21 @@ Resolved issues that were validated after correction.
 
 - ID: DEMO_UP_PORT_CHECK
 - Title: demo:up did not check if port was already in use
-- Fixed by: Kilo
+- Fixed by: Reviewer
 - Date fixed: 2026-03-19
 - Validation method: Added port check and health verification to demo-control.ts
 - Notes: Now checks if SignalGrid is already running before starting
 
 - ID: DEMO_EXEC_ROUTE_CHECK
 - Title: demo:exec did not verify routes before running
-- Fixed by: Kilo
+- Fixed by: Reviewer
 - Date fixed: 2026-03-19
 - Validation method: Added /api/health and /api/demo/verify checks
 - Notes: Now fails with clear diagnostics if routes unavailable
 
 - ID: DEMO_DOCTOR_MISSING
 - Title: No way to diagnose demo environment issues
-- Fixed by: Kilo
+- Fixed by: Reviewer
 - Date fixed: 2026-03-19
 - Validation method: Created bun run demo:doctor command
 - Notes: Prints PASS/FAIL with reasons
