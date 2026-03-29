@@ -2,7 +2,7 @@
 
 ## Purpose
 This checklist is the single source of truth for validating the SignalGrid demo.
-Both Kilo and human review should use this same checklist.
+All reviewers should use this same checklist.
 
 ---
 

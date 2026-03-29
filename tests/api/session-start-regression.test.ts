@@ -277,6 +277,31 @@ describe('POST /api/session/start regression matrix', () => {
     });
   });
 
+
+  it('uses session nextAction as mode source for existing session extension response', async () => {
+    sessionStore.getByDeviceId.mockResolvedValueOnce([
+      {
+        sessionId: 'sess-existing-2',
+        userId: 'user-001',
+        status: 'active',
+        nextAction: 'UNLOCK_DEVICE',
+        bundleId: 'com.example.app',
+        expiresAt: '2099-01-01T00:00:00.000Z',
+      },
+    ]);
+
+    const { POST } = await import('@/app/api/session/start/route');
+    const response = await POST(makeRequest({ any: 'payload' }));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.session).toMatchObject({
+      sessionId: 'sess-existing-2',
+      nextAction: 'UNLOCK_DEVICE',
+    });
+    expect(sessionStore.create).not.toHaveBeenCalled();
+  });
+
   it('uses session nextAction as mode source for fresh session response', async () => {
     sessionStore.create.mockResolvedValueOnce({
       sessionId: 'sess-002',
@@ -295,6 +320,57 @@ describe('POST /api/session/start regression matrix', () => {
     expect(data.session).toMatchObject({
       sessionId: 'sess-002',
       nextAction: 'UNLOCK_DEVICE',
+    });
+  });
+
+  it('applies one effective directive resolver contract for extension and fresh paths', async () => {
+    sessionStore.getByDeviceId.mockResolvedValueOnce([
+      {
+        sessionId: 'sess-existing-3',
+        userId: 'user-001',
+        status: 'active',
+        // route should fall back to LAUNCH_APP via shared resolver
+        nextAction: undefined,
+        bundleId: 'com.example.existing',
+        expiresAt: '2099-01-01T00:00:00.000Z',
+      },
+    ]);
+
+    const { POST } = await import('@/app/api/session/start/route');
+
+    const extensionResponse = await POST(makeRequest({ any: 'payload' }));
+    const extensionData = await extensionResponse.json();
+
+    expect(extensionResponse.status).toBe(200);
+    expect(extensionData.session).toMatchObject({
+      sessionId: 'sess-existing-3',
+      nextAction: 'LAUNCH_APP',
+      bundleId: 'com.example.existing',
+    });
+
+    sessionStore.getByDeviceId.mockResolvedValueOnce([]);
+    sessionStore.create.mockResolvedValueOnce({
+      sessionId: 'sess-003',
+      userId: 'user-001',
+      nextAction: 'WAIT',
+      bundleId: 'com.example.enterpriseapp',
+      createdAt: '2026-03-28T00:00:00.000Z',
+      expiresAt: '2026-03-28T01:00:00.000Z',
+    });
+    mockGetEvaluator.mockReturnValueOnce({
+      evaluate: vi.fn().mockResolvedValue([
+        { type: 'launch_app', params: { appBundleId: 'com.epic.ezyaccess' } },
+      ]),
+    });
+
+    const freshResponse = await POST(makeRequest({ any: 'payload' }));
+    const freshData = await freshResponse.json();
+
+    expect(freshResponse.status).toBe(200);
+    expect(freshData.session).toMatchObject({
+      sessionId: 'sess-003',
+      nextAction: 'LAUNCH_APP',
+      bundleId: 'com.epic.ezyaccess',
     });
   });
 

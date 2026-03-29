@@ -26,6 +26,17 @@ import {
 } from './services/policy';
 import { createDeniedDeviceResponse } from './services/responses';
 
+type DirectiveAffectingPolicyAction = {
+  type: string;
+  params?: Record<string, unknown>;
+};
+
+const DEFAULT_SESSION_NEXT_ACTION: SessionDirective['nextAction'] = 'LAUNCH_APP';
+
+function resolveSessionNextAction(nextAction?: string): SessionDirective['nextAction'] {
+  return (nextAction as SessionDirective['nextAction']) || DEFAULT_SESSION_NEXT_ACTION;
+}
+
 function toSessionDirective(session: {
   sessionId: string;
   userId: string;
@@ -36,10 +47,49 @@ function toSessionDirective(session: {
   return {
     sessionId: session.sessionId,
     userId: session.userId,
-    nextAction: (session.nextAction as SessionDirective['nextAction']) || 'LAUNCH_APP',
+    nextAction: resolveSessionNextAction(session.nextAction),
     bundleId: session.bundleId,
     expiresAt: session.expiresAt,
   };
+}
+
+function resolveEffectiveSessionDirective(params: {
+  session: {
+    sessionId: string;
+    userId: string;
+    nextAction?: string;
+    bundleId?: string;
+    expiresAt: string;
+  };
+  policyActions?: DirectiveAffectingPolicyAction[];
+}) {
+  const { session, policyActions = [] } = params;
+  const directive = toSessionDirective(session);
+
+  let ttlSeconds: number | undefined;
+
+  for (const action of policyActions) {
+    if (action.type === 'launch_app') {
+      directive.nextAction = 'LAUNCH_APP';
+
+      const actionBundleId =
+        typeof action.params?.bundleId === 'string'
+          ? action.params.bundleId
+          : typeof action.params?.appBundleId === 'string'
+            ? action.params.appBundleId
+            : undefined;
+
+      if (actionBundleId) {
+        directive.bundleId = actionBundleId;
+      }
+    }
+
+    if (action.type === 'set_session_ttl' && typeof action.params?.seconds === 'number') {
+      ttlSeconds = action.params.seconds;
+    }
+  }
+
+  return { directive, ttlSeconds };
 }
 
 /**
@@ -158,7 +208,7 @@ export async function POST(request: Request) {
 
     if (existingActiveSession && new Date(existingActiveSession.expiresAt) > new Date()) {
       // Return existing session directive (extend expiry)
-      const directive = toSessionDirective(existingActiveSession);
+      const { directive } = resolveEffectiveSessionDirective({ session: existingActiveSession });
 
       return NextResponse.json({
         success: true,
@@ -249,7 +299,7 @@ export async function POST(request: Request) {
       userId: badgeMapping.userId,
       badgeUid: event.badge.badgeId,
       deviceId,
-      nextAction: 'LAUNCH_APP',
+      nextAction: resolveSessionNextAction(),
       bundleId: defaultBundleId,
       metadata: {
         employeeId: event.badge.employeeId,
@@ -258,8 +308,6 @@ export async function POST(request: Request) {
         locationId: event.context?.locationId,
       },
     });
-
-    const directive = toSessionDirective(session);
 
     console.log('[SessionStart] Session created:', {
       sessionId: session.sessionId,
@@ -292,12 +340,18 @@ export async function POST(request: Request) {
     // Process policy actions
     for (const action of policyActions) {
       console.log('[Policy] Action triggered:', action.type, action.params);
-      if (action.type === 'set_session_ttl' && action.params?.seconds) {
-        await sessionStore.update(session.sessionId, {
-          expiresAt: new Date(Date.now() + action.params.seconds * 1000).toISOString(),
-        });
-        directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
-      }
+    }
+
+    const { directive, ttlSeconds } = resolveEffectiveSessionDirective({
+      session,
+      policyActions,
+    });
+
+    if (ttlSeconds) {
+      await sessionStore.update(session.sessionId, {
+        expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+      });
+      directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
     }
 
     return NextResponse.json({
