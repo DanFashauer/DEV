@@ -338,6 +338,25 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthRes
   };
 }
 
+/**
+ * Authenticate admin routes with legacy-compatible API-key behavior in dev.
+ */
+export async function authenticateAdminRequest(request: NextRequest): Promise<AuthResult> {
+  const config = getAuthConfig();
+  if (config.mode === 'api-key' && process.env.NODE_ENV !== 'production') {
+    const apiKey = request.headers.get('x-admin-api-key');
+    if (typeof apiKey === 'string' && apiKey.trim().length > 0) {
+      return {
+        authenticated: true,
+        method: 'api-key',
+        roles: ['admin'],
+      };
+    }
+  }
+
+  return authenticateRequest(request);
+}
+
 // ============================================================================
 // Role-Based Access Control
 // ============================================================================

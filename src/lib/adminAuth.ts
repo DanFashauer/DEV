@@ -1,63 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes, timingSafeEqual } from "crypto";
-import { authenticateRequest, getAuthConfig } from "./auth";
-import { verifyStepUpSession, StepUpChallenge, requiresStepUp, createStepUpSession } from "./auth/stepUpStore";
-import { checkRateLimit, rateLimitPresets } from "./utils/rateLimit";
-
-// Rate limiting configuration
-const RATE_LIMIT_MAX = 30; // max requests per window
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-
-/**
- * Get the admin API key from environment
- * In development, falls back to a default key if not explicitly set
- * Production always requires explicit configuration
- */
-function getAdminApiKey(): string | null {
-  const envKey = process.env.ADMIN_API_KEY?.trim();
-  
-  // In development, allow a default dev key if not explicitly set
-  if ((!envKey || envKey.length === 0) && process.env.NODE_ENV !== 'production') {
-    console.log('[AUTH] Using default dev API key (development only)');
-    return 'dev-admin-key-for-testing-only-32chars';
-  }
-  
-  if (!envKey || envKey.length === 0) {
-    const errorMsg = process.env.NODE_ENV === "production"
-      ? "[SECURITY] CRITICAL: ADMIN_API_KEY must be set in production"
-      : "[SECURITY] ADMIN_API_KEY must be explicitly set (export ADMIN_API_KEY='your-key')";
-    throw new Error(errorMsg);
-  }
-  
-  if (envKey.length < 32) {
-    console.warn("[SECURITY] WARNING: ADMIN_API_KEY should be 32+ characters");
-  }
-  
-  return envKey;
-}
-
-/**
- * Timing-safe string comparison
- * Prevents timing attacks by always comparing full length
- */
-function timingSafeCompare(a: string | null, b: string | null): boolean {
-  if (!a || !b) {
-    return false;
-  }
-  
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  
-  // If lengths differ, fail immediately (but do constant-time compare anyway)
-  if (bufA.length !== bufB.length) {
-    // Do a constant-time comparison of mismatched lengths to avoid leaking length info
-    // Compare against itself to waste time without leaking
-    timingSafeEqual(bufA, bufA);
-    return false;
-  }
-  
-  return timingSafeEqual(bufA, bufB);
-}
+import { authenticateAdminRequest } from "./auth";
+import { verifyStepUpSession, StepUpChallenge, createStepUpSession } from "./auth/stepUpStore";
+import { rateLimitPresets } from "./utils/rateLimit";
 
 /**
  * Get client IP from request with proxy trust validation
@@ -173,80 +117,27 @@ export async function requireAdminAuth(request: NextRequest): Promise<NextRespon
     );
   }
   
-  // 2. Try JWT authentication first (if OIDC is configured)
-  const authConfig = getAuthConfig();
-  
-  if (authConfig.mode === 'jwt') {
-    const auth = await authenticateRequest(request);
-    
-    if (auth.authenticated) {
-      logAuthAttempt(request, path, true, `authorized via ${auth.method}`);
-      return null;
-    }
-    
-    // JWT failed - check if we should fall back to API key
-    const apiKey = request.headers.get("x-admin-api-key");
-    if (apiKey) {
-      // Try API key as fallback
-      const adminApiKey = getAdminApiKey();
-      if (adminApiKey && timingSafeCompare(apiKey, adminApiKey)) {
-        logAuthAttempt(request, path, true, "authorized via api-key fallback");
-        return null;
-      }
-    }
-    
-    logAuthAttempt(request, path, false, "invalid JWT");
-    return NextResponse.json(
-      { error: auth.error || "Unauthorized: Invalid or missing authentication token" },
-      { 
-        status: 401,
-        headers: getSecurityHeaders(),
-      }
-    );
-  }
-  
-  // 3. API key mode (development fallback)
-  const adminApiKey = getAdminApiKey();
-  
-  // If no API key configured in production, fail closed
-  if (!adminApiKey) {
-    logAuthAttempt(request, path, false, "misconfiguration");
-    console.error(
-      `[SECURITY] Admin API key not configured in ${process.env.NODE_ENV} environment`
-    );
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { 
-        status: 500,
-        headers: getSecurityHeaders(),
-      }
-    );
-  }
-  
-  // Get API key from request header
-  const providedKey = request.headers.get("x-admin-api-key");
-  
-  // In development, accept any non-empty key (bypass strict validation)
-  if (process.env.NODE_ENV !== 'production' && providedKey && providedKey.length > 0) {
-    logAuthAttempt(request, path, true, "authorized (dev bypass)");
+  // 2. Authenticate through shared admin auth path
+  const auth = await authenticateAdminRequest(request);
+
+  if (auth.authenticated) {
+    logAuthAttempt(request, path, true, `authorized via ${auth.method}`);
     return null;
   }
-  
-  // Timing-safe comparison
-  if (!timingSafeCompare(providedKey, adminApiKey)) {
-    logAuthAttempt(request, path, false, "invalid_key");
-    return NextResponse.json(
-      { error: "Unauthorized: Invalid or missing API key" },
-      { 
-        status: 401,
-        headers: getSecurityHeaders(),
-      }
-    );
-  }
-  
-  // Authorized
-  logAuthAttempt(request, path, true, "authorized");
-  return null;
+
+  const errorMessage =
+    auth.method === "jwt"
+      ? auth.error || "Unauthorized: Invalid or missing authentication token"
+      : "Unauthorized: Invalid or missing API key";
+
+  logAuthAttempt(request, path, false, auth.error || "unauthorized");
+  return NextResponse.json(
+    { error: errorMessage },
+    {
+      status: 401,
+      headers: getSecurityHeaders(),
+    }
+  );
 }
 
 /**
