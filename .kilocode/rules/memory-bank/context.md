@@ -8,6 +8,22 @@ The project includes a Next.js 16 frontend and an iOS EnterpriseShell kiosk appl
 
 ## Recently Completed
 
+- [x] **Mode source-of-truth consistency cleanup (2026-03-29)**:
+  - Consolidated session directive mode (`nextAction`) resolution in `/api/session/start` into one shared helper used by both existing-session extension and fresh-session creation paths
+  - Added narrow regression coverage to lock fresh-session response mode resolution against session store output
+
+- [x] **Session store source-of-truth cleanup (2026-03-29)**:
+  - Updated `src/app/api/session/[sessionId]/route.ts` to resolve session store from request via tenant-aware session store abstraction
+  - Added focused consistency tests to lock that GET/DELETE use request-resolved tenant store access path
+
+- [x] **Session-start regression matrix (2026-03-28)**:
+  - Added focused route-level regression tests for `/api/session/start` behavior lock after route decomposition
+  - Covered validation failure, badge enrollment/active gates, active-session extension, posture denial, compliant success, and `set_session_ttl` expiry update path
+
+- [x] **Codebase issue triage (2026-03-28)**:
+  - Added `TASK_AUDIT_2026-03-28.md` with four scoped follow-up tasks
+  - Identified one typo task, one runtime bug task, one comment/docs discrepancy task, and one test quality task
+
 - [x] **Session start route decomposition (no behavior change)**:
   - Extracted rate limiting utilities to `src/app/api/session/start/services/rateLimit.ts`
   - Extracted posture aggregation helpers to `src/app/api/session/start/services/posture.ts`

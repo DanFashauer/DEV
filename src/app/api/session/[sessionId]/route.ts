@@ -17,7 +17,7 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
-import { sessionStore } from '@/lib/sessionStore';
+import { getSessionStoreFromRequest } from '@/lib/tenant/sessionStore';
 import { appendAuditRecord } from '@/lib/auditLedger';
 import { emitSessionEnd } from '@/lib/integrations/webhooks/emitter';
 
@@ -29,6 +29,7 @@ interface RouteParams {
 
 export async function GET(request: Request, { params }: RouteParams) {
   try {
+    const sessionStore = getSessionStoreFromRequest(request);
     const { sessionId } = await params;
     
     if (!sessionId) {
@@ -94,6 +95,7 @@ export async function GET(request: Request, { params }: RouteParams) {
  */
 export async function DELETE(request: Request, { params }: RouteParams) {
   try {
+    const sessionStore = getSessionStoreFromRequest(request);
     const { sessionId } = await params;
     
     if (!sessionId) {
