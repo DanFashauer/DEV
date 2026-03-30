@@ -124,9 +124,10 @@ const samplePersonas: Persona[] = [
   },
 ];
 
-const adminSecurityEventsHeaders: HeadersInit = {
-  'x-admin-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'dev-admin-key-for-testing-only-32chars',
-};
+const adminApiKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+const adminSecurityEventsHeaders: HeadersInit = adminApiKey
+  ? { 'x-admin-api-key': adminApiKey }
+  : {};
 
 // Security Events View - fetches real events from API
 
@@ -160,6 +161,10 @@ export function SecurityEventsView() {
   useEffect(() => {
     async function fetchEvents() {
       try {
+        if (!adminApiKey) {
+          throw new Error('NEXT_PUBLIC_ADMIN_API_KEY is not configured');
+        }
+
         const res = await fetch('/api/admin/security-events?limit=50', { headers: adminSecurityEventsHeaders });
         const data = await res.json();
         setEvents(data.events || []);
