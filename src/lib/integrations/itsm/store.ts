@@ -17,7 +17,6 @@ const REDIS_URL = process.env.REDIS_URL;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 // Encryption key from environment (must be 32 bytes for AES-256)
-const ENCRYPTION_KEY = process.env.ITSM_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || 'default-dev-key-must-be-32-bytes!!';
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
@@ -166,8 +165,12 @@ const memoryStore: {
 // ============================================================================
 
 function getEncryptionKey(): Buffer {
+  const encryptionKey = process.env.ITSM_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
+  if (!encryptionKey) {
+    throw new Error('ITSM encryption key not configured');
+  }
   // Ensure key is exactly 32 bytes for AES-256
-  const key = Buffer.from(ENCRYPTION_KEY.slice(0, 32).padEnd(32, '0'));
+  const key = Buffer.from(encryptionKey.slice(0, 32).padEnd(32, '0'));
   return key;
 }
 

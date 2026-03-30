@@ -32,6 +32,11 @@ type DirectiveAffectingPolicyAction = {
 };
 
 const DEFAULT_SESSION_NEXT_ACTION: SessionDirective['nextAction'] = 'LAUNCH_APP';
+const DEFAULT_UNKNOWN_POSTURE_MODE = 'deny';
+
+function getUnknownPostureMode(): 'allow' | 'deny' {
+  return process.env.UNKNOWN_POSTURE_MODE === 'allow' ? 'allow' : DEFAULT_UNKNOWN_POSTURE_MODE;
+}
 
 function resolveSessionNextAction(nextAction?: string): SessionDirective['nextAction'] {
   return (nextAction as SessionDirective['nextAction']) || DEFAULT_SESSION_NEXT_ACTION;
@@ -226,6 +231,8 @@ export async function POST(request: Request) {
     const isFleetCompliant = fleetContext.status === 'compliant';
     const isUEMCompliant = uemContext.complianceStatus === 'compliant';
     const isDeviceCompliant = isFleetCompliant || isUEMCompliant;
+    const isPostureUnknown = !fleetContext.enrolled && !uemContext.enrolled;
+    const unknownPostureMode = getUnknownPostureMode();
 
     await appendAuditRecord('session.start', { type: 'device', id: deviceId }, {
       target: { type: 'badge', id: event.badge.badgeId },
@@ -239,6 +246,24 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    if (isPostureUnknown && unknownPostureMode === 'deny') {
+      await recordAuthFailure('device_posture_unknown', { type: 'device', id: deviceId }, {
+        meta: {
+          reason: 'Unknown device posture denied by policy',
+          unknownPostureMode,
+        },
+      });
+
+      return NextResponse.json(
+        {
+          error: 'Device posture unknown',
+          code: 'DEVICE_POSTURE_UNKNOWN',
+          hint: 'Device must report posture before access is granted',
+        },
+        { status: 403 }
+      );
+    }
 
     if (!isDeviceCompliant && (fleetContext.enrolled || uemContext.enrolled)) {
       console.log('[SessionStart] Device non-compliant, denying session:', {
@@ -292,7 +317,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Step 4: Create new session (device is compliant or no posture data)
+    // Step 4: Create new session (device is compliant or explicitly allowed unknown posture)
     const defaultBundleId = process.env.DEFAULT_LAUNCH_BUNDLE_ID ?? 'com.example.enterpriseapp';
 
     const session = await sessionStore.create({
