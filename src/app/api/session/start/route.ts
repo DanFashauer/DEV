@@ -103,6 +103,256 @@ function resolveEffectiveSessionDirective(params: {
   return { directive, ttlSeconds };
 }
 
+async function handleExistingActiveSession(params: {
+  existingActiveSession: {
+    sessionId: string;
+    userId: string;
+    nextAction?: string;
+    bundleId?: string;
+    expiresAt: string;
+  };
+  sessionStore: {
+    update: (sessionId: string, updates: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>;
+    get: (sessionId: string) => Promise<Record<string, unknown> | undefined>;
+  };
+}) {
+  const { existingActiveSession, sessionStore } = params;
+  const extendedExpiresAt = new Date(Date.now() + getSessionTtlSeconds() * 1000).toISOString();
+  const updatedSession = await sessionStore.update(existingActiveSession.sessionId, {
+    expiresAt: extendedExpiresAt,
+    lastActivityAt: new Date().toISOString(),
+  });
+  const fetchedSession = await sessionStore.get(existingActiveSession.sessionId);
+  const refreshedSession = {
+    ...existingActiveSession,
+    ...(updatedSession || {}),
+    ...(fetchedSession || {}),
+    expiresAt: fetchedSession?.expiresAt || updatedSession?.expiresAt || extendedExpiresAt,
+  };
+  const { directive } = resolveEffectiveSessionDirective({ session: refreshedSession });
+
+  return NextResponse.json({
+    success: true,
+    session: directive,
+    message: 'Existing session extended',
+  });
+}
+
+async function handlePostureDeniedSessionStart(params: {
+  event: {
+    badge: { badgeId: string };
+  };
+  deviceId: string;
+  badgeMapping: {
+    userId: string;
+    userName?: string;
+  };
+  uemContext: {
+    complianceStatus: string;
+  };
+  fleetContext: {
+    status: string;
+  };
+  isFleetCompliant: boolean;
+  isDeviceCompliant: boolean;
+  isUEMCompliant: boolean;
+  evaluator: {
+    evaluate: (policyContext: unknown) => Promise<DirectiveAffectingPolicyAction[]>;
+  };
+}) {
+  const {
+    event,
+    deviceId,
+    badgeMapping,
+    uemContext,
+    fleetContext,
+    isFleetCompliant,
+    isDeviceCompliant,
+    isUEMCompliant,
+    evaluator,
+  } = params;
+
+  console.log('[SessionStart] Device non-compliant, denying session:', {
+    deviceId,
+    fleetStatus: fleetContext.status,
+    uemStatus: uemContext.complianceStatus,
+  });
+
+  await recordAuthFailure('device_non_compliant', { type: 'device', id: deviceId }, {
+    meta: {
+      reason: 'Device compliance check failed',
+      fleetStatus: fleetContext.status,
+      uemStatus: uemContext.complianceStatus,
+    },
+  });
+
+  const { policyContext, riskScore } = await buildDeniedPolicyInput({
+    event,
+    deviceId,
+    badgeMapping,
+    uemContext,
+    fleetContext,
+    isFleetCompliant,
+    isDeviceCompliant,
+  });
+
+  // Evaluate policies (this will trigger quarantine, SIEM, ITSM actions)
+  const policyActions = await evaluator.evaluate(policyContext);
+
+  // Log the policy actions that were triggered
+  for (const action of policyActions) {
+    console.log('[Policy] Action triggered (non-compliant device):', action.type, action.params);
+  }
+
+  recordDeniedPolicySideEffects({
+    policyActions,
+    deviceId,
+    userId: badgeMapping.userId,
+    badgeId: event.badge.badgeId,
+    userName: badgeMapping.userName,
+    riskScore: riskScore.riskScore,
+  });
+
+  // Return denial response with decision receipt
+  return createDeniedDeviceResponse({
+    isFleetCompliant,
+    isUEMCompliant,
+    fleetContext,
+    uemContext,
+    policyActions,
+  });
+}
+
+async function handlePostureAllowedSessionStart(params: {
+  event: {
+    badge: {
+      badgeId: string;
+      employeeId?: string;
+      cardSerialNumber?: string;
+    };
+    reader: {
+      readerType: string;
+    };
+    context?: {
+      locationId?: string;
+    };
+  };
+  deviceId: string;
+  badgeMapping: {
+    userId: string;
+  };
+  sessionStore: {
+    create: (input: Record<string, unknown>) => Promise<{
+      sessionId: string;
+      userId: string;
+      nextAction?: string;
+      bundleId?: string;
+      createdAt: string;
+      expiresAt: string;
+    }>;
+    update: (sessionId: string, updates: Record<string, unknown>) => Promise<unknown>;
+    get: (sessionId: string) => Promise<{ expiresAt?: string } | undefined>;
+  };
+  evaluator: {
+    evaluate: (policyContext: unknown) => Promise<DirectiveAffectingPolicyAction[]>;
+  };
+  uemContext: unknown;
+  fleetContext: unknown;
+  isFleetCompliant: boolean;
+  isUEMCompliant: boolean;
+}) {
+  const {
+    event,
+    deviceId,
+    badgeMapping,
+    sessionStore,
+    evaluator,
+    uemContext,
+    fleetContext,
+    isFleetCompliant,
+    isUEMCompliant,
+  } = params;
+
+  const defaultBundleId = process.env.DEFAULT_LAUNCH_BUNDLE_ID ?? 'com.example.enterpriseapp';
+
+  const session = await sessionStore.create({
+    userId: badgeMapping.userId,
+    badgeUid: event.badge.badgeId,
+    deviceId,
+    nextAction: resolveSessionNextAction(),
+    bundleId: defaultBundleId,
+    metadata: {
+      employeeId: event.badge.employeeId,
+      cardSerialNumber: event.badge.cardSerialNumber,
+      readerType: event.reader.readerType,
+      locationId: event.context?.locationId,
+    },
+  });
+
+  console.log('[SessionStart] Session created:', {
+    sessionId: session.sessionId,
+    userId: session.userId,
+    deviceId,
+    expiresAt: session.expiresAt,
+  });
+
+  // Emit webhook event (best-effort, non-blocking)
+  emitSessionStart({
+    sessionId: session.sessionId,
+    userId: session.userId,
+    deviceId,
+    badgeId: event.badge.badgeId,
+    timestamp: new Date().toISOString(),
+  }).catch((err) => console.error('[Webhook] Failed to emit session.start:', err));
+
+  const grantedPolicyInput = await buildGrantedPolicyInput({
+    event,
+    deviceId,
+    badgeMapping,
+    uemContext,
+    fleetContext,
+    sessionId: session.sessionId,
+    sessionCreatedAt: session.createdAt,
+  });
+
+  const policyActions = await evaluator.evaluate(grantedPolicyInput.policyContext);
+
+  // Process policy actions
+  for (const action of policyActions) {
+    console.log('[Policy] Action triggered:', action.type, action.params);
+  }
+
+  const { directive, ttlSeconds } = resolveEffectiveSessionDirective({
+    session,
+    policyActions,
+  });
+
+  if (ttlSeconds) {
+    await sessionStore.update(session.sessionId, {
+      expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+    });
+    directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
+  }
+
+  return NextResponse.json({
+    decision: 'ACCESS_GRANTED',
+    reason: 'Device compliant and policy allows access',
+    success: true,
+    session: directive,
+    riskScore: grantedPolicyInput.riskScore.riskScore,
+    riskLevel: grantedPolicyInput.riskScore.riskLevel,
+    identityId: grantedPolicyInput.deviceIdentity.identityId,
+    devicePosture: {
+      fleetCompliant: isFleetCompliant,
+      uemCompliant: isUEMCompliant,
+      fleetDetails: fleetContext,
+      uemDetails: uemContext,
+    },
+    actions: policyActions.map((a) => ({ type: a.type, params: a.params })),
+    policyActions: policyActions.length > 0 ? policyActions : undefined,
+  });
+}
+
 /**
  * POST /api/session/start
  */
@@ -218,26 +468,7 @@ export async function POST(request: Request) {
     const existingActiveSession = existingSessions.find((s) => s.status === 'active');
 
     if (existingActiveSession && new Date(existingActiveSession.expiresAt) > new Date()) {
-      // Return existing session directive after extending expiry/lastActivity.
-      const extendedExpiresAt = new Date(Date.now() + getSessionTtlSeconds() * 1000).toISOString();
-      const updatedSession = await sessionStore.update(existingActiveSession.sessionId, {
-        expiresAt: extendedExpiresAt,
-        lastActivityAt: new Date().toISOString(),
-      });
-      const fetchedSession = await sessionStore.get(existingActiveSession.sessionId);
-      const refreshedSession = {
-        ...existingActiveSession,
-        ...(updatedSession || {}),
-        ...(fetchedSession || {}),
-        expiresAt: fetchedSession?.expiresAt || updatedSession?.expiresAt || extendedExpiresAt,
-      };
-      const { directive } = resolveEffectiveSessionDirective({ session: refreshedSession });
-
-      return NextResponse.json({
-        success: true,
-        session: directive,
-        message: 'Existing session extended',
-      });
+      return handleExistingActiveSession({ existingActiveSession, sessionStore });
     }
 
     // Step 3: Check device posture BEFORE creating session
@@ -284,21 +515,7 @@ export async function POST(request: Request) {
     }
 
     if (!isDeviceCompliant && (fleetContext.enrolled || uemContext.enrolled)) {
-      console.log('[SessionStart] Device non-compliant, denying session:', {
-        deviceId,
-        fleetStatus: fleetContext.status,
-        uemStatus: uemContext.complianceStatus,
-      });
-
-      await recordAuthFailure('device_non_compliant', { type: 'device', id: deviceId }, {
-        meta: {
-          reason: 'Device compliance check failed',
-          fleetStatus: fleetContext.status,
-          uemStatus: uemContext.complianceStatus,
-        },
-      });
-
-      const { policyContext, riskScore } = await buildDeniedPolicyInput({
+      return handlePostureDeniedSessionStart({
         event,
         deviceId,
         badgeMapping,
@@ -306,113 +523,22 @@ export async function POST(request: Request) {
         fleetContext,
         isFleetCompliant,
         isDeviceCompliant,
-      });
-
-      // Evaluate policies (this will trigger quarantine, SIEM, ITSM actions)
-      const policyActions = await evaluator.evaluate(policyContext);
-
-      // Log the policy actions that were triggered
-      for (const action of policyActions) {
-        console.log('[Policy] Action triggered (non-compliant device):', action.type, action.params);
-      }
-
-      recordDeniedPolicySideEffects({
-        policyActions,
-        deviceId,
-        userId: badgeMapping.userId,
-        badgeId: event.badge.badgeId,
-        userName: badgeMapping.userName,
-        riskScore: riskScore.riskScore,
-      });
-
-      // Return denial response with decision receipt
-      return createDeniedDeviceResponse({
-        isFleetCompliant,
         isUEMCompliant,
-        fleetContext,
-        uemContext,
-        policyActions,
+        evaluator,
       });
     }
 
     // Step 4: Create new session (device is compliant or explicitly allowed unknown posture)
-    const defaultBundleId = process.env.DEFAULT_LAUNCH_BUNDLE_ID ?? 'com.example.enterpriseapp';
-
-    const session = await sessionStore.create({
-      userId: badgeMapping.userId,
-      badgeUid: event.badge.badgeId,
-      deviceId,
-      nextAction: resolveSessionNextAction(),
-      bundleId: defaultBundleId,
-      metadata: {
-        employeeId: event.badge.employeeId,
-        cardSerialNumber: event.badge.cardSerialNumber,
-        readerType: event.reader.readerType,
-        locationId: event.context?.locationId,
-      },
-    });
-
-    console.log('[SessionStart] Session created:', {
-      sessionId: session.sessionId,
-      userId: session.userId,
-      deviceId,
-      expiresAt: session.expiresAt,
-    });
-
-    // Emit webhook event (best-effort, non-blocking)
-    emitSessionStart({
-      sessionId: session.sessionId,
-      userId: session.userId,
-      deviceId,
-      badgeId: event.badge.badgeId,
-      timestamp: new Date().toISOString(),
-    }).catch((err) => console.error('[Webhook] Failed to emit session.start:', err));
-
-    const grantedPolicyInput = await buildGrantedPolicyInput({
+    return handlePostureAllowedSessionStart({
       event,
       deviceId,
       badgeMapping,
+      sessionStore,
+      evaluator,
       uemContext,
       fleetContext,
-      sessionId: session.sessionId,
-      sessionCreatedAt: session.createdAt,
-    });
-
-    const policyActions = await evaluator.evaluate(grantedPolicyInput.policyContext);
-
-    // Process policy actions
-    for (const action of policyActions) {
-      console.log('[Policy] Action triggered:', action.type, action.params);
-    }
-
-    const { directive, ttlSeconds } = resolveEffectiveSessionDirective({
-      session,
-      policyActions,
-    });
-
-    if (ttlSeconds) {
-      await sessionStore.update(session.sessionId, {
-        expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
-      });
-      directive.expiresAt = (await sessionStore.get(session.sessionId))?.expiresAt || directive.expiresAt;
-    }
-
-    return NextResponse.json({
-      decision: 'ACCESS_GRANTED',
-      reason: 'Device compliant and policy allows access',
-      success: true,
-      session: directive,
-      riskScore: grantedPolicyInput.riskScore.riskScore,
-      riskLevel: grantedPolicyInput.riskScore.riskLevel,
-      identityId: grantedPolicyInput.deviceIdentity.identityId,
-      devicePosture: {
-        fleetCompliant: isFleetCompliant,
-        uemCompliant: isUEMCompliant,
-        fleetDetails: fleetContext,
-        uemDetails: uemContext,
-      },
-      actions: policyActions.map((a) => ({ type: a.type, params: a.params })),
-      policyActions: policyActions.length > 0 ? policyActions : undefined,
+      isFleetCompliant,
+      isUEMCompliant,
     });
   } catch (error) {
     console.error('[SessionStart] Error:', error);
