@@ -124,9 +124,25 @@ async function dispatchToEndpoint(
   // Get secret (stored as hash, we need to handle this)
   // Note: In production, you'd store encrypted secrets or use a secret manager
   // For now, we'll need to pass the secret or implement secret retrieval
-  const secret = (webhook as unknown as { _secret?: string })._secret || 
-    process.env[`WEBHOOK_SECRET_${webhook.id.slice(0, 8)}`] || 
-    'default-dev-secret';
+  const secret =
+    (webhook as unknown as { _secret?: string })._secret ||
+    process.env[`WEBHOOK_SECRET_${webhook.id.slice(0, 8)}`];
+
+  if (!secret) {
+    const errorMessage = 'Webhook signing secret not configured';
+    await recordDelivery(
+      webhook.id,
+      payload.id,
+      'failed',
+      undefined,
+      undefined,
+      errorMessage
+    );
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
   
   const payloadStr = JSON.stringify(payload);
   const headers = createSignedHeaders(payloadStr, secret, payload.deliveryId, payload.id);

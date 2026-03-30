@@ -9,8 +9,8 @@
  * - OIDC_CLIENT_ID: Client ID for this application
  * - OIDC_JWKS_URI: JWKS URI for token verification (defaults to {issuer}/.well-known/jwks.json)
  * - OIDC_AUDIENCE: Expected audience claim (optional, defaults to client ID)
- * - ADMIN_API_KEY: Fallback API key for development (required in dev if OIDC not configured)
- * - ENABLE_DEV_BYPASS: Set to "true" to allow API key fallback in non-production
+ * - ADMIN_API_KEY: API key for admin authentication when API key auth is enabled
+ * - ENABLE_DEV_BYPASS: Set to "true" to allow API key fallback from JWT mode in non-production
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -249,14 +249,12 @@ function getAdminApiKey(): string | null {
   if (envKey && envKey.length > 0) {
     return envKey;
   }
-  
-  // Production requires explicit configuration
-  if (process.env.NODE_ENV === 'production') {
-    return null;
-  }
-  
-  // Development fallback
-  return 'dev-admin-key-12345';
+
+  return null;
+}
+
+function allowDevApiKeyFallback(): boolean {
+  return process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_BYPASS === 'true';
 }
 
 /**
@@ -304,14 +302,16 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthRes
       }
     }
     
-    // JWT failed, try API key as fallback (for dev/testing)
-    const apiKey = request.headers.get('x-admin-api-key');
-    if (verifyApiKey(apiKey)) {
-      return {
-        authenticated: true,
-        method: 'api-key',
-        roles: ['admin'], // API key grants full access
-      };
+    // JWT failed, optionally allow API key fallback only in explicitly-enabled dev bypass mode
+    if (allowDevApiKeyFallback()) {
+      const apiKey = request.headers.get('x-admin-api-key');
+      if (verifyApiKey(apiKey)) {
+        return {
+          authenticated: true,
+          method: 'api-key',
+          roles: ['admin'], // API key grants full access
+        };
+      }
     }
     
     return {
@@ -342,18 +342,6 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthRes
  * Authenticate admin routes with legacy-compatible API-key behavior in dev.
  */
 export async function authenticateAdminRequest(request: NextRequest): Promise<AuthResult> {
-  const config = getAuthConfig();
-  if (config.mode === 'api-key' && process.env.NODE_ENV !== 'production') {
-    const apiKey = request.headers.get('x-admin-api-key');
-    if (typeof apiKey === 'string' && apiKey.trim().length > 0) {
-      return {
-        authenticated: true,
-        method: 'api-key',
-        roles: ['admin'],
-      };
-    }
-  }
-
   return authenticateRequest(request);
 }
 

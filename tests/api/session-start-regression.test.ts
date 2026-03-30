@@ -118,6 +118,7 @@ describe('POST /api/session/start regression matrix', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
 
     mockResolveTenantId.mockReturnValue('tenant-test');
     mockCheckIpRateLimit.mockReturnValue(true);
@@ -274,6 +275,45 @@ describe('POST /api/session/start regression matrix', () => {
       session: { sessionId: 'sess-001', nextAction: 'LAUNCH_APP' },
       riskScore: 20,
       riskLevel: 'low',
+    });
+  });
+
+  it('denies unknown posture by default policy', async () => {
+    mockGetFleetContext.mockResolvedValueOnce({ status: 'unknown', enrolled: false });
+    mockGetUEMContext.mockResolvedValueOnce({ complianceStatus: 'unknown', enrolled: false });
+
+    const { POST } = await import('@/app/api/session/start/route');
+    const response = await POST(makeRequest({ any: 'payload' }));
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data).toMatchObject({
+      error: 'Device posture unknown',
+      code: 'DEVICE_POSTURE_UNKNOWN',
+    });
+    expect(mockRecordAuthFailure).toHaveBeenCalledWith(
+      'device_posture_unknown',
+      { type: 'device', id: baseEvent.device.deviceId },
+      expect.objectContaining({
+        meta: expect.objectContaining({ unknownPostureMode: 'deny' }),
+      })
+    );
+  });
+
+  it('allows unknown posture when UNKNOWN_POSTURE_MODE=allow', async () => {
+    vi.stubEnv('UNKNOWN_POSTURE_MODE', 'allow');
+    mockGetFleetContext.mockResolvedValueOnce({ status: 'unknown', enrolled: false });
+    mockGetUEMContext.mockResolvedValueOnce({ complianceStatus: 'unknown', enrolled: false });
+
+    const { POST } = await import('@/app/api/session/start/route');
+    const response = await POST(makeRequest({ any: 'payload' }));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toMatchObject({
+      decision: 'ACCESS_GRANTED',
+      success: true,
+      session: { sessionId: 'sess-001' },
     });
   });
 

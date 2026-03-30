@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export function checkApiKey(request: NextRequest): NextResponse<{ error: string; code: string; requestId: string | null }> | null {
   const apiKey = request.headers.get('X-API-Key');
-  const envApiKey = process.env.ADMIN_API_KEY || (process.env.NODE_ENV !== 'production' ? 'dev-admin-key-12345' : '');
+  const envApiKey = process.env.ADMIN_API_KEY;
 
   if (!apiKey) {
     return NextResponse.json(
