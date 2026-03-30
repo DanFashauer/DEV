@@ -16,13 +16,18 @@ export default function Home() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const adminApiKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 
   useEffect(() => {
     async function loadDevices() {
       try {
+        if (!adminApiKey) {
+          throw new Error('NEXT_PUBLIC_ADMIN_API_KEY is not configured');
+        }
+
         const res = await fetch('/api/admin/devices', {
           headers: {
-            'X-API-Key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'dev-admin-key-12345',
+            'X-API-Key': adminApiKey,
           },
         });
 
@@ -40,7 +45,7 @@ export default function Home() {
     }
 
     loadDevices();
-  }, []);
+  }, [adminApiKey]);
 
   return (
     <main className="min-h-screen bg-neutral-900 text-white px-4 py-8">

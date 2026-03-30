@@ -24,15 +24,16 @@ function getSigningSecret(): string {
   }
   
   const secret = process.env.BACKEND_SIGNING_SECRET;
+  const isDevBypassEnabled =
+    process.env.NODE_ENV === 'development' && process.env.ENABLE_DEV_BYPASS === 'true';
   
   if (!secret) {
-    // Only throw at runtime in production, not at build time
-    // Use a flag to track if we've already warned
-    if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
-      console.error('[SECURITY] BACKEND_SIGNING_SECRET must be set in production');
-      throw new Error('[SECURITY] BACKEND_SIGNING_SECRET must be set in production');
+    if (!isDevBypassEnabled) {
+      console.error('[SECURITY] BACKEND_SIGNING_SECRET must be set unless development bypass is explicitly enabled');
+      throw new Error('[SECURITY] BACKEND_SIGNING_SECRET must be set');
     }
-    console.warn('[SECURITY] Using insecure default secret - set BACKEND_SIGNING_SECRET for production');
+
+    console.warn('[SECURITY] Using development signing secret because ENABLE_DEV_BYPASS=true');
     signingSecret = 'development-secret-key-do-not-use-in-production';
     return signingSecret;
   }

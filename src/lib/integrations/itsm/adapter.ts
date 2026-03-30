@@ -62,13 +62,14 @@ export function createITSMAdapter(
         return null;
       }
       // Jira uses email as username and apiToken for auth
-      // If no credentials, use placeholder
-      const jiraEmail = credentials.username || 'admin@example.com';
-      const jiraToken = credentials.apiToken || 'dummy-token';
+      if (!credentials.username || !credentials.apiToken) {
+        console.warn('Jira adapter requires username and apiToken');
+        return null;
+      }
       return new JiraAdapter({
         baseUrl: config.instanceUrl,
-        email: jiraEmail,
-        apiToken: jiraToken,
+        email: credentials.username,
+        apiToken: credentials.apiToken,
         projectKey: config.projectKey,
         serviceDeskId: '1', // Default - can be configured via credentials
         useJSM: true,
