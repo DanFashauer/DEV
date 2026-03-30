@@ -33,9 +33,15 @@ type DirectiveAffectingPolicyAction = {
 
 const DEFAULT_SESSION_NEXT_ACTION: SessionDirective['nextAction'] = 'LAUNCH_APP';
 const DEFAULT_UNKNOWN_POSTURE_MODE = 'deny';
+const DEFAULT_SESSION_TTL_SECONDS = 28800;
 
 function getUnknownPostureMode(): 'allow' | 'deny' {
   return process.env.UNKNOWN_POSTURE_MODE === 'allow' ? 'allow' : DEFAULT_UNKNOWN_POSTURE_MODE;
+}
+
+function getSessionTtlSeconds(): number {
+  const ttlSeconds = Number.parseInt(process.env.SESSION_TTL_SECONDS ?? '', 10);
+  return Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds : DEFAULT_SESSION_TTL_SECONDS;
 }
 
 function resolveSessionNextAction(nextAction?: string): SessionDirective['nextAction'] {
@@ -212,8 +218,20 @@ export async function POST(request: Request) {
     const existingActiveSession = existingSessions.find((s) => s.status === 'active');
 
     if (existingActiveSession && new Date(existingActiveSession.expiresAt) > new Date()) {
-      // Return existing session directive (extend expiry)
-      const { directive } = resolveEffectiveSessionDirective({ session: existingActiveSession });
+      // Return existing session directive after extending expiry/lastActivity.
+      const extendedExpiresAt = new Date(Date.now() + getSessionTtlSeconds() * 1000).toISOString();
+      const updatedSession = await sessionStore.update(existingActiveSession.sessionId, {
+        expiresAt: extendedExpiresAt,
+        lastActivityAt: new Date().toISOString(),
+      });
+      const fetchedSession = await sessionStore.get(existingActiveSession.sessionId);
+      const refreshedSession = {
+        ...existingActiveSession,
+        ...(updatedSession || {}),
+        ...(fetchedSession || {}),
+        expiresAt: fetchedSession?.expiresAt || updatedSession?.expiresAt || extendedExpiresAt,
+      };
+      const { directive } = resolveEffectiveSessionDirective({ session: refreshedSession });
 
       return NextResponse.json({
         success: true,

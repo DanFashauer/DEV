@@ -222,28 +222,62 @@ describe('POST /api/session/start regression matrix', () => {
   });
 
   it('covers existing active session extension path', async () => {
-    sessionStore.getByDeviceId.mockResolvedValueOnce([
-      {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-28T00:00:00.000Z'));
+    vi.stubEnv('SESSION_TTL_SECONDS', '120');
+    try {
+      sessionStore.getByDeviceId.mockResolvedValueOnce([
+        {
+          sessionId: 'sess-existing',
+          userId: 'user-001',
+          status: 'active',
+          nextAction: 'LAUNCH_APP',
+          bundleId: 'com.example.app',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ]);
+      sessionStore.update.mockResolvedValueOnce({
         sessionId: 'sess-existing',
         userId: 'user-001',
         status: 'active',
         nextAction: 'LAUNCH_APP',
         bundleId: 'com.example.app',
-        expiresAt: '2099-01-01T00:00:00.000Z',
-      },
-    ]);
+        expiresAt: '2026-03-28T00:02:00.000Z',
+        lastActivityAt: '2026-03-28T00:00:00.000Z',
+      });
+      sessionStore.get.mockResolvedValueOnce({
+        sessionId: 'sess-existing',
+        userId: 'user-001',
+        status: 'active',
+        nextAction: 'LAUNCH_APP',
+        bundleId: 'com.example.app',
+        expiresAt: '2026-03-28T00:02:00.000Z',
+        lastActivityAt: '2026-03-28T00:00:00.000Z',
+      });
 
-    const { POST } = await import('@/app/api/session/start/route');
-    const response = await POST(makeRequest({ any: 'payload' }));
-    const data = await response.json();
+      const { POST } = await import('@/app/api/session/start/route');
+      const response = await POST(makeRequest({ any: 'payload' }));
+      const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data).toMatchObject({
-      success: true,
-      message: 'Existing session extended',
-      session: { sessionId: 'sess-existing' },
-    });
-    expect(sessionStore.create).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(data).toMatchObject({
+        success: true,
+        message: 'Existing session extended',
+        session: {
+          sessionId: 'sess-existing',
+          expiresAt: '2026-03-28T00:02:00.000Z',
+        },
+      });
+      expect(sessionStore.create).not.toHaveBeenCalled();
+      expect(sessionStore.update).toHaveBeenCalledWith(
+        'sess-existing',
+        expect.objectContaining({
+          expiresAt: '2026-03-28T00:02:00.000Z',
+        })
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('covers non-compliant posture denial path', async () => {
