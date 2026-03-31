@@ -38,7 +38,7 @@ describe('Decision Flow Engine', () => {
     const response = await evaluateDecisionFlow(basePayload);
     expect(response.decision).toBe('allow');
     expect(response.reason).toContain('passed');
-    expect(response.decisionSource).toBe('threshold');
+    expect(response.decisionSource).toBe('baseline');
     expect(response.matchedPolicyId).toBeUndefined();
     expect(mockAppendAuditRecord).toHaveBeenCalledWith(
       'decision.allow',
