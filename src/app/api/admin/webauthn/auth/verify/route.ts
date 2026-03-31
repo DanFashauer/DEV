@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/adminAuth';
+import { getWebAuthnRequestIdentity } from '../../requestIdentity';
 import { verifyAuthentication, createStepUp } from '@/lib/auth/webauthn/server';
 import { appendAuditRecord } from '@/lib/auditLedger';
 
@@ -25,16 +26,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user info from auth header
-    const userId = request.headers.get('x-user-id') || 'admin-user';
+    const { identity, errorResponse } = getWebAuthnRequestIdentity(request);
+    if (!identity) {
+      return errorResponse!;
+    }
 
-    const result = await verifyAuthentication(userId, challengeId, response);
+    const result = await verifyAuthentication(identity.userId, challengeId, response);
 
     if (!result.success) {
       // Audit failure
       await appendAuditRecord(
         'security.webauthn.step_up.failure',
-        { type: 'user', id: userId },
+        { type: 'user', id: identity.userId },
         { meta: { error: result.error } }
       );
 
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // Create step-up session
     const stepUp = await createStepUp(
-      userId,
+      identity.userId,
       ttlSeconds as number || 300,
       'Admin portal step-up authentication'
     );

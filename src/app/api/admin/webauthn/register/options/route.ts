@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/adminAuth';
+import { getWebAuthnRequestIdentity } from '../../requestIdentity';
 import { generateRegistrationOptions } from '@/lib/auth/webauthn/server';
 
 export async function POST(request: NextRequest) {
@@ -13,15 +14,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get user info from auth header (in production from JWT)
-    const userId = request.headers.get('x-user-id') || 'admin-user';
-    const userEmail = request.headers.get('x-user-email') || 'admin@example.com';
-    const displayName = request.headers.get('x-user-name') || 'Admin User';
+    const { identity, errorResponse } = getWebAuthnRequestIdentity(request);
+    if (!identity) {
+      return errorResponse!;
+    }
 
     const options = await generateRegistrationOptions(
-      userId,
-      userEmail,
-      displayName
+      identity.userId,
+      identity.userEmail,
+      identity.displayName
     );
 
     return NextResponse.json({ options });
