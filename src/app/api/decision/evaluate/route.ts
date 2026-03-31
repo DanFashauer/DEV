@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { evaluateDecisionFlow } from '@/lib/decision/engine';
-import type { DecisionRequest } from '@/lib/decision/types';
+import { REQUIRED_DECISION_FIELDS, type DecisionRequest, type RequiredDecisionField } from '@/lib/decision/types';
 
 export const runtime = 'nodejs';
 
@@ -8,14 +8,18 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function hasRequiredInputs(payload: unknown): payload is DecisionRequest {
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function validateDecisionRequest(payload: unknown): { valid: boolean; missingFields: RequiredDecisionField[] } {
   if (!isObject(payload)) {
-    return false;
+    return { valid: false, missingFields: [...REQUIRED_DECISION_FIELDS] };
   }
 
   const hasTopLevel = Boolean(payload.user && payload.device && payload.session && payload.context && payload.action && payload.app);
   if (!hasTopLevel) {
-    return false;
+    return { valid: false, missingFields: [...REQUIRED_DECISION_FIELDS] };
   }
 
   const user = payload.user as Record<string, unknown>;
@@ -23,26 +27,37 @@ function hasRequiredInputs(payload: unknown): payload is DecisionRequest {
   const session = payload.session as Record<string, unknown>;
   const app = payload.app as Record<string, unknown>;
   const action = payload.action as Record<string, unknown>;
+  const missingFields: RequiredDecisionField[] = [];
 
-  return Boolean(user.id && device.id && session.id && app.id && action.type);
+  if (!isNonEmptyString(user.id)) missingFields.push('user.id');
+  if (!isNonEmptyString(device.id)) missingFields.push('device.id');
+  if (!isNonEmptyString(session.id)) missingFields.push('session.id');
+  if (!isNonEmptyString(app.id)) missingFields.push('app.id');
+  if (!isNonEmptyString(action.type)) missingFields.push('action.type');
+
+  return {
+    valid: missingFields.length === 0,
+    missingFields,
+  };
 }
 
 export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as unknown;
 
-    if (!hasRequiredInputs(payload)) {
+    const validation = validateDecisionRequest(payload);
+    if (!validation.valid) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            'Missing required fields. Required: user.id, device.id, session.id, app.id, action.type (and top-level user/device/session/app/context/action)',
+          error: `Missing required fields. Required: ${REQUIRED_DECISION_FIELDS.join(', ')}`,
+          missingFields: validation.missingFields,
         },
         { status: 400 }
       );
     }
 
-    const decision = await evaluateDecisionFlow(payload);
+    const decision = await evaluateDecisionFlow(payload as DecisionRequest);
 
     return NextResponse.json({
       success: true,

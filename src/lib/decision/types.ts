@@ -1,5 +1,9 @@
 export type DecisionResult = 'allow' | 'deny' | 'step_up';
 
+export const REQUIRED_DECISION_FIELDS = ['user.id', 'device.id', 'session.id', 'app.id', 'action.type'] as const;
+
+export type RequiredDecisionField = (typeof REQUIRED_DECISION_FIELDS)[number];
+
 export type DecisionRequest = {
   user: {
     id?: string;
