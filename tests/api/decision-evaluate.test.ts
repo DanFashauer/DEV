@@ -38,6 +38,8 @@ describe('Decision Flow Engine', () => {
     const response = await evaluateDecisionFlow(basePayload);
     expect(response.decision).toBe('allow');
     expect(response.reason).toContain('passed');
+    expect(response.decisionSource).toBe('threshold');
+    expect(response.matchedPolicyId).toBeUndefined();
     expect(mockAppendAuditRecord).toHaveBeenCalledWith(
       'decision.allow',
       expect.any(Object),
@@ -58,6 +60,8 @@ describe('Decision Flow Engine', () => {
 
     expect(response.decision).toBe('deny');
     expect(response.reason).toContain('Missing required canonical fields');
+    expect(response.decisionSource).toBe('validation');
+    expect(response.matchedPolicyId).toBeUndefined();
     expect(response.requiredActions).toContain('fix_request_payload');
     expect(mockAppendAuditRecord).toHaveBeenCalledWith(
       'decision.validation.failed',
@@ -96,6 +100,8 @@ describe('Decision Flow Engine', () => {
     });
 
     expect(response.decision).toBe('step_up');
+    expect(response.decisionSource).toBe('threshold');
+    expect(response.matchedPolicyId).toBeUndefined();
     expect(response.requiredActions).toContain('mfa_challenge');
     expect(mockAppendAuditRecord).toHaveBeenCalledWith(
       'decision.step_up',
@@ -107,6 +113,41 @@ describe('Decision Flow Engine', () => {
         }),
       })
     );
+  });
+
+  it('returns policy decision metadata when a policy rule matches', async () => {
+    const response = await evaluateDecisionFlow({
+      ...basePayload,
+      context: {
+        ...basePayload.context,
+        policyRules: [
+          {
+            id: 'policy-deny-launch',
+            when: [{ field: 'action.type', equals: 'launch_app' }],
+            decision: 'deny',
+            reason: 'Launch blocked by policy',
+            requiredActions: ['contact_support'],
+          },
+        ],
+      },
+    });
+
+    expect(response.decision).toBe('deny');
+    expect(response.decisionSource).toBe('policy');
+    expect(response.matchedPolicyId).toBe('policy-deny-launch');
+    expect(response.reason).toContain('Policy matched');
+  });
+
+  it('returns deny for threshold-based high risk with threshold metadata', async () => {
+    const response = await evaluateDecisionFlow({
+      ...basePayload,
+      user: { ...basePayload.user, riskScore: 90 },
+    });
+
+    expect(response.decision).toBe('deny');
+    expect(response.decisionSource).toBe('threshold');
+    expect(response.matchedPolicyId).toBeUndefined();
+    expect(response.reason).toContain('threshold');
   });
 
   it('fails closed on adapter errors', async () => {
@@ -121,12 +162,15 @@ describe('Decision Flow Engine', () => {
 
     expect(response.decision).toBe('deny');
     expect(response.reason).toContain('fail-closed');
+    expect(response.decisionSource).toBe('engine_error');
+    expect(response.matchedPolicyId).toBeUndefined();
     expect(mockAppendAuditRecord).toHaveBeenCalledWith(
       'decision.engine_error',
       expect.any(Object),
       expect.objectContaining({
         meta: expect.objectContaining({
           branch: 'engine_error',
+          decisionSource: 'engine_error',
         }),
       })
     );
