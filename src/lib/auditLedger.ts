@@ -33,7 +33,13 @@ export type AuditEventType =
   // Phase 4: NAC events
   | "nac.quarantine.applied"
   | "nac.quarantine.cleared"
-  | "nac.quarantine.failed";
+  | "nac.quarantine.failed"
+  // Decision Flow Engine events
+  | "decision.validation.failed"
+  | "decision.allow"
+  | "decision.deny"
+  | "decision.step_up"
+  | "decision.engine_error";
 
 export type Actor = {
   type: "device" | "admin" | "system" | "user";
