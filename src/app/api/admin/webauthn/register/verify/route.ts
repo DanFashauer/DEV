@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/adminAuth';
+import { getWebAuthnRequestIdentity } from '../../requestIdentity';
 import { verifyRegistration } from '@/lib/auth/webauthn/server';
 
 export async function POST(request: NextRequest) {
@@ -24,10 +25,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user info from auth header
-    const userId = request.headers.get('x-user-id') || 'admin-user';
+    const { identity, errorResponse } = getWebAuthnRequestIdentity(request);
+    if (!identity) {
+      return errorResponse!;
+    }
 
-    const result = await verifyRegistration(userId, challengeId, response);
+    const result = await verifyRegistration(identity.userId, challengeId, response);
 
     if (!result.success) {
       return NextResponse.json(
