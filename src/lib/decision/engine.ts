@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { appendAuditRecord, type AuditEventType } from '@/lib/auditLedger';
 import { defaultAdapters, type DecisionAdapters } from './adapters';
-import type { DecisionRequest, DecisionResponse, DecisionResult, PolicyRule } from './types';
+import { REQUIRED_DECISION_FIELDS, type DecisionRequest, type DecisionResponse, type DecisionResult, type PolicyRule } from './types';
 
 function pick<T>(obj: Record<string, unknown>, path: string): T | undefined {
   const parts = path.split('.');
@@ -70,15 +70,10 @@ function policyEngine(payload: DecisionRequest, riskScore: number): Pick<Decisio
 }
 
 function getMissingCanonicalFields(payload: DecisionRequest): string[] {
-  const missing: string[] = [];
-
-  if (!payload.user.id) missing.push('user.id');
-  if (!payload.device.id) missing.push('device.id');
-  if (!payload.session.id) missing.push('session.id');
-  if (!payload.app.id) missing.push('app.id');
-  if (!payload.action.type) missing.push('action.type');
-
-  return missing;
+  return REQUIRED_DECISION_FIELDS.filter((field) => {
+    const value = pick<unknown>(payload as unknown as Record<string, unknown>, field);
+    return typeof value !== 'string' || value.trim().length === 0;
+  });
 }
 
 function resolveAuditEventType(params: {
