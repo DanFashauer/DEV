@@ -1,0 +1,71 @@
+export type DecisionResult = 'allow' | 'deny' | 'step_up';
+
+export type DecisionRequest = {
+  user: {
+    id?: string;
+    token?: string;
+    role?: string;
+    riskScore?: number;
+    [key: string]: unknown;
+  };
+  device: {
+    id?: string;
+    enrolled?: boolean;
+    compliant?: boolean;
+    secureState?: boolean;
+    rebooted?: boolean;
+    [key: string]: unknown;
+  };
+  session: {
+    id?: string;
+    active?: boolean;
+    expired?: boolean;
+    needsExtension?: boolean;
+    [key: string]: unknown;
+  };
+  app: {
+    id?: string;
+    [key: string]: unknown;
+  };
+  action: {
+    type?: string;
+    [key: string]: unknown;
+  };
+  context: {
+    location?: string;
+    networkType?: 'wifi' | 'cellular' | 'unknown';
+    networkTrustLevel?: 'trusted' | 'untrusted' | 'unknown';
+    anomalyScore?: number;
+    policyRules?: PolicyRule[];
+    [key: string]: unknown;
+  };
+};
+
+export type PolicyRule = {
+  id: string;
+  when: {
+    field: string;
+    equals?: unknown;
+    gte?: number;
+    lte?: number;
+    includes?: unknown;
+  }[];
+  decision: DecisionResult;
+  reason: string;
+  requiredActions?: string[];
+};
+
+export type DecisionResponse = {
+  decision: DecisionResult;
+  reason: string;
+  requiredActions: string[];
+  sessionUpdate: {
+    extendBySeconds?: number;
+    keepAliveRecommended: boolean;
+  };
+  auditLog: {
+    requestId: string;
+    evaluatedAt: string;
+    steps: Record<string, unknown>;
+  };
+};
