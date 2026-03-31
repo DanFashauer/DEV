@@ -62,7 +62,7 @@ export type PolicyRule = {
 export type DecisionResponse = {
   decision: DecisionResult;
   reason: string;
-  decisionSource: 'policy' | 'threshold' | 'validation' | 'engine_error';
+  decisionSource: 'policy' | 'threshold' | 'baseline' | 'validation' | 'engine_error';
   matchedPolicyId?: string;
   requiredActions: string[];
   sessionUpdate: {

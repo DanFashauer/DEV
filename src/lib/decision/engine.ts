@@ -55,7 +55,7 @@ function policyEngine(
     return {
       decision: 'deny',
       reason: 'Risk score exceeds deny threshold',
-      decisionSource: 'threshold',
+      decisionSource: 'baseline',
       requiredActions: ['investigate_user', 'open_incident'],
     };
   }
@@ -72,7 +72,7 @@ function policyEngine(
   return {
     decision: 'allow',
     reason: 'All validations and policy checks passed',
-    decisionSource: 'threshold',
+    decisionSource: 'baseline',
     requiredActions: [],
   };
 }
