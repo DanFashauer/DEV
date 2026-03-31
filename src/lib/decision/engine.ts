@@ -34,7 +34,10 @@ function matchesRule(rule: PolicyRule, payload: DecisionRequest): boolean {
   });
 }
 
-function policyEngine(payload: DecisionRequest, riskScore: number): Pick<DecisionResponse, 'decision' | 'reason' | 'requiredActions'> {
+function policyEngine(
+  payload: DecisionRequest,
+  riskScore: number
+): Pick<DecisionResponse, 'decision' | 'reason' | 'requiredActions' | 'decisionSource' | 'matchedPolicyId'> {
   const rules = payload.context.policyRules ?? [];
   const matched = rules.find((rule) => matchesRule(rule, payload));
 
@@ -42,6 +45,8 @@ function policyEngine(payload: DecisionRequest, riskScore: number): Pick<Decisio
     return {
       decision: matched.decision,
       reason: `Policy matched: ${matched.reason}`,
+      decisionSource: 'policy',
+      matchedPolicyId: matched.id,
       requiredActions: matched.requiredActions ?? [],
     };
   }
@@ -50,6 +55,7 @@ function policyEngine(payload: DecisionRequest, riskScore: number): Pick<Decisio
     return {
       decision: 'deny',
       reason: 'Risk score exceeds deny threshold',
+      decisionSource: 'threshold',
       requiredActions: ['investigate_user', 'open_incident'],
     };
   }
@@ -58,6 +64,7 @@ function policyEngine(payload: DecisionRequest, riskScore: number): Pick<Decisio
     return {
       decision: 'step_up',
       reason: 'Additional verification required',
+      decisionSource: 'threshold',
       requiredActions: ['mfa_challenge'],
     };
   }
@@ -65,6 +72,7 @@ function policyEngine(payload: DecisionRequest, riskScore: number): Pick<Decisio
   return {
     decision: 'allow',
     reason: 'All validations and policy checks passed',
+    decisionSource: 'threshold',
     requiredActions: [],
   };
 }
@@ -104,10 +112,12 @@ async function writeDecisionAudit(params: {
   payload: DecisionRequest;
   result: DecisionResult;
   reason: string;
+  decisionSource: DecisionResponse['decisionSource'];
+  matchedPolicyId?: string;
   steps: Record<string, unknown>;
   branch: 'validation_failure' | 'decision' | 'engine_error';
 }): Promise<void> {
-  const { requestId, payload, result, reason, steps, branch } = params;
+  const { requestId, payload, result, reason, decisionSource, matchedPolicyId, steps, branch } = params;
   const eventType = resolveAuditEventType({ branch, decision: result });
 
   await appendAuditRecord(eventType, { type: 'system', id: 'decision-flow-engine' }, {
@@ -120,6 +130,8 @@ async function writeDecisionAudit(params: {
       actionType: payload.action.type,
       decision: result,
       reason,
+      decisionSource,
+      matchedPolicyId,
       branch,
       steps,
     },
@@ -141,15 +153,19 @@ export async function evaluateDecisionFlow(
   let result: DecisionResult = 'deny';
   let reason = 'Fail-closed default';
   let requiredActions: string[] = ['manual_review'];
+  let decisionSource: DecisionResponse['decisionSource'] = 'engine_error';
+  let matchedPolicyId: string | undefined;
   let branch: 'validation_failure' | 'decision' | 'engine_error' = 'decision';
   const steps: Record<string, unknown> = {};
 
   const toResponse = async (): Promise<DecisionResponse> => {
-    await writeDecisionAudit({ requestId, payload, result, reason, steps, branch });
+    await writeDecisionAudit({ requestId, payload, result, reason, decisionSource, matchedPolicyId, steps, branch });
 
     return {
       decision: result,
       reason,
+      decisionSource,
+      matchedPolicyId,
       requiredActions,
       sessionUpdate: {
         keepAliveRecommended: result !== 'deny',
@@ -162,6 +178,8 @@ export async function evaluateDecisionFlow(
           ...steps,
           decision: result,
           reason,
+          decisionSource,
+          matchedPolicyId,
         },
       },
     };
@@ -173,6 +191,8 @@ export async function evaluateDecisionFlow(
       result = 'deny';
       reason = `Missing required canonical fields: ${missingCanonicalFields.join(', ')}`;
       requiredActions = ['fix_request_payload'];
+      decisionSource = 'validation';
+      matchedPolicyId = undefined;
       branch = 'validation_failure';
       steps.validationFailure = { missingCanonicalFields };
       return toResponse();
@@ -185,6 +205,8 @@ export async function evaluateDecisionFlow(
     if (!identityValidation.valid) {
       reason = identityValidation.reason ?? 'Identity validation failed';
       requiredActions = ['reauthenticate'];
+      decisionSource = 'validation';
+      matchedPolicyId = undefined;
       branch = 'validation_failure';
       return toResponse();
     }
@@ -194,6 +216,8 @@ export async function evaluateDecisionFlow(
     if (!deviceValidation.enrolled || !deviceValidation.compliant || !deviceValidation.secureState) {
       reason = 'Device validation failed';
       requiredActions = ['reenroll_device', 'recheck_posture'];
+      decisionSource = 'validation';
+      matchedPolicyId = undefined;
       branch = 'validation_failure';
       return toResponse();
     }
@@ -207,6 +231,8 @@ export async function evaluateDecisionFlow(
     if (!sessionValidation.active || sessionValidation.expired) {
       reason = 'Session is inactive or expired';
       requiredActions = ['reauthenticate'];
+      decisionSource = 'validation';
+      matchedPolicyId = undefined;
       branch = 'validation_failure';
       return toResponse();
     }
@@ -231,6 +257,8 @@ export async function evaluateDecisionFlow(
 
     result = policyResult.decision;
     reason = policyResult.reason;
+    decisionSource = policyResult.decisionSource;
+    matchedPolicyId = policyResult.matchedPolicyId;
     requiredActions = policyResult.requiredActions;
     branch = 'decision';
 
@@ -239,6 +267,8 @@ export async function evaluateDecisionFlow(
     result = 'deny';
     reason = 'Decision engine error (fail-closed)';
     requiredActions = ['manual_review'];
+    decisionSource = 'engine_error';
+    matchedPolicyId = undefined;
     branch = 'engine_error';
     steps.error = error instanceof Error ? error.message : 'unknown_error';
     return toResponse();
