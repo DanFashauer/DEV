@@ -3,7 +3,12 @@ import Link from 'next/link';
 const pillars = [
   {
     title: 'Unified Context',
-    points: ['Identity (Entra / Okta)', 'Device posture (Intune / Jamf / Workspace ONE)', 'Behavior and risk signals'],
+    points: [
+      'Identity (Entra / Okta)',
+      'Device posture (Intune / Jamf / Workspace ONE)',
+      'Client authenticity (certificates / hardware-backed trust / attestation)',
+      'Behavior and risk signals',
+    ],
   },
   {
     title: 'Decision Engine',
@@ -38,7 +43,8 @@ export default function Home() {
           <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">SignalGrid</p>
           <h1 className="mt-3 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">Decide Before Risk Becomes Impact</h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-300">
-            SignalGrid is the real-time decision engine for identity, device, and access — preventing incidents before they happen.
+            SignalGrid is the real-time decision engine for identity, device, and access — including device trust and client authenticity
+            signals before risky actions execute.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/demo" className="rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">Request Demo</Link>
@@ -90,7 +96,8 @@ export default function Home() {
             <h2 className="text-2xl font-semibold">How It Works</h2>
             <p className="mt-2 text-sm text-slate-300">Signal Ingest → Context Build → Trust Score → Decision → Enforcement → Audit</p>
             <div className="mt-5 rounded-xl border border-slate-700 bg-slate-950/70 p-4 text-sm text-slate-300">
-              User login from unmanaged device → Trust score drops → Step-up auth triggered (or access denied) → No unnecessary ticket.
+              User login from unmanaged device with failed attestation → Trust score drops → Step-up auth triggered (or access denied) → No
+              unnecessary ticket.
             </div>
           </article>
 
@@ -116,7 +123,8 @@ export default function Home() {
           </div>
           <p className="mt-4 text-sm text-slate-300">We don’t replace — we orchestrate.</p>
           <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/70 p-4 text-sm text-slate-300">
-            SignalGrid prevents incidents upstream, reduces ITSM load, and feeds meaningful events into enterprise ITIL workflows.
+            SignalGrid prevents incidents upstream, reduces ITSM load, and feeds meaningful events into enterprise ITIL workflows with
+            certificate-aware, device- and session-context enforcement.
           </div>
         </section>
 

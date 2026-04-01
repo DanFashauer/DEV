@@ -10,7 +10,29 @@ type StoredFleetPosture = {
   rawSignals?: Record<string, unknown>;
 };
 
-function mapStoredFleetPosture(posture: StoredFleetPosture): Record<string, unknown> {
+export type UEMContext = {
+  enrolled: boolean;
+  complianceStatus?: string;
+  platform?: string;
+  osVersion?: string;
+  managementId?: string;
+  attest?: Record<string, unknown>;
+  signals?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
+export type FleetContext = {
+  enrolled: boolean;
+  status?: string;
+  lastSeenAge?: number;
+  osVersion?: string;
+  platform?: string;
+  policies?: { id: number; name: string; response: string }[];
+  labels?: string[];
+  [key: string]: unknown;
+};
+
+function mapStoredFleetPosture(posture: StoredFleetPosture): FleetContext {
   return {
     enrolled: true,
     status: posture.compliant ? 'compliant' : 'non_compliant',
@@ -26,7 +48,7 @@ function mapStoredFleetPosture(posture: StoredFleetPosture): Record<string, unkn
  * Build UEM context for policy evaluation
  * Fetches device posture from configured UEM (Intune, Jamf, Workspace ONE)
  */
-export async function getUEMContext(deviceId: string): Promise<Record<string, unknown>> {
+export async function getUEMContext(deviceId: string): Promise<UEMContext> {
   try {
     const posture = await getDevicePosture(deviceId);
 
@@ -53,7 +75,7 @@ export async function getUEMContext(deviceId: string): Promise<Record<string, un
  * Fetches cached FleetDM posture data if available
  * Also checks posture store directly by deviceSerial or deviceId for demo/testing
  */
-export async function getFleetContext(deviceSerial: string, deviceId?: string): Promise<Record<string, unknown>> {
+export async function getFleetContext(deviceSerial: string, deviceId?: string): Promise<FleetContext> {
   try {
     // First, check posture store directly by deviceSerial (for demo/testing)
     const directPosture = await getPostureForHost(deviceSerial);
@@ -102,7 +124,7 @@ export async function getFleetContext(deviceSerial: string, deviceId?: string): 
       enrolled: true,
       status: posture.compliant ? 'compliant' : 'non_compliant',
       lastSeenAge: Date.now() - new Date(host.seen_time).getTime(),
-      osVersion: posture.rawSignals?.os_version || host.os_version,
+      osVersion: typeof posture.rawSignals?.os_version === 'string' ? posture.rawSignals.os_version : host.os_version,
       platform: posture.platform,
       policies: posture.policies,
       labels: [], // Would need additional API call

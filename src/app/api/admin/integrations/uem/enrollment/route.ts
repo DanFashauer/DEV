@@ -8,53 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdminAuth } from '@/lib/adminAuth';
 import { deviceRegistry } from '@/lib/deviceRegistry';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-/**
- * Normalized device enrollment data from any UEM
- */
-export const UEMEnrollmentSchema = z.object({
-  // Device identification
-  deviceId: z.string(), // UEM-specific device ID
-  serialNumber: z.string().optional(),
-  udid: z.string().optional(), // iOS unique device identifier
-  macAddress: z.string().optional(),
-  imei: z.string().optional(),
-  
-  // Device info
-  platform: z.enum(['ios', 'ipados', 'macos', 'android', 'windows', 'linux', 'chrome']),
-  osVersion: z.string().optional(),
-  model: z.string().optional(),
-  manufacturer: z.string().optional(),
-  hostname: z.string().optional(),
-  
-  // User info
-  userId: z.string().optional(),
-  userEmail: z.string().email().optional(),
-  userName: z.string().optional(),
-  department: z.string().optional(),
-  
-  // Enrollment status
-  enrollmentStatus: z.enum(['enrolled', 'unenrolled', 'pending', 'revoked']),
-  enrollmentDate: z.string().datetime().optional(),
-  
-  // Compliance status
-  complianceStatus: z.enum(['compliant', 'non_compliant', 'unknown', 'not_assessed']).optional(),
-  complianceCheckDate: z.string().datetime().optional(),
-  complianceDetails: z.record(z.unknown()).optional(),
-  
-  // MDM-specific data (preserved for reference)
-  mdmProvider: z.string(), // e.g., 'intune', 'jamf', 'workspace-one'
-  rawPayload: z.record(z.unknown()).optional(),
-  
-  // Timestamp
-  eventTimestamp: z.string().datetime(),
-});
-
-export type UEMEnrollment = z.infer<typeof UEMEnrollmentSchema>;
+import { UEMEnrollmentSchema } from './schema';
 
 // ============================================================================
 // POST Handler - Receive enrollment webhook
@@ -129,13 +83,13 @@ export async function GET(request: NextRequest) {
     
     if (mdmProvider) {
       filtered = filtered.filter(d => 
-        (d.metadata as Record<string, any>)?.mdmProvider === mdmProvider
+        (d.metadata as Record<string, unknown>)?.mdmProvider === mdmProvider
       );
     }
     
     if (complianceStatus) {
       filtered = filtered.filter(d => 
-        (d.metadata as Record<string, any>)?.complianceStatus === complianceStatus
+        (d.metadata as Record<string, unknown>)?.complianceStatus === complianceStatus
       );
     }
     
@@ -149,9 +103,9 @@ export async function GET(request: NextRequest) {
         enrolled: d.enrolled,
         enrolledAt: d.enrolledAt,
         metadata: {
-          mdmProvider: (d.metadata as Record<string, any>)?.mdmProvider,
-          enrollmentStatus: (d.metadata as Record<string, any>)?.enrollmentStatus,
-          complianceStatus: (d.metadata as Record<string, any>)?.complianceStatus,
+          mdmProvider: (d.metadata as Record<string, unknown>)?.mdmProvider,
+          enrollmentStatus: (d.metadata as Record<string, unknown>)?.enrollmentStatus,
+          complianceStatus: (d.metadata as Record<string, unknown>)?.complianceStatus,
           serialNumber: d.deviceSerial,
         },
       })),

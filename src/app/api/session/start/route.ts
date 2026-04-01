@@ -11,14 +11,15 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { validateAndAuthorizeSessionStart } from '@/lib/backend/validation';
-import { getBadgeRegistry } from '@/lib/tenant/badgeRegistry';
-import { getSessionStore, SessionDirective } from '@/lib/tenant/sessionStore';
-import { getEvaluator } from '@/lib/tenant/policyEvaluator';
+import { getBadgeRegistry, type BadgeMapping } from '@/lib/tenant/badgeRegistry';
+import { getSessionStore, type Session, SessionDirective } from '@/lib/tenant/sessionStore';
+import { getEvaluator, type PolicyAction, type PolicyContext } from '@/lib/tenant/policyEvaluator';
 import { resolveTenantId } from '@/lib/tenant/tenantContext';
 import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
 import { emitAuthFailure, emitSessionStart } from '@/lib/integrations/webhooks/emitter';
+import type { BadgeEvent } from '@/lib/types/badge-event';
 import { checkDeviceRateLimit, checkIpRateLimit } from './services/rateLimit';
-import { getFleetContext, getUEMContext } from './services/posture';
+import { type FleetContext, getFleetContext, type UEMContext, getUEMContext } from './services/posture';
 import {
   buildDeniedPolicyInput,
   buildGrantedPolicyInput,
@@ -29,6 +30,10 @@ import { createDeniedDeviceResponse } from './services/responses';
 type DirectiveAffectingPolicyAction = {
   type: string;
   params?: Record<string, unknown>;
+};
+
+type SessionStartEvaluator = {
+  evaluate: (policyContext: PolicyContext) => Promise<PolicyAction[]>;
 };
 
 const DEFAULT_SESSION_NEXT_ACTION: SessionDirective['nextAction'] = 'LAUNCH_APP';
@@ -104,17 +109,8 @@ function resolveEffectiveSessionDirective(params: {
 }
 
 async function handleExistingActiveSession(params: {
-  existingActiveSession: {
-    sessionId: string;
-    userId: string;
-    nextAction?: string;
-    bundleId?: string;
-    expiresAt: string;
-  };
-  sessionStore: {
-    update: (sessionId: string, updates: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>;
-    get: (sessionId: string) => Promise<Record<string, unknown> | undefined>;
-  };
+  existingActiveSession: Session;
+  sessionStore: ReturnType<typeof getSessionStore>;
 }) {
   const { existingActiveSession, sessionStore } = params;
   const extendedExpiresAt = new Date(Date.now() + getSessionTtlSeconds() * 1000).toISOString();
@@ -139,26 +135,15 @@ async function handleExistingActiveSession(params: {
 }
 
 async function handlePostureDeniedSessionStart(params: {
-  event: {
-    badge: { badgeId: string };
-  };
+  event: BadgeEvent;
   deviceId: string;
-  badgeMapping: {
-    userId: string;
-    userName?: string;
-  };
-  uemContext: {
-    complianceStatus: string;
-  };
-  fleetContext: {
-    status: string;
-  };
+  badgeMapping: BadgeMapping;
+  uemContext: UEMContext;
+  fleetContext: FleetContext;
   isFleetCompliant: boolean;
   isDeviceCompliant: boolean;
   isUEMCompliant: boolean;
-  evaluator: {
-    evaluate: (policyContext: unknown) => Promise<DirectiveAffectingPolicyAction[]>;
-  };
+  evaluator: SessionStartEvaluator;
 }) {
   const {
     event,
@@ -224,40 +209,13 @@ async function handlePostureDeniedSessionStart(params: {
 }
 
 async function handlePostureAllowedSessionStart(params: {
-  event: {
-    badge: {
-      badgeId: string;
-      employeeId?: string;
-      cardSerialNumber?: string;
-    };
-    reader: {
-      readerType: string;
-    };
-    context?: {
-      locationId?: string;
-    };
-  };
+  event: BadgeEvent;
   deviceId: string;
-  badgeMapping: {
-    userId: string;
-  };
-  sessionStore: {
-    create: (input: Record<string, unknown>) => Promise<{
-      sessionId: string;
-      userId: string;
-      nextAction?: string;
-      bundleId?: string;
-      createdAt: string;
-      expiresAt: string;
-    }>;
-    update: (sessionId: string, updates: Record<string, unknown>) => Promise<unknown>;
-    get: (sessionId: string) => Promise<{ expiresAt?: string } | undefined>;
-  };
-  evaluator: {
-    evaluate: (policyContext: unknown) => Promise<DirectiveAffectingPolicyAction[]>;
-  };
-  uemContext: unknown;
-  fleetContext: unknown;
+  badgeMapping: BadgeMapping;
+  sessionStore: ReturnType<typeof getSessionStore>;
+  evaluator: SessionStartEvaluator;
+  uemContext: UEMContext;
+  fleetContext: FleetContext;
   isFleetCompliant: boolean;
   isUEMCompliant: boolean;
 }) {
