@@ -28,7 +28,7 @@ const slides = [
     number: '03',
     title: 'Why Now',
     heading: 'Continuous trust requires real-time decisions',
-    bullets: ['Identity is the new perimeter', 'Client authenticity now drives access', 'AI increases execution speed'],
+    bullets: ['Identity is the new perimeter', 'Client trust evidence increasingly drives access', 'AI increases execution speed'],
     talkTrack:
       'More machine actors, unmanaged devices, and automation compress response windows. Access decisions increasingly depend on whether client trust evidence is strong enough for the action being requested.',
     vcQuestion: 'Why will buyers care now?',
@@ -51,7 +51,7 @@ const slides = [
     title: 'Product — 3-Layer Architecture',
     heading: 'Unified Context + Decision Engine + Enforcement Layer',
     bullets: [
-      'Identity, device posture, client authenticity, behavior, risk',
+      'Identity, device posture, client-trust evidence, behavior, risk',
       'Policy + trust scoring + AI reasoning',
       'Allow / deny / step-up / workflow trigger',
     ],

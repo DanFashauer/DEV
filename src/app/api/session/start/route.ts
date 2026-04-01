@@ -27,10 +27,7 @@ import {
 } from './services/policy';
 import { createDeniedDeviceResponse } from './services/responses';
 
-type DirectiveAffectingPolicyAction = {
-  type: string;
-  params?: Record<string, unknown>;
-};
+type SessionDirectiveSource = Pick<Session, 'sessionId' | 'userId' | 'nextAction' | 'bundleId' | 'expiresAt'>;
 
 type SessionStartEvaluator = {
   evaluate: (policyContext: PolicyContext) => Promise<PolicyAction[]>;
@@ -53,13 +50,7 @@ function resolveSessionNextAction(nextAction?: string): SessionDirective['nextAc
   return (nextAction as SessionDirective['nextAction']) || DEFAULT_SESSION_NEXT_ACTION;
 }
 
-function toSessionDirective(session: {
-  sessionId: string;
-  userId: string;
-  nextAction?: string;
-  bundleId?: string;
-  expiresAt: string;
-}): SessionDirective {
+function toSessionDirective(session: SessionDirectiveSource): SessionDirective {
   return {
     sessionId: session.sessionId,
     userId: session.userId,
@@ -70,14 +61,8 @@ function toSessionDirective(session: {
 }
 
 function resolveEffectiveSessionDirective(params: {
-  session: {
-    sessionId: string;
-    userId: string;
-    nextAction?: string;
-    bundleId?: string;
-    expiresAt: string;
-  };
-  policyActions?: DirectiveAffectingPolicyAction[];
+  session: SessionDirectiveSource;
+  policyActions?: PolicyAction[];
 }) {
   const { session, policyActions = [] } = params;
   const directive = toSessionDirective(session);

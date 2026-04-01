@@ -6,7 +6,7 @@ const pillars = [
     points: [
       'Identity (Entra / Okta)',
       'Device posture (Intune / Jamf / Workspace ONE)',
-      'Client authenticity (certificates / hardware-backed trust / attestation)',
+      'Client trust evidence (managed state, device identity, session context)',
       'Behavior and risk signals',
     ],
   },
@@ -43,7 +43,7 @@ export default function Home() {
           <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">SignalGrid</p>
           <h1 className="mt-3 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">Decide Before Risk Becomes Impact</h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-300">
-            SignalGrid is the real-time decision engine for identity, device, and access — evaluating device trust and client authenticity
+            SignalGrid is the real-time decision engine for identity, device, and access — evaluating device trust and client-trust
             evidence before risky actions execute.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -124,7 +124,7 @@ export default function Home() {
           <p className="mt-4 text-sm text-slate-300">We don’t replace — we orchestrate.</p>
           <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/70 p-4 text-sm text-slate-300">
             SignalGrid prevents incidents upstream, reduces ITSM load, and feeds meaningful events into enterprise ITIL workflows with
-            identity-, device-, and session-context enforcement.
+            identity-, device-, and session-context enforcement decisions.
           </div>
         </section>
 
