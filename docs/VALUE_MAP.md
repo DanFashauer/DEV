@@ -41,3 +41,10 @@ SignalGrid enables secure, contextual, real-time access by evaluating identity, 
 - **Supported now:** identity + posture-informed session decisions, policy enforcement actions, auditability, and operational integrations.
 - **Near-term roadmap:** deeper client authenticity signal weighting (for example attestation/certificate-derived evidence where upstream systems provide it).
 - **Future concept:** autonomous policy suggestions and decision-memory-driven remediation optimization.
+
+## Bucket-to-value linkage
+
+- **Identity + client authenticity:** improves risk confidence at access-time decisions.
+- **Device trust/posture/attestation:** reduces unknown-device and degraded-trust exposure.
+- **Physical access + badge/mobile credentials:** improves frontline shared-device workflow quality.
+- **Decisioning + orchestration:** turns trust decisions into enforceable outcomes across NAC/SIEM/ITSM and operations tooling.
