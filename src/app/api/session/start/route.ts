@@ -10,10 +10,11 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
-import { validateAndAuthorizeSessionStart } from '@/lib/backend/validation';
+import { validateAndAuthorizeSessionStart, type BadgeEvent } from '@/lib/backend/validation';
+import type { BadgeMapping } from '@/lib/badgeRegistry';
 import { getBadgeRegistry } from '@/lib/tenant/badgeRegistry';
 import { getSessionStore, SessionDirective, Session } from '@/lib/tenant/sessionStore';
-import { getEvaluator } from '@/lib/tenant/policyEvaluator';
+import { getEvaluator, type PolicyAction, type PolicyContext } from '@/lib/tenant/policyEvaluator';
 import { resolveTenantId } from '@/lib/tenant/tenantContext';
 import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
 import { emitAuthFailure, emitSessionStart } from '@/lib/integrations/webhooks/emitter';
@@ -26,10 +27,53 @@ import {
 } from './services/policy';
 import { createDeniedDeviceResponse } from './services/responses';
 
-type DirectiveAffectingPolicyAction = {
-  type: string;
-  params?: Record<string, unknown>;
+type FleetContext = {
+  enrolled: boolean;
+  status?: string;
+  lastSeenAge?: number;
+  osVersion?: string;
+  platform?: string;
+  policies?: Array<{ id: number; name: string; response: string }>;
+  labels?: unknown[];
 };
+
+type UEMContext = {
+  enrolled: boolean;
+  complianceStatus?: string;
+  platform?: string;
+  osVersion?: string;
+  managementId?: string;
+  attest?: unknown;
+  signals?: unknown;
+};
+
+type SessionDirectiveSource = Pick<Session, 'sessionId' | 'userId' | 'nextAction' | 'bundleId' | 'expiresAt'>;
+
+function toFleetContext(context: Record<string, unknown>): FleetContext {
+  return {
+    enrolled: context.enrolled === true,
+    status: typeof context.status === 'string' ? context.status : undefined,
+    lastSeenAge: typeof context.lastSeenAge === 'number' ? context.lastSeenAge : undefined,
+    osVersion: typeof context.osVersion === 'string' ? context.osVersion : undefined,
+    platform: typeof context.platform === 'string' ? context.platform : undefined,
+    policies: Array.isArray(context.policies)
+      ? (context.policies as Array<{ id: number; name: string; response: string }>)
+      : undefined,
+    labels: Array.isArray(context.labels) ? context.labels : undefined,
+  };
+}
+
+function toUEMContext(context: Record<string, unknown>): UEMContext {
+  return {
+    enrolled: context.enrolled === true,
+    complianceStatus: typeof context.complianceStatus === 'string' ? context.complianceStatus : undefined,
+    platform: typeof context.platform === 'string' ? context.platform : undefined,
+    osVersion: typeof context.osVersion === 'string' ? context.osVersion : undefined,
+    managementId: typeof context.managementId === 'string' ? context.managementId : undefined,
+    attest: context.attest,
+    signals: context.signals,
+  };
+}
 
 const DEFAULT_SESSION_NEXT_ACTION: SessionDirective['nextAction'] = 'LAUNCH_APP';
 const DEFAULT_UNKNOWN_POSTURE_MODE = 'deny';
@@ -48,13 +92,7 @@ function resolveSessionNextAction(nextAction?: string): SessionDirective['nextAc
   return (nextAction as SessionDirective['nextAction']) || DEFAULT_SESSION_NEXT_ACTION;
 }
 
-function toSessionDirective(session: {
-  sessionId: string;
-  userId: string;
-  nextAction?: string;
-  bundleId?: string;
-  expiresAt: string;
-}): SessionDirective {
+function toSessionDirective(session: SessionDirectiveSource): SessionDirective {
   return {
     sessionId: session.sessionId,
     userId: session.userId,
@@ -64,16 +102,7 @@ function toSessionDirective(session: {
   };
 }
 
-function resolveEffectiveSessionDirective(params: {
-  session: {
-    sessionId: string;
-    userId: string;
-    nextAction?: string;
-    bundleId?: string;
-    expiresAt: string;
-  };
-  policyActions?: DirectiveAffectingPolicyAction[];
-}) {
+function resolveEffectiveSessionDirective(params: { session: SessionDirectiveSource; policyActions?: PolicyAction[] }) {
   const { session, policyActions = [] } = params;
   const directive = toSessionDirective(session);
 
@@ -104,13 +133,7 @@ function resolveEffectiveSessionDirective(params: {
 }
 
 async function handleExistingActiveSession(params: {
-  existingActiveSession: {
-    sessionId: string;
-    userId: string;
-    nextAction?: string;
-    bundleId?: string;
-    expiresAt: string;
-  };
+  existingActiveSession: Session;
   sessionStore: ReturnType<typeof getSessionStore>;
 }) {
   const { existingActiveSession, sessionStore } = params;
@@ -140,22 +163,16 @@ async function handleExistingActiveSession(params: {
 }
 
 async function handlePostureDeniedSessionStart(params: {
-  event: {
-    timestamp: string;
-    badge: { badgeId: string };
-  };
+  event: BadgeEvent;
   deviceId: string;
-  badgeMapping: {
-    userId: string;
-    userName?: string;
-  };
-  uemContext: Record<string, unknown>;
-  fleetContext: Record<string, unknown>;
+  badgeMapping: BadgeMapping;
+  uemContext: UEMContext;
+  fleetContext: FleetContext;
   isFleetCompliant: boolean;
   isDeviceCompliant: boolean;
   isUEMCompliant: boolean;
   evaluator: {
-    evaluate: (policyContext: any) => Promise<DirectiveAffectingPolicyAction[]>;
+    evaluate: (policyContext: PolicyContext) => Promise<PolicyAction[]>;
   };
 }) {
   const {
@@ -222,30 +239,15 @@ async function handlePostureDeniedSessionStart(params: {
 }
 
 async function handlePostureAllowedSessionStart(params: {
-  event: {
-    timestamp: string;
-    badge: {
-      badgeId: string;
-      employeeId?: string;
-      cardSerialNumber?: string;
-    };
-    reader: {
-      readerType: string;
-    };
-    context?: {
-      locationId?: string;
-    };
-  };
+  event: BadgeEvent;
   deviceId: string;
-  badgeMapping: {
-    userId: string;
-  };
+  badgeMapping: BadgeMapping;
   sessionStore: ReturnType<typeof getSessionStore>;
   evaluator: {
-    evaluate: (policyContext: any) => Promise<DirectiveAffectingPolicyAction[]>;
+    evaluate: (policyContext: PolicyContext) => Promise<PolicyAction[]>;
   };
-  uemContext: Record<string, unknown>;
-  fleetContext: Record<string, unknown>;
+  uemContext: UEMContext;
+  fleetContext: FleetContext;
   isFleetCompliant: boolean;
   isUEMCompliant: boolean;
 }) {
@@ -460,10 +462,12 @@ export async function POST(request: Request) {
     }
 
     // Step 3: Check device posture BEFORE creating session
-    const [fleetContext, uemContext] = await Promise.all([
+    const [rawFleetContext, rawUEMContext] = await Promise.all([
       getFleetContext(event.device?.deviceSerial || '', event.device?.deviceId || deviceId),
       getUEMContext(event.device?.deviceId || deviceId),
     ]);
+    const fleetContext = toFleetContext(rawFleetContext);
+    const uemContext = toUEMContext(rawUEMContext);
 
     const isFleetCompliant = fleetContext.status === 'compliant';
     const isUEMCompliant = uemContext.complianceStatus === 'compliant';
