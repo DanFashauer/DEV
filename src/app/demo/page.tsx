@@ -7,7 +7,7 @@ export default function DemoPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">SignalGrid</p>
         <h1 className="text-4xl font-semibold sm:text-5xl">Request a Demo</h1>
         <p className="max-w-2xl text-lg text-slate-300">
-          See how SignalGrid helps enterprise teams decide before risk becomes impact across identity, device, and access.
+          See how SignalGrid helps enterprise teams decide before risk becomes impact across identity, device posture, and access policy.
         </p>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">

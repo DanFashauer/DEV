@@ -30,7 +30,7 @@ const slides = [
     heading: 'Continuous trust requires real-time decisions',
     bullets: ['Identity is the new perimeter', 'Client authenticity now drives access', 'AI increases execution speed'],
     talkTrack:
-      'More machine actors, unmanaged devices, and automation compress response windows. Access decisions now depend on whether the client device itself is cryptographically trustworthy.',
+      'More machine actors, unmanaged devices, and automation compress response windows. Access decisions increasingly depend on whether client trust evidence is strong enough for the action being requested.',
     vcQuestion: 'Why will buyers care now?',
     vcAnswer: 'The cost of delayed decisions is increasing now in real production environments.',
     visual: 'trend',
@@ -56,7 +56,7 @@ const slides = [
       'Allow / deny / step-up / workflow trigger',
     ],
     talkTrack:
-      'The product normalizes fragmented signals into an explainable decision graph, including hardware-backed trust and attestation signals, then converts policy into immediate action.',
+      'The product normalizes fragmented signals into an explainable decision graph, including identity, posture, and client-trust evidence, then converts policy into immediate action.',
     vcQuestion: 'Where is the moat?',
     vcAnswer: 'Reliable cross-stack normalization plus low-latency, explainable decisions tied to real enforcement.',
     visual: 'architecture',
@@ -67,7 +67,7 @@ const slides = [
     heading: 'Signal ingest → context → trust score → decision → enforcement',
     bullets: [
       'Unmanaged device attempts login',
-      'Attestation fails or device trust is weak',
+      'Device trust evidence is weak or missing',
       'Step-up or deny instantly with audit trail',
     ],
     talkTrack:
@@ -82,7 +82,7 @@ const slides = [
     heading: 'SignalGrid sits between signal and impact',
     bullets: ['IAM authenticates users', 'SIEM investigates events', 'SignalGrid decides with identity + device + client trust context'],
     talkTrack:
-      'We do not replace the stack. We orchestrate it by deciding whether risky actions should proceed based on session, endpoint, and attestation-aware trust.',
+      'We do not replace the stack. We orchestrate it by deciding whether risky actions should proceed based on session, endpoint, and policy-scored trust context.',
     vcQuestion: 'Why not Microsoft or Okta?',
     vcAnswer: 'They can cover segments in their ecosystems; SignalGrid is purpose-built for mixed enterprise environments.',
     visual: 'matrix',

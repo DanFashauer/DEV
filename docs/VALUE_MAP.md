@@ -2,13 +2,14 @@
 
 SignalGrid is a Zero Trust orchestration platform for shared and mobile work environments.
 
-SignalGrid enables secure, contextual, real-time access by continuously evaluating identity, device trust, and operational context.
+SignalGrid enables secure, contextual, real-time access by evaluating identity, device posture, and operational context before session actions proceed.
 
 ## Reduce risk
 
 - Denies non-compliant or unknown-posture sessions.
 - Applies step-up or restrictive controls when trust degrades.
 - Creates auditable decision and security event trails.
+- Uses client-trust evidence when available from integrated posture/endpoint systems.
 
 ## Improve operations
 
@@ -31,5 +32,12 @@ SignalGrid enables secure, contextual, real-time access by continuously evaluati
 ## Differentiate the business
 
 - Connects identity, device trust, and context in one control loop.
+- Connects policy decisions directly to enterprise enforcement and workflow systems.
 - Enables modern frontline workflows in regulated environments.
 - Positions SignalGrid beyond standalone IAM, MDM/UEM, NAC, or badge-system categories.
+
+## Claim boundaries
+
+- **Supported now:** identity + posture-informed session decisions, policy enforcement actions, auditability, and operational integrations.
+- **Near-term roadmap:** deeper client authenticity signal weighting (for example attestation/certificate-derived evidence where upstream systems provide it).
+- **Future concept:** autonomous policy suggestions and decision-memory-driven remediation optimization.

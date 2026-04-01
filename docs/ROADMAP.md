@@ -2,34 +2,25 @@
 
 This roadmap is a directional planning artifact and will evolve as implementation and pilot feedback mature.
 
-SignalGrid is a Zero Trust orchestration platform for shared and mobile work environments, focused on secure, contextual, real-time access through continuous trust evaluation.
+SignalGrid remains positioned as **The Decision Layer for Enterprise Risk**: Others detect. SignalGrid decides.
 
-## Now
+## Supported now (implemented behavior)
 
-- Harden authentication paths across admin and session surfaces.
-- Clean up source-of-truth boundaries for policies, session state, and registries.
-- Improve session trust consistency across runtime and administrative views.
-- Continue admin decomposition for clearer operational ownership.
+- Badge-driven session start with request validation, rate limits, and fail-closed posture gating.
+- Policy-evaluated allow / deny / step-up-style directives with audit/security event capture.
+- Device posture ingestion and normalization from UEM/Fleet pathways.
+- Integration paths for NAC, SIEM, ITSM, and webhooks with operational logging.
 
-## Next
+## Next (near-term roadmap)
 
-- Reach pilot readiness milestones for regulated frontline scenarios.
-- Increase integration maturity across NAC, SIEM, ITSM, and webhook pathways.
-- Strengthen policy and context observability for faster incident review.
-- Reduce ambiguity between demo-oriented defaults and stricter deployment paths.
+- Tighten trust-evidence modeling (identity + posture + client authenticity signals) into clearer policy inputs.
+- Expand pilot-ready policy packs for shared-device and frontline workflows.
+- Improve admin/operator visibility into why decisions were made and which signals drove outcomes.
+- Standardize enforcement playbooks across NAC, ITSM, and endpoint workflows.
 
-## Later
+## Later (future concept direction)
 
-- Expand production controls for hardened deployment profiles.
-- Mature trust model controls for sustained multi-site operations.
-- Improve governance automation and accountability workflows.
-- Extend platform reliability patterns for higher-scale environments.
-
-## Outcome alignment
-
-As roadmap items mature, SignalGrid should show measurable progress across:
-- Risk reduction
-- Operational resilience
-- Productivity and workflow efficiency
-- Governance readiness and accountability
-- Category differentiation in frontline trust orchestration
+- Decision memory and reusable remediation patterns across repeated incident types.
+- Broader trust orchestration for app/API/session layers beyond initial beachhead flows.
+- Governance automation for cross-team policy change management and accountability.
+- Higher-scale resilience patterns for multi-site and multi-tenant enterprise programs.
