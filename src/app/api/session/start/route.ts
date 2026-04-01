@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { validateAndAuthorizeSessionStart } from '@/lib/backend/validation';
 import { getBadgeRegistry } from '@/lib/tenant/badgeRegistry';
-import { getSessionStore, SessionDirective } from '@/lib/tenant/sessionStore';
+import { getSessionStore, SessionDirective, Session } from '@/lib/tenant/sessionStore';
 import { getEvaluator } from '@/lib/tenant/policyEvaluator';
 import { resolveTenantId } from '@/lib/tenant/tenantContext';
 import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
@@ -111,10 +111,7 @@ async function handleExistingActiveSession(params: {
     bundleId?: string;
     expiresAt: string;
   };
-  sessionStore: {
-    update: (sessionId: string, updates: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>;
-    get: (sessionId: string) => Promise<Record<string, unknown> | undefined>;
-  };
+  sessionStore: ReturnType<typeof getSessionStore>;
 }) {
   const { existingActiveSession, sessionStore } = params;
   const extendedExpiresAt = new Date(Date.now() + getSessionTtlSeconds() * 1000).toISOString();
@@ -123,11 +120,15 @@ async function handleExistingActiveSession(params: {
     lastActivityAt: new Date().toISOString(),
   });
   const fetchedSession = await sessionStore.get(existingActiveSession.sessionId);
+  const refreshedExpiresAt =
+    (typeof fetchedSession?.expiresAt === 'string' && fetchedSession.expiresAt) ||
+    (typeof updatedSession?.expiresAt === 'string' && updatedSession.expiresAt) ||
+    extendedExpiresAt;
   const refreshedSession = {
     ...existingActiveSession,
     ...(updatedSession || {}),
     ...(fetchedSession || {}),
-    expiresAt: fetchedSession?.expiresAt || updatedSession?.expiresAt || extendedExpiresAt,
+    expiresAt: refreshedExpiresAt,
   };
   const { directive } = resolveEffectiveSessionDirective({ session: refreshedSession });
 
@@ -140,6 +141,7 @@ async function handleExistingActiveSession(params: {
 
 async function handlePostureDeniedSessionStart(params: {
   event: {
+    timestamp: string;
     badge: { badgeId: string };
   };
   deviceId: string;
@@ -147,17 +149,13 @@ async function handlePostureDeniedSessionStart(params: {
     userId: string;
     userName?: string;
   };
-  uemContext: {
-    complianceStatus: string;
-  };
-  fleetContext: {
-    status: string;
-  };
+  uemContext: Record<string, unknown>;
+  fleetContext: Record<string, unknown>;
   isFleetCompliant: boolean;
   isDeviceCompliant: boolean;
   isUEMCompliant: boolean;
   evaluator: {
-    evaluate: (policyContext: unknown) => Promise<DirectiveAffectingPolicyAction[]>;
+    evaluate: (policyContext: any) => Promise<DirectiveAffectingPolicyAction[]>;
   };
 }) {
   const {
@@ -225,6 +223,7 @@ async function handlePostureDeniedSessionStart(params: {
 
 async function handlePostureAllowedSessionStart(params: {
   event: {
+    timestamp: string;
     badge: {
       badgeId: string;
       employeeId?: string;
@@ -241,23 +240,12 @@ async function handlePostureAllowedSessionStart(params: {
   badgeMapping: {
     userId: string;
   };
-  sessionStore: {
-    create: (input: Record<string, unknown>) => Promise<{
-      sessionId: string;
-      userId: string;
-      nextAction?: string;
-      bundleId?: string;
-      createdAt: string;
-      expiresAt: string;
-    }>;
-    update: (sessionId: string, updates: Record<string, unknown>) => Promise<unknown>;
-    get: (sessionId: string) => Promise<{ expiresAt?: string } | undefined>;
-  };
+  sessionStore: ReturnType<typeof getSessionStore>;
   evaluator: {
-    evaluate: (policyContext: unknown) => Promise<DirectiveAffectingPolicyAction[]>;
+    evaluate: (policyContext: any) => Promise<DirectiveAffectingPolicyAction[]>;
   };
-  uemContext: unknown;
-  fleetContext: unknown;
+  uemContext: Record<string, unknown>;
+  fleetContext: Record<string, unknown>;
   isFleetCompliant: boolean;
   isUEMCompliant: boolean;
 }) {
