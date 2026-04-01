@@ -1,18 +1,7 @@
 name: Auto-Approve
 
 on:
-  pull_request:
-    types: [opened, synchronize, labeled, unlabeled]
-    branches:
-      - main
-      - release
-    # SECURITY: Never run on changes to .github/ directory (workflows, policies)
-    # This prevents the workflow from approving itself
-    paths-ignore:
-      - ".github/**"
-      - "!.github/workflows/auto-approve.yml"
-  pull_request_review:
-    types: [dismissed]
+  workflow_dispatch:
 
 # SECURITY: Least-privilege permissions
 # - contents: read - needed to check files

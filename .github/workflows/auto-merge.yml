@@ -1,8 +1,7 @@
 name: Auto-merge (no human approvals)
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, labeled]
+  workflow_dispatch:
 
 permissions:
   contents: write
