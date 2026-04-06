@@ -1,40 +1,30 @@
 import { NextResponse } from 'next/server';
+import type { RemediationResult } from './posture';
 
-export function createDeniedDeviceResponse(params: {
-  isFleetCompliant: boolean;
-  isUEMCompliant: boolean;
-  fleetContext: Record<string, unknown>;
-  uemContext: Record<string, unknown>;
-  policyActions: Array<{ type: string; params?: Record<string, unknown> }>;
-}) {
-  const { isFleetCompliant, isUEMCompliant, fleetContext, uemContext, policyActions } = params;
+export type SessionDecisionResponse = {
+  decision: 'allow' | 'deny';
+  reason: string;
+  timestamp: string;
+  remediation?: RemediationResult;
+};
 
-  return NextResponse.json(
-    {
-      // C-suite decision receipt
-      decision: 'ACCESS_DENIED',
-      reason: isFleetCompliant ? 'UEM compliance check failed' : 'FleetDM compliance check failed (jailbroken)',
-      actions: policyActions.map((a) => ({ type: a.type, params: a.params })),
-      devicePosture: {
-        fleetCompliant: isFleetCompliant,
-        uemCompliant: isUEMCompliant,
-        fleetDetails: fleetContext,
-        uemDetails: uemContext,
-      },
+function buildResponse(
+  decision: SessionDecisionResponse['decision'],
+  reason: string,
+  remediation?: RemediationResult
+): SessionDecisionResponse {
+  return {
+    decision,
+    reason,
+    timestamp: new Date().toISOString(),
+    ...(remediation ? { remediation } : {}),
+  };
+}
 
-      // Legacy/compatibility fields
-      success: false,
-      error: 'Device compliance check failed',
-      code: 'DEVICE_NON_COMPLIANT',
-      hint: 'Device must be compliant before accessing shared resources',
-      complianceStatus: {
-        fleetCompliant: isFleetCompliant,
-        uemCompliant: isUEMCompliant,
-        fleetDetails: fleetContext,
-        uemDetails: uemContext,
-      },
-      policyActions: policyActions.length > 0 ? policyActions : undefined,
-    },
-    { status: 403 }
-  );
+export function allow(reason: string, remediation?: RemediationResult): NextResponse<SessionDecisionResponse> {
+  return NextResponse.json(buildResponse('allow', reason, remediation), { status: 200 });
+}
+
+export function deny(reason: string, remediation?: RemediationResult): NextResponse<SessionDecisionResponse> {
+  return NextResponse.json(buildResponse('deny', reason, remediation), { status: 403 });
 }
