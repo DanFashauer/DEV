@@ -46,13 +46,13 @@ export default function HomePage() {
         </section>
 
         <section className="flex flex-col items-start gap-4 border-t border-neutral-800 pt-10">
-          <button
-            type="button"
+          <a
+            href="mailto:sales@signalgrid.io?subject=SignalGrid%20Early%20Access%20Request"
             className="rounded-lg border border-cyan-400/60 bg-cyan-500/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-cyan-200"
           >
             Request Early Access
-          </button>
-          <p className="text-sm text-neutral-500">Identity • Device • Session • Risk</p>
+          </a>
+          <p className="text-sm text-neutral-400">For early design-partner conversations and pilot interest.</p>
         </section>
       </div>
     </main>
