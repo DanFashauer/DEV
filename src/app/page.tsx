@@ -1,31 +1,60 @@
-import Link from 'next/link';
-
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-8 px-6 py-16">
-      <header className="space-y-3">
-        <p className="text-sm font-medium uppercase tracking-wide text-neutral-500">SignalGrid</p>
-        <h1 className="text-4xl font-semibold tracking-tight">Identity-bound physical access for modern workplaces</h1>
-        <p className="max-w-2xl text-neutral-600">
-          SignalGrid connects badge events, device posture, and policy decisions to deliver adaptive, auditable
-          access outcomes.
-        </p>
-      </header>
+    <main className="min-h-screen bg-neutral-950 px-6 py-16 text-neutral-100">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-10">
+        <header className="space-y-5 border-b border-neutral-800 pb-10">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-neutral-400">SignalGrid</p>
+          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">Fix Risk Before It Breaks Access</h1>
+          <p className="max-w-3xl text-lg text-neutral-300">
+            SignalGrid detects risk, makes the access decision, and closes the loop before users get stuck in manual
+            remediation.
+          </p>
+        </header>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <Link href="/demo" className="rounded-lg border border-neutral-200 p-5 transition hover:border-neutral-400">
-          <h2 className="text-lg font-medium">Interactive demo</h2>
-          <p className="mt-2 text-sm text-neutral-600">Run through scenario flows used during pilot validation.</p>
-        </Link>
+        <section className="space-y-8">
+          <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Why now</h2>
+            <p className="mt-3 text-neutral-200">
+              Most access and security decisions still happen too late—after trust is assumed, after a session is
+              established, or after risk is already present.
+            </p>
+          </article>
 
-        <Link
-          href="/investor-deck"
-          className="rounded-lg border border-neutral-200 p-5 transition hover:border-neutral-400"
-        >
-          <h2 className="text-lg font-medium">Investor deck</h2>
-          <p className="mt-2 text-sm text-neutral-600">Review the condensed company, product, and roadmap narrative.</p>
-        </Link>
-      </section>
+          <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">How it works</h2>
+            <p className="mt-3 text-neutral-200">
+              SignalGrid evaluates identity, device posture, and session context before access proceeds. When risk is
+              detected, it can attempt remediation, re-evaluate trust, and return a final decision with auditability.
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Closed-loop value</h2>
+            <p className="mt-3 text-neutral-200">
+              Most systems stop at blocking. SignalGrid closes the loop by detecting risk, attempting remediation,
+              re-evaluating trust, and returning a final decision before the workflow breaks.
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Who it&apos;s for</h2>
+            <p className="mt-3 text-neutral-200">
+              Built for identity, endpoint, mobility, and Zero Trust teams that need clearer decisions before access
+              proceeds.
+            </p>
+          </article>
+        </section>
+
+        <section className="flex flex-col items-start gap-4 border-t border-neutral-800 pt-10">
+          <button
+            type="button"
+            className="rounded-lg border border-cyan-400/60 bg-cyan-500/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-cyan-200"
+          >
+            Request Early Access
+          </button>
+          <p className="text-sm text-neutral-500">Identity • Device • Session • Risk</p>
+        </section>
+      </div>
     </main>
   );
 }
