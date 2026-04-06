@@ -6,53 +6,59 @@ export default function HomePage() {
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-neutral-400">SignalGrid</p>
           <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">Fix Risk Before It Breaks Access</h1>
           <p className="max-w-3xl text-lg text-neutral-300">
-            SignalGrid detects risk, makes the access decision, and closes the loop before users get stuck in manual
-            remediation.
+            Intune identifies non-compliance. Conditional Access blocks the user. SignalGrid diagnoses, remediates,
+            and re-evaluates in real time so access can recover before operations stall.
           </p>
         </header>
 
         <section className="space-y-8">
           <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
-            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Why now</h2>
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Where SignalGrid fits</h2>
             <p className="mt-3 text-neutral-200">
-              Most access and security decisions still happen too late—after trust is assumed, after a session is
-              established, or after risk is already present.
+              You keep Intune and Entra. SignalGrid augments them with a closed-loop decision and recovery layer
+              between detection and enforcement.
             </p>
           </article>
 
           <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
-            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">How it works</h2>
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Closed-loop decisioning</h2>
             <p className="mt-3 text-neutral-200">
-              SignalGrid evaluates identity, device posture, and session context before access proceeds. When risk is
-              detected, it can attempt remediation, re-evaluate trust, and return a final decision with auditability.
+              Input signals include device non-compliance, user risk, and session context. SignalGrid classifies root
+              cause, maps remediation steps, executes response, and re-checks trust before returning allow or deny.
             </p>
           </article>
 
           <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
-            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Closed-loop value</h2>
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Business outcome</h2>
             <p className="mt-3 text-neutral-200">
-              Most systems stop at blocking. SignalGrid closes the loop by detecting risk, attempting remediation,
-              re-evaluating trust, and returning a final decision before the workflow breaks.
-            </p>
-          </article>
-
-          <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
-            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Who it&apos;s for</h2>
-            <p className="mt-3 text-neutral-200">
-              Built for identity, endpoint, mobility, and Zero Trust teams that need clearer decisions before access
-              proceeds.
+              Replace ticket-driven recovery that takes hours with automated recovery loops that restore compliant
+              access in minutes.
             </p>
           </article>
         </section>
 
-        <section className="flex flex-col items-start gap-4 border-t border-neutral-800 pt-10">
-          <button
-            type="button"
-            className="rounded-lg border border-cyan-400/60 bg-cyan-500/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-cyan-200"
-          >
-            Request Early Access
-          </button>
-          <p className="text-sm text-neutral-500">Identity • Device • Session • Risk</p>
+        <section className="space-y-4 border-t border-neutral-800 pt-10">
+          <p className="text-sm font-medium uppercase tracking-wide text-neutral-400">Next step</p>
+          <h2 className="text-2xl font-semibold tracking-tight text-neutral-100">See your access blockers mapped in 20 minutes</h2>
+          <p className="max-w-3xl text-neutral-300">
+            Bring one broken access flow. We&apos;ll map detection gaps, remediation paths, and a pilot-ready closed-loop
+            architecture.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              type="button"
+              className="rounded-lg border border-cyan-400/60 bg-cyan-500/10 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-cyan-200"
+            >
+              Book Workflow Teardown
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-neutral-600 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-neutral-200"
+            >
+              Request Pilot Plan
+            </button>
+          </div>
+          <p className="text-sm text-neutral-500">Response SLA: within 1 business day • Identity • Device • Session • Remediation</p>
         </section>
       </div>
     </main>
