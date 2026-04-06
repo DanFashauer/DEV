@@ -16,7 +16,7 @@ import { deviceRegistry } from '@/lib/deviceRegistry';
 /**
  * Normalized device enrollment data from any UEM
  */
-export const UEMEnrollmentSchema = z.object({
+const UEMEnrollmentSchema = z.object({
   // Device identification
   deviceId: z.string(), // UEM-specific device ID
   serialNumber: z.string().optional(),
@@ -53,8 +53,6 @@ export const UEMEnrollmentSchema = z.object({
   // Timestamp
   eventTimestamp: z.string().datetime(),
 });
-
-export type UEMEnrollment = z.infer<typeof UEMEnrollmentSchema>;
 
 // ============================================================================
 // POST Handler - Receive enrollment webhook
