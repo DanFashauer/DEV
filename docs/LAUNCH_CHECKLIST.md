@@ -1,45 +1,49 @@
-# SignalGrid Launch Checklist (MVP Closed-Loop Scope)
+# SignalGrid Launch Checklist (MVP Closed-Loop Only)
 
-Use this checklist only for the MVP closed-loop launch (detect → explain → remediate attempt → outcome/state update).
+Scope for this checklist: **only** the MVP closed-loop launch (detect issue → explain cause → attempt remediation → record outcome).
 
-## 1) Product Readiness
-- [ ] MVP flow works end-to-end in demo: risk signal detected, cause surfaced, remediation attempt triggered, and final status recorded.
-- [ ] Decision logic and outcomes align with the MVP contract and demo script.
-- [ ] Demo dataset/scenarios are stable and reproducible for live walkthroughs.
-- [ ] Critical defects that break the closed loop are fixed; non-blocking backlog items are documented.
-- [ ] Basic observability/logging is available to show each step in the loop during demo.
+## Product readiness
 
-## 2) Website Readiness
-- [ ] Homepage clearly states SignalGrid as a closed-loop decision layer for identity/device/session risk.
-- [ ] CTA/contact path is live and tested (form, email link, or scheduling path).
-- [ ] MVP scope and target design-partner message are reflected consistently in website copy.
-- [ ] Core trust pages needed for launch are present (at minimum: concise company/about context and contact method).
-- [ ] Deployment is stable for launch traffic expectations.
+- [ ] Demo path completes end-to-end for at least 3 core scenarios.
+- [ ] Each step is visible in product output/logs (detect, explain, remediate, outcome).
+- [ ] MVP contract/demo script/checklist are aligned with actual behavior.
+- [ ] Any loop-breaking bug is fixed; known non-blockers are documented.
 
-## 3) Outreach Readiness
-- [ ] LinkedIn teaser post copy and final teaser image are approved.
-- [ ] Outreach target list template exists (design-partner focus only).
-- [ ] Outreach message templates are ready (intro + follow-up) and aligned to MVP scope.
-- [ ] Response handling path is defined (who replies, where leads are tracked, expected response SLA).
+## Website readiness
 
-## 4) Business / Manual Readiness
-- [ ] Domain is purchased and controlled by founder.
-- [ ] Company email is created on the chosen domain.
-- [ ] LLC formation path is selected and filing is started/completed.
-- [ ] Business bank account path is selected and account opening is started/completed.
-- [ ] Founder LinkedIn teaser is published.
-- [ ] Initial outreach batch is sent.
+- [ ] Homepage clearly positions SignalGrid as a closed-loop decision layer for identity/device/session risk.
+- [ ] CTA/contact path is live and tested end-to-end.
+- [ ] Copy stays within MVP launch scope (no post-MVP claims).
+- [ ] Launch deployment is stable.
 
-## Founder Manual Tasks (Do Outside Codex)
-- [ ] Buy SignalGrid domain.
+## Outreach readiness
+
+- [ ] LinkedIn teaser text and final image are approved.
+- [ ] Design-partner outreach list template is ready.
+- [ ] Intro + follow-up outreach messages are ready and MVP-scoped.
+- [ ] Lead response workflow is defined (owner, channel, SLA).
+
+## Business / manual readiness
+
+- [ ] Domain is purchased and under founder control.
+- [ ] Company email is created on the domain.
+- [ ] LLC path is chosen and filing is started/completed.
+- [ ] Business bank account path is chosen and started/completed.
+- [ ] LinkedIn teaser is published.
+- [ ] First outreach batch is sent.
+
+## Founder manual tasks (outside Codex)
+
+- [ ] Buy domain.
 - [ ] Create company email.
 - [ ] File LLC / choose formation path.
 - [ ] Open bank account.
 - [ ] Publish LinkedIn teaser.
 - [ ] Send outreach.
 
-## Codex / GitHub Tasks
-- [ ] MVP polish: tighten only demo-critical UX/content for the closed-loop storyline.
-- [ ] Website implementation: finalize launch CTA/contact path and deploy-ready homepage updates.
-- [ ] Docs: ensure MVP contract, demo checklist/script, and launch checklist are aligned.
-- [ ] Launch content files: add/maintain teaser copy, outreach templates, and one-pager artifacts in-repo.
+## Codex / GitHub tasks
+
+- [ ] MVP polish (demo-critical UX/content only).
+- [ ] Website implementation (launch CTA/contact path).
+- [ ] Docs alignment (MVP contract, demo checklist/script, launch checklist).
+- [ ] Launch content files (teaser copy, outreach templates, one-pager).
