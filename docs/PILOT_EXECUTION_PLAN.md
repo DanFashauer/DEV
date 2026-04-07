@@ -101,7 +101,15 @@ Use this common badge/session payload:
 }
 ```
 
-> Note: If security headers are enforced in your environment, include required `x-signature`, `x-timestamp`, and `x-nonce` headers.
+> Security headers are required for session-start requests: always send `x-signature`, `x-timestamp`, and `x-nonce`. The only exception is a local development bypass when both `NODE_ENV=development` and `ENABLE_DEV_BYPASS=true` are set.
+
+Use these helper values before running the session-start `curl` commands:
+
+```bash
+TIMESTAMP="$(date +%s)"
+NONCE="$(uuidgen)"
+SIGNATURE="dev-placeholder-signature"
+```
 
 ### 4.1 Prepare posture signal (compliant)
 
@@ -132,6 +140,9 @@ curl -sS -X POST "$BASE_URL/api/integrations/v1/posture" \
 ```bash
 curl -sS -X POST "$BASE_URL/api/session/start" \
   -H "Content-Type: application/json" \
+  -H "x-signature: $SIGNATURE" \
+  -H "x-timestamp: $TIMESTAMP" \
+  -H "x-nonce: $NONCE" \
   -d @session-event.json
 ```
 
@@ -165,6 +176,9 @@ curl -sS -X POST "$BASE_URL/api/integrations/v1/posture" \
 ```bash
 curl -sS -X POST "$BASE_URL/api/session/start" \
   -H "Content-Type: application/json" \
+  -H "x-signature: $SIGNATURE" \
+  -H "x-timestamp: $TIMESTAMP" \
+  -H "x-nonce: $NONCE" \
   -d @session-event.json
 ```
 
@@ -200,6 +214,9 @@ curl -sS -X POST "$BASE_URL/api/integrations/v1/posture" \
 ```bash
 curl -sS -X POST "$BASE_URL/api/session/start" \
   -H "Content-Type: application/json" \
+  -H "x-signature: $SIGNATURE" \
+  -H "x-timestamp: $TIMESTAMP" \
+  -H "x-nonce: $NONCE" \
   -d @session-event.json
 ```
 
