@@ -47,3 +47,7 @@ Scope for this checklist: **only** the MVP closed-loop launch (detect issue → 
 - [ ] Website implementation (launch CTA/contact path).
 - [ ] Docs alignment (MVP contract, demo checklist/script, launch checklist).
 - [ ] Launch content files (teaser copy, outreach templates, one-pager).
+## Cutover reference
+
+- See `docs/CODEX_COMPLETE_CUTOVER_CHECKLIST.md` for the final Codex-complete and manual-only handoff sequence, including PR #72 cleanup.
+
