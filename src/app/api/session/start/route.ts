@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateAndAuthorizeSessionStart } from '@/lib/backend/validation';
 import { badgeRegistry } from '@/lib/badgeRegistry';
 import { getSessionStoreFromRequest } from '@/lib/tenant/sessionStore';
+import { resolveTenantId } from '@/lib/tenant/tenantContext';
 import { appendAuditRecord } from '@/lib/auditLedger';
 import { checkDeviceRateLimit, checkIpRateLimit } from './services/rateLimit';
 import { evaluatePostureDecision, RemediationAttempt } from './services/posture';
@@ -78,6 +79,7 @@ async function writeSessionStartAudit(params: {
 export async function POST(request: NextRequest) {
   const timestamp = new Date().toISOString();
   const requestId = request.headers.get('x-request-id') ?? undefined;
+  const tenantId = resolveTenantId(request);
 
   try {
     const rawBody = (await request.json()) as unknown;
@@ -90,7 +92,8 @@ export async function POST(request: NextRequest) {
       },
       rawBody,
       request.url,
-      request.method
+      request.method,
+      tenantId
     );
 
     if (!validation.valid || !validation.event) {
