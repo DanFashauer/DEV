@@ -1,27 +1,39 @@
 # About SignalGrid
 
 ## Short company description
-SignalGrid is building a closed-loop decision layer for session-start access risk. We help security and IT teams decide, remediate when needed, and return a final auditable access outcome before workflows break.
+SignalGrid is the runtime decision layer between authentication and enforcement that resolves identity, device, and session risk before access breaks.
+
+## Medium company description
+Modern enterprise stacks can authenticate identity, enforce policy, and visualize issues, but they still leave a critical gap between risk detection and final access outcome. SignalGrid fills that gap by evaluating identity, device posture, and session risk at runtime, attempting remediation when possible, re-evaluating trust, and returning a final access decision before disruption reaches the business.
 
 ## Longer company description
-SignalGrid focuses on the decision gap between risk detection and final access outcome. Many organizations already have strong tools for posture reporting and policy enforcement, but operators still get pulled into manual remediation when risk appears at login. SignalGrid adds a closed-loop step at session start: evaluate risk, attempt remediation for non-compliant posture, re-check trust, and return a final allow/deny result with audit context. The current product is intentionally MVP-scoped and designed for early design partners validating this closed-loop flow.
+SignalGrid exists to close the decision gap between authentication and enforcement in modern enterprise environments. Today’s stacks are strong at verifying identity, managing endpoints, and observing failures, but they still leave operators with the same problem: when runtime conditions degrade, the common result is a block, a lockout, or a manual recovery process. SignalGrid adds a runtime decision layer that connects identity, device, and session signals, attempts remediation when possible, re-evaluates trust, and returns the correct final access outcome before disruption reaches the business.
+
+SignalGrid's core principle: access decisions should reflect runtime truth, not stale or incomplete signals.
 
 ## One-line product description
-SignalGrid is a closed-loop decision layer that evaluates session-start risk, attempts remediation for non-compliant posture, and returns a final access decision with audit context.
+SignalGrid is a runtime decision layer that evaluates identity, device, and session risk at session start, attempts remediation when possible, and returns a final access decision with audit context.
 
 ## Problem statement
-Security teams can detect posture risk and enforce allow/deny policy, but often lack an operational loop that handles remediation attempts and clear final outcomes at session start. This creates manual work, slower access decisions, and inconsistent decision trails.
+Authentication and enforcement are necessary, but they are not sufficient. When risk is detected, most systems either block access or rely on manual intervention. That creates lockouts, delays, and operational friction at exactly the moment when systems should be making the right decision automatically.
 
 ## Solution statement
-SignalGrid runs in the pre-access decision path. It ingests identity/device/session risk inputs, applies policy logic, attempts remediation for non-compliant posture, re-evaluates trust, and returns a final decision (`allow` or `deny`) with explainable reasons and an auditable record.
+SignalGrid sits between authentication and enforcement to make the correct access decision at runtime. It evaluates identity, device posture, and session risk, attempts remediation when possible, re-evaluates trust after response, and returns a final allow or deny outcome with audit context.
+
+## Differentiator
+Authentication proves identity. SignalGrid ensures the system is actually capable of operating before access is granted.
+
+## Guardrail
+SignalGrid does not replace IAM, UEM, or DEX tools. It operationalizes real-time decisioning between them.
 
 ## Where SignalGrid fits (vs. Intune/Entra and existing security tooling)
 - **Intune (or other UEM/MDM):** source of device and compliance posture signals.
 - **Entra Conditional Access (or similar enforcement layer):** enforces access controls based on policy outcomes.
-- **SignalGrid:** decision-and-closure layer between detection and outcome at session start.
+- **DEX tools:** highlight user experience and endpoint failures.
+- **SignalGrid:** runtime decision layer between authentication and enforcement that determines what happens next.
 - **Other security tooling (SIEM/ITSM/NAC):** surrounding systems for monitoring and operations; not replaced by SignalGrid.
 
-In practice: Intune reports posture, Entra enforces policy, and SignalGrid closes the loop on what happens next when posture risk appears.
+In practice: UEM tools show what is configured, DEX tools show what is failing, enforcement systems apply policy outcomes, and SignalGrid decides what happens next. SignalGrid does not replace IAM, UEM, DEX, or enforcement tooling.
 
 ## MVP boundary statement
 SignalGrid is currently in MVP closed-loop launch mode, scoped to session-start behavior:

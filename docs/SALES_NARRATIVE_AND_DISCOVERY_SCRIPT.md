@@ -11,15 +11,18 @@ Use it for:
 
 ## Core Narrative (60–90 seconds)
 
-Most IT and security teams are overwhelmed by repetitive identity and endpoint operations that still require human follow-up. Every manual review creates delay, inconsistency, and ticket backlog.
+Most IT and security teams are overloaded by access-risk operations that still require human follow-up. Every manual review creates delay, inconsistency, and ticket backlog.
 
-Our platform turns those high-friction workflows into policy-driven automations with explicit audit trails. Instead of adding another dashboard, we focus on reducing manual effort where teams already work (Intune, Entra, and adjacent systems) while preserving control and visibility.
+SignalGrid is the runtime decision layer between authentication and enforcement. At session start, we evaluate identity, device, and session risk, attempt remediation when possible, re-check trust, and return a final access decision with an audit trail before users hit disruption.
 
-The practical outcome is faster response on access and device-risk events, fewer policy exceptions, and measurable reduction in operational drag without forcing a complete process rewrite.
+We are additive to existing controls: UEM tools show what’s configured, DEX tools show what’s failing, and SignalGrid decides what happens next. The practical outcome is faster decisions, less manual remediation work, and clearer accountability without rip-and-replace.
+Runtime truth matters: we have seen environments that still appear healthy while silently losing the ability to establish new TCP connections after prolonged uptime, forcing manual recovery and disruption.
+Authentication proves identity; SignalGrid ensures the system is actually capable of operating before access is granted.
+SignalGrid ensures access decisions are based on runtime truth, not stale or incomplete signals.
 
 ## Positioning Statement
 
-We help IT and security teams automate high-volume Intune/Entra workflows with clear policy controls, so they can ship consistent outcomes faster and with less manual toil.
+SignalGrid helps IT and security teams make runtime access decisions between authentication and enforcement by resolving identity, device, and session risk before access breaks.
 
 ## Ideal Customer Profile (ICP)
 
@@ -48,6 +51,7 @@ We help IT and security teams automate high-volume Intune/Entra workflows with c
 - “Where does human intervention happen most often?”
 - “How often do exceptions or retries happen?”
 - “How do you currently audit who approved what and why?”
+- “Where do authentication checks end and enforcement begin today?”
 
 ### 3) Risk and Constraints (4–6 min)
 - “What is the failure mode you’re most worried about?”
@@ -83,7 +87,7 @@ That can work for isolated tasks. The tradeoff is long-term maintainability, gov
 Agreed. Pilot scope should start with bounded workflows, explicit approvals where needed, and pre-agreed rollback paths. The objective is safe automation with evidence, not blind automation.
 
 ### “We already have too many tools.”
-Understood. The goal is not a new destination UI. We prioritize workflow outcomes, integration with existing systems, and minimizing additional operational surface area.
+Understood. SignalGrid is not a replacement for IAM, UEM, or DEX. The goal is a runtime decision layer that uses your existing tools and minimizes additional operational surface area.
 
 ## Pilot Offer Template
 
