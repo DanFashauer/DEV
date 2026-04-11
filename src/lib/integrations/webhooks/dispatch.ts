@@ -202,18 +202,24 @@ async function dispatchWithRetry(
 ): Promise<DeliveryResult> {
   let lastResult: DeliveryResult | null = null;
 
+  const isPermanentError = (result: DeliveryResult): boolean => {
+    if (result.statusCode && !isRetryableStatus(result.statusCode)) {
+      return true;
+    }
+
+    return (
+      result.error === 'Webhook signing secret not configured' ||
+      result.error === 'Invalid URL' ||
+      result.error === 'HTTPS required in production' ||
+      result.error === 'Localhost not allowed in production'
+    );
+  };
+
   for (let attempt = 1; attempt <= config.retry.maxAttempts; attempt++) {
     const result = await dispatchToEndpoint(webhook, payload, config);
     lastResult = result;
 
-    if (result.success) {
-      return result;
-    }
-
-    // Check if we should retry
-    const statusCode = result.statusCode;
-    if (statusCode && !isRetryableStatus(statusCode)) {
-      // Non-retryable error, stop here
+    if (result.success || isPermanentError(result)) {
       return result;
     }
 

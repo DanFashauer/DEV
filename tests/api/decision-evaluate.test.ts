@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { evaluateDecisionFlow } from '@/lib/decision/engine';
 import { POST } from '@/app/api/decision/evaluate/route';
 
-const mockAppendAuditRecord = vi.fn();
+const { mockAppendAuditRecord } = vi.hoisted(() => ({
+  mockAppendAuditRecord: vi.fn(),
+}));
 
 vi.mock('@/lib/auditLedger', async () => {
   const actual = await vi.importActual<typeof import('@/lib/auditLedger')>('@/lib/auditLedger');
