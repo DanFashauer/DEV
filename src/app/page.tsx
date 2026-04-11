@@ -4,45 +4,59 @@ export default function HomePage() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-10">
         <header className="space-y-5 border-b border-neutral-800 pb-10">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-neutral-400">SignalGrid</p>
-          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">Fix Risk Before It Breaks Access</h1>
+          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+            Fix Risk Before It Breaks Access
+          </h1>
           <p className="max-w-3xl text-lg text-neutral-300">
-            SignalGrid detects risk, makes the access decision, and closes the loop before users get stuck in manual
-            remediation.
+            SignalGrid is the runtime decision layer between authentication and enforcement that resolves identity,
+            device, and session risk before access breaks.
           </p>
         </header>
 
         <section className="space-y-8">
           <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Where SignalGrid fits</h2>
+            <p className="mt-3 text-neutral-200">
+              Identity systems authenticate. Access systems enforce. SignalGrid decides what happens in between.
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
             <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Why now</h2>
             <p className="mt-3 text-neutral-200">
-              Most access and security decisions still happen too late—after trust is assumed, after a session is
-              established, or after risk is already present.
+              Modern enterprise environments can verify identity, enforce policy, and visualize issues, but they still
+              leave a runtime decision gap. When risk is detected, most systems either block the user or rely on manual
+              remediation.
             </p>
           </article>
 
           <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
-            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">How it works</h2>
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Runtime truth</h2>
             <p className="mt-3 text-neutral-200">
-              SignalGrid evaluates identity, device posture, and session context before access proceeds. When risk is
-              detected, it can attempt remediation, re-evaluate trust, and return a final decision with auditability.
+              Even when authentication succeeds and compliance looks healthy, runtime conditions can still silently
+              fail. We have seen operating environments appear healthy while losing the ability to establish new TCP
+              connections after prolonged uptime, forcing manual recovery and disruption. SignalGrid helps ensure
+              access decisions reflect runtime truth, not stale or incomplete signals.
             </p>
           </article>
 
           <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
-            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Closed-loop value</h2>
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">What SignalGrid does</h2>
             <p className="mt-3 text-neutral-200">
-              Most systems stop at blocking. SignalGrid closes the loop by detecting risk, attempting remediation,
-              re-evaluating trust, and returning a final decision before the workflow breaks.
+              SignalGrid connects identity, device posture, and runtime risk signals, determines whether remediation
+              can be attempted, re-evaluates trust after response, and returns a final allow or deny decision with
+              audit context.
             </p>
           </article>
 
           <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
-            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Who it&apos;s for</h2>
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Differentiation</h2>
             <p className="mt-3 text-neutral-200">
-              Built for identity, endpoint, mobility, and Zero Trust teams that need clearer decisions before access
-              proceeds.
+              UEM tools show what&apos;s configured. DEX tools show what&apos;s failing. SignalGrid decides what happens
+              next and returns a final access decision before workflow disruption.
             </p>
           </article>
+
         </section>
 
         <section className="flex flex-col items-start gap-4 border-t border-neutral-800 pt-10">

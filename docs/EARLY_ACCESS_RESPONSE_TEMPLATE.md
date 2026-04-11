@@ -8,9 +8,12 @@ Hi {{FirstName}},
 
 Thank you for reaching out and for your interest in SignalGrid.
 
-SignalGrid is a closed-loop decision layer focused on session-start access risk. Before access continues, SignalGrid evaluates identity, device, and session posture, attempts remediation when possible, and then returns a final auditable allow/deny outcome. We are currently in MVP closed-loop launch mode, with scope intentionally limited to this flow.
+SignalGrid is the runtime decision layer between authentication and enforcement. It evaluates identity, device, and session risk at runtime, attempts remediation when possible, re-evaluates trust, and returns a final access decision before workflows are disrupted. We are currently in MVP closed-loop launch mode, focused on a narrow session-start use case.
+Our core principle is simple: access decisions should reflect runtime truth, not stale or incomplete signals.
 
-If helpful, I’d be glad to schedule a short 20-minute design-partner/pilot conversation to learn about your environment and confirm fit.
+We are additive to existing controls: UEM tools show what’s configured, DEX tools show what’s failing, and SignalGrid decides what happens next. We do not replace IAM, UEM, DEX, or enforcement systems.
+
+If helpful, I’d be glad to schedule a short 20-minute design-partner conversation and learn how your team handles runtime access failures today.
 
 To prepare, three quick questions:
 1. What typically happens today when a device or session fails policy checks at login/session start?
