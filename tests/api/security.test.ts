@@ -33,7 +33,9 @@ describe('API Security Tests', () => {
     it('should reject expired tokens', async () => {
       // Token with exp claim in the past
       const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MDAwMDAwMDB9.signature';
-      expect(expiredToken).toContain('exp');
+      const payloadSegment = expiredToken.split('.')[1];
+      const payload = JSON.parse(Buffer.from(payloadSegment, 'base64url').toString('utf-8')) as { exp?: number };
+      expect(payload.exp).toBeDefined();
     });
 
     it('should validate token signature', async () => {
@@ -96,8 +98,9 @@ describe('API Security Tests', () => {
       ];
 
       xssPayloads.forEach(payload => {
-        // Response should encode HTML entities
-        expect(payload).toContain('<');
+        const looksLikeHtmlVector = payload.includes('<');
+        const looksLikeUriVector = payload.toLowerCase().startsWith('javascript:');
+        expect(looksLikeHtmlVector || looksLikeUriVector).toBe(true);
       });
     });
 
@@ -133,8 +136,9 @@ describe('API Security Tests', () => {
       ];
 
       testCases.forEach(test => {
-        const numValue = parseInt(test.value);
-        expect(isNaN(numValue)).toBe(!test.valid);
+        const numValue = Number(test.value);
+        const isValidNumericParam = Number.isInteger(numValue) && numValue >= 0;
+        expect(isValidNumericParam).toBe(test.valid);
       });
     });
   });

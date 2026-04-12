@@ -199,7 +199,7 @@ describe('API Contract Tests', () => {
     it('should calculate hasMore correctly', () => {
       const testCases = [
         { total: 100, limit: 10, offset: 0, expectedHasMore: true },
-        { total: 100, limit: 10, offset: 90, expectedHasMore: true },
+        { total: 100, limit: 10, offset: 90, expectedHasMore: false },
         { total: 100, limit: 10, offset: 100, expectedHasMore: false },
       ];
 
