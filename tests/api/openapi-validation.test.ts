@@ -197,7 +197,7 @@ describe('Input Validation Tests', () => {
         badge: { badgeId: 'test' },
         timestamp: 'invalid-date',
       };
-      expect(() => new Date(payload.timestamp)).toThrow();
+      expect(Number.isNaN(new Date(payload.timestamp).getTime())).toBe(true);
     });
 
     it('should validate device ID format', () => {
@@ -229,8 +229,9 @@ describe('Input Validation Tests', () => {
       ];
 
       invalidLocations.forEach(loc => {
-        expect(Math.abs(loc.lat)).toBeLessThanOrEqual(90);
-        expect(Math.abs(loc.lon)).toBeLessThanOrEqual(180);
+        const validLat = Number.isFinite(loc.lat) && Math.abs(loc.lat) <= 90;
+        const validLon = Number.isFinite(loc.lon) && Math.abs(loc.lon) <= 180;
+        expect(validLat && validLon).toBe(false);
       });
     });
 
@@ -303,6 +304,14 @@ describe('Input Validation Tests', () => {
 });
 
 describe('API Security Compliance', () => {
+  let openApiSpec: any;
+
+  beforeAll(() => {
+    const specPath = path.join(process.cwd(), 'openapi.json');
+    const content = fs.readFileSync(specPath, 'utf-8');
+    openApiSpec = JSON.parse(content);
+  });
+
   it('should require HTTPS for production', () => {
     const prodServer = openApiSpec.servers.find((s: any) => 
       s.url.includes('https://')

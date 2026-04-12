@@ -161,7 +161,7 @@ describe('API Integration Tests', () => {
 
       const testCases = [
         { offset: 0, expectedHasMore: true },
-        { offset: 90, expectedHasMore: true },
+        { offset: 90, expectedHasMore: false },
         { offset: 100, expectedHasMore: false },
       ];
 
