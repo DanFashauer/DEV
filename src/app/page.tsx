@@ -8,8 +8,8 @@ export default function HomePage() {
             Fix Risk Before It Breaks Access
           </h1>
           <p className="max-w-3xl text-lg text-neutral-300">
-            SignalGrid is the runtime decision layer between authentication and enforcement that resolves identity,
-            device, and session risk before access breaks.
+            SignalGrid is a shared-device access and runtime decision platform for frontline environments that resolves
+            identity, device, and session risk before access breaks.
           </p>
         </header>
 
@@ -26,7 +26,8 @@ export default function HomePage() {
             <p className="mt-3 text-neutral-200">
               Modern enterprise environments can verify identity, enforce policy, and visualize issues, but they still
               leave a runtime decision gap. When risk is detected, most systems either block the user or rely on manual
-              remediation.
+              remediation. SignalGrid starts with high-friction frontline shared-device workflows and expands into other
+              industries where access continuity is mission-critical.
             </p>
           </article>
 
