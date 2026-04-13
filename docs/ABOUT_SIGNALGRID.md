@@ -1,18 +1,20 @@
 # About SignalGrid
 
 ## Short company description
-SignalGrid is the runtime decision layer between authentication and enforcement that resolves identity, device, and session risk before access breaks.
+SignalGrid is a shared-device access and runtime decision platform for frontline environments that resolves identity, device, and session risk before access breaks.
 
 ## Medium company description
-Modern enterprise stacks can authenticate identity, enforce policy, and visualize issues, but they still leave a critical gap between risk detection and final access outcome. SignalGrid fills that gap by evaluating identity, device posture, and session risk at runtime, attempting remediation when possible, re-evaluating trust, and returning a final access decision before disruption reaches the business.
+Modern enterprise stacks can authenticate identity, enforce policy, and visualize issues, but they still leave a critical gap between risk detection and final access outcome. SignalGrid fills that gap by evaluating identity, device posture, and session risk at runtime, attempting remediation when possible, re-evaluating trust, and returning a final access decision before disruption reaches the business. SignalGrid launches with high-friction shared-device workflows in frontline environments and can expand across industries where access, device posture, and operational continuity matter.
 
 ## Longer company description
 SignalGrid exists to close the decision gap between authentication and enforcement in modern enterprise environments. Today’s stacks are strong at verifying identity, managing endpoints, and observing failures, but they still leave operators with the same problem: when runtime conditions degrade, the common result is a block, a lockout, or a manual recovery process. SignalGrid adds a runtime decision layer that connects identity, device, and session signals, attempts remediation when possible, re-evaluates trust, and returns the correct final access outcome before disruption reaches the business.
 
+SignalGrid is built as a horizontal platform, with an intentional launch wedge in frontline, shared-device operating contexts where access continuity issues are frequent and costly.
+
 SignalGrid's core principle: access decisions should reflect runtime truth, not stale or incomplete signals.
 
 ## One-line product description
-SignalGrid is a runtime decision layer that evaluates identity, device, and session risk at session start, attempts remediation when possible, and returns a final access decision with audit context.
+SignalGrid is a shared-device access and runtime decision platform that evaluates identity, device, and session risk at session start, attempts remediation when possible, and returns a final access decision with audit context.
 
 ## Problem statement
 Authentication and enforcement are necessary, but they are not sufficient. When risk is detected, most systems either block access or rely on manual intervention. That creates lockouts, delays, and operational friction at exactly the moment when systems should be making the right decision automatically.

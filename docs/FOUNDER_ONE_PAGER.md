@@ -4,10 +4,11 @@
 **SignalGrid**
 
 ## One-line product description
-SignalGrid is the runtime decision layer between authentication and enforcement that evaluates identity, device, and session risk, attempts remediation when possible, and returns a final access outcome with audit context.
+SignalGrid is a shared-device access and runtime decision platform between authentication and enforcement that evaluates identity, device, and session risk, attempts remediation when possible, and returns a final access outcome with audit context.
 
 ## Founder / investor blurb
 Modern security stacks are fragmented across identity, device, experience, and enforcement layers. Those systems can authenticate, configure, and observe—but they still do not own the decision of what happens next when runtime conditions degrade. SignalGrid is the runtime decision layer that unifies those signals, attempts remediation when possible, and determines the correct access outcome before disruption occurs.
+The initial launch wedge is frontline shared-device workflows where friction and downtime are most visible, with expansion potential across other industries over time.
 
 ## Problem
 Security and access teams often have the right controls but a broken flow at decision time:
@@ -48,6 +49,7 @@ SignalGrid sits between system-of-record and enforcement controls:
 In short: UEM tools show what is configured, DEX tools show what is failing, and SignalGrid decides what happens next before enforcement. SignalGrid is additive and does not replace IAM, UEM, DEX, or enforcement systems.
 
 ## Who it is for
+- Frontline environments with shared-device workflows, including healthcare and operations-heavy teams.
 - Identity and access teams.
 - Endpoint/UEM and mobility teams.
 - Security operations and Zero Trust program owners.
