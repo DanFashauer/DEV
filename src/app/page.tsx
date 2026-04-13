@@ -31,6 +31,21 @@ export default function HomePage() {
           </article>
 
           <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
+            <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">
+              Beyond traditional Zero Trust
+            </h2>
+            <p className="mt-3 text-neutral-200">
+              Traditional Zero Trust architectures verify identity and enforce policy at the point of access.
+            </p>
+            <p className="mt-4 text-neutral-200">But real-world conditions change.</p>
+            <p className="mt-4 text-neutral-200">Devices fail. Networks degrade. Signals become stale.</p>
+            <p className="mt-4 text-neutral-200">
+              SignalGrid extends Zero Trust into runtime decisioning—ensuring access decisions remain correct even
+              after they are made.
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-6">
             <h2 className="text-base font-semibold uppercase tracking-wide text-neutral-400">Runtime truth</h2>
             <p className="mt-3 text-neutral-200">
               Even when authentication succeeds and compliance looks healthy, runtime conditions can still silently
