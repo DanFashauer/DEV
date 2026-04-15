@@ -26,8 +26,8 @@ export default function HomePage() {
             <p className="mt-3 text-neutral-200">
               Modern enterprise environments can verify identity, enforce policy, and visualize issues, but they still
               leave a runtime decision gap. When risk is detected, most systems either block the user or rely on manual
-              remediation. SignalGrid starts with high-friction frontline shared-device workflows and expands into other
-              industries where access continuity is mission-critical.
+              remediation. SignalGrid launches with high-friction frontline shared-device workflows and later expands
+              into additional industries where access continuity is mission-critical.
             </p>
           </article>
 
