@@ -13,10 +13,11 @@ Use it for:
 
 Most IT and security teams are overloaded by access-risk operations that still require human follow-up. Every manual review creates delay, inconsistency, and ticket backlog.
 
-SignalGrid is a shared-device access and runtime decision platform between authentication and enforcement. At session start, we evaluate identity, device, and session risk, attempt remediation when possible, re-check trust, and return a final access decision with an audit trail before users hit disruption.
+SignalGrid is a shared-device access and runtime decision platform that sits between authentication and enforcement. At session start, we evaluate identity, device, and session risk, attempt remediation when possible, re-check trust, and return a final access decision with an audit trail before users hit disruption.
 
 We are additive to existing controls: UEM tools show what’s configured, DEX tools show what’s failing, and SignalGrid decides what happens next. The practical outcome is faster decisions, less manual remediation work, and clearer accountability without rip-and-replace.
-We launch with frontline shared-device workflows where manual recovery and access friction are highest, then expand into adjacent workflows over time.
+We launch with frontline shared-device workflows where manual recovery and access friction are highest, then expand into adjacent industries over time.
+Today, trust troubleshooting (including certificate, Wi-Fi, or VPN-related access failures) is often manual and fragmented; SignalGrid helps move those operations toward runtime classification, remediation, and outcome control.
 Runtime truth matters: we have seen environments that still appear healthy while silently losing the ability to establish new TCP connections after prolonged uptime, forcing manual recovery and disruption.
 Authentication proves identity; SignalGrid ensures the system is actually capable of operating before access is granted.
 SignalGrid ensures access decisions are based on runtime truth, not stale or incomplete signals.

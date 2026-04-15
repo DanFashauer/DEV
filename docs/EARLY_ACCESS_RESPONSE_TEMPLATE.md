@@ -9,6 +9,7 @@ Hi {{FirstName}},
 Thank you for reaching out and for your interest in SignalGrid.
 
 SignalGrid is the runtime decision layer between authentication and enforcement. It evaluates identity, device, and session risk at runtime, attempts remediation when possible, re-evaluates trust, and returns a final access decision before workflows are disrupted. We are currently in MVP closed-loop launch mode, focused on a narrow session-start use case.
+Our launch wedge is frontline shared-device workflows where posture, runtime conditions, and access continuity matter most.
 Our core principle is simple: access decisions should reflect runtime truth, not stale or incomplete signals.
 
 We are additive to existing controls: UEM tools show what’s configured, DEX tools show what’s failing, and SignalGrid decides what happens next. We do not replace IAM, UEM, DEX, or enforcement systems.

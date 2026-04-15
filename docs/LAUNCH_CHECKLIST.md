@@ -12,6 +12,8 @@ Scope for this checklist: **only** the MVP closed-loop launch (detect issue → 
 ## Website readiness
 
 - [ ] Homepage clearly positions SignalGrid as a closed-loop decision layer for identity/device/session risk.
+- [ ] Messaging states SignalGrid sits between authentication and enforcement.
+- [ ] Launch narrative is explicitly focused on frontline/shared-device workflows (with broader expansion framed as future direction).
 - [ ] CTA/contact path is live and tested end-to-end.
 - [ ] Copy stays within MVP launch scope (no post-MVP claims).
 - [ ] Launch deployment is stable.
@@ -50,4 +52,3 @@ Scope for this checklist: **only** the MVP closed-loop launch (detect issue → 
 ## Cutover reference
 
 - See `docs/CODEX_COMPLETE_CUTOVER_CHECKLIST.md` for the final Codex-complete and manual-only handoff sequence, including PR #72 cleanup.
-
