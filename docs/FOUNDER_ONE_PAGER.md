@@ -18,6 +18,7 @@ Security and access teams often have the right controls but a broken flow at dec
 - When risk is found, users and operators still fall into manual, slow remediation paths.
 
 The gap is the runtime loop between authentication, remediation attempt, and final outcome before workflow disruption.
+In practice, trust troubleshooting (such as certificate, Wi-Fi, or VPN access-path issues) is still manual and admin-heavy, which reinforces the need for runtime classification, remediation, and outcome control.
 
 ## Solution
 SignalGrid runs in the runtime decision path between authentication and enforcement before access proceeds:
