@@ -144,7 +144,10 @@ async function badgeScan() {
   };
   
   const bodyString = JSON.stringify(event);
-  const secret = process.env.BACKEND_SECRET || 'development-secret-key';
+  const secret =
+    process.env.BACKEND_SIGNING_SECRET ||
+    process.env.BACKEND_SECRET ||
+    'development-secret-key-do-not-use-in-production';
   const signature = createHmac('sha256', secret)
     .update(`POST|${SERVER_URL}/api/session/start|${timestamp}|${nonce}|${bodyString}`)
     .digest('hex');

@@ -6,7 +6,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 describe('API v1 - Public Endpoints', () => {
-  const baseUrl = 'http://localhost:3000/api/v1';
+  const serverUrl = process.env.SERVER_URL || 'http://localhost:3010';
+  const baseUrl = `${serverUrl}/api/v1`;
   const apiKey = process.env.ADMIN_API_KEY || 'test-api-key';
 
   beforeAll(async () => {

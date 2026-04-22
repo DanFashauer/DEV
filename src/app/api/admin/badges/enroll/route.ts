@@ -20,7 +20,8 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { badgeRegistry } from '@/lib/badgeRegistry';
+import { getBadgeRegistryFromRequest } from '@/lib/tenant/badgeRegistry';
+import { badgeRegistry as globalBadgeRegistry } from '@/lib/badgeRegistry';
 import { requireAdminAuth } from '@/lib/adminAuth';
 import { appendAuditRecord, recordAdminAccess } from '@/lib/auditLedger';
 import { emitBadgeEnroll } from '@/lib/integrations/webhooks/emitter';
@@ -53,7 +54,16 @@ export async function POST(request: NextRequest) {
     }
     
     // Enroll badge
+    const badgeRegistry = getBadgeRegistryFromRequest(request);
     const mapping = await badgeRegistry.enroll({
+      badgeUid: badgeUid.trim(),
+      userId: userId.trim(),
+      userName,
+      department,
+    });
+
+    // Dual-write to global registry for compatibility with non-tenant admin/read paths.
+    await globalBadgeRegistry.enroll({
       badgeUid: badgeUid.trim(),
       userId: userId.trim(),
       userName,
