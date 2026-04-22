@@ -15,14 +15,26 @@ const SERVER_URL = `http://localhost:${DEMO_PORT}`;
 
 async function checkPort(port: string): Promise<{ inUse: boolean; process?: string }> {
   try {
-    const { spawn } = await import('child_process');
-    const proc = Bun.spawn(['sh', '-c', `ss -ltnp 2>/dev/null | grep :${port} || netstat -ltnp 2>/dev/null | grep :${port} || echo ""`]);
-    const output = await new Response(proc.stdout).text();
-    
-    if (output.trim()) {
-      return { inUse: true, process: output.trim() };
-    }
-    return { inUse: false };
+    const net = await import('node:net');
+
+    const inUse = await new Promise<boolean>((resolve) => {
+      const socket = net.createConnection({ host: '127.0.0.1', port: Number(port) });
+      socket.once('connect', () => {
+        socket.destroy();
+        resolve(true);
+      });
+      socket.once('error', () => {
+        resolve(false);
+      });
+      socket.setTimeout(1000, () => {
+        socket.destroy();
+        resolve(false);
+      });
+    });
+
+    return inUse
+      ? { inUse: true, process: `Something is listening on port ${port}` }
+      : { inUse: false };
   } catch {
     return { inUse: false };
   }
@@ -195,9 +207,17 @@ async function startServer() {
   const { spawn } = await import('child_process');
   
   // Start server in background
+  const demoEnv = {
+    ...process.env,
+    PORT: DEMO_PORT,
+    ADMIN_API_KEY: process.env.ADMIN_API_KEY || 'dev-admin-key-12345',
+    BACKEND_SIGNING_SECRET:
+      process.env.BACKEND_SIGNING_SECRET || 'development-secret-key-do-not-use-in-production',
+  };
+
   const serverProcess = spawn('bun', ['run', 'dev'], {
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, PORT: DEMO_PORT },
+    env: demoEnv,
     detached: true,
   });
   
@@ -244,6 +264,10 @@ function printUrls() {
   console.log(`📍 Admin Portal:    http://localhost:${DEMO_PORT}/admin`);
   console.log(`📍 Health Check:    http://localhost:${DEMO_PORT}/api/health`);
   console.log('═══════════════════════════════════════════════════════════════\n');
+  console.log('Env defaults used by demo:');
+  console.log('  - ADMIN_API_KEY=dev-admin-key-12345 (if not already set)');
+  console.log('  - BACKEND_SIGNING_SECRET=development-secret-key-do-not-use-in-production (if not already set)');
+  console.log('');
   console.log('Next steps:');
   console.log(`  1. Open http://localhost:${DEMO_PORT}/admin in your browser`);
   if (DEMO_PORT !== '3000') {
@@ -256,23 +280,31 @@ function printUrls() {
 
 async function stopServer() {
   console.log('🛑 Stopping SignalGrid demo...\n');
-  
+
   const pidFile = '/tmp/signalgrid-demo.pid';
-  
+
   try {
-    const pid = parseInt(await Bun.readFile(pidFile).then(b => b.toString()).catch(() => ''));
-    if (pid) {
-      process.kill(pid);
-      console.log('✅ Server stopped');
+    const pidText = await Bun.readFile(pidFile).then((b) => b.toString()).catch(() => '');
+    const pid = Number.parseInt(pidText, 10);
+    if (Number.isFinite(pid) && pid > 0) {
+      try {
+        process.kill(-pid, 'SIGTERM');
+      } catch {
+        process.kill(pid, 'SIGTERM');
+      }
+      await new Promise((r) => setTimeout(r, 500));
     }
-  } catch {}
-  
-  // Also try to kill by port
+  } catch {
+    // ignore
+  }
+
+  // Safety fallback for orphan dev processes
   try {
-    const { spawn } = await import('child_process');
-    const proc = Bun.spawn(['sh', '-c', `fuser -k ${DEMO_PORT}/tcp 2>/dev/null || true`]);
-  } catch {}
-  
+    await Bun.$`pkill -f '/workspace/DEV/node_modules/.bin/next dev'`.quiet();
+  } catch {
+    // ignore when no process matches
+  }
+
   await Bun.write(pidFile, '');
   console.log('✅ Demo services stopped');
 }

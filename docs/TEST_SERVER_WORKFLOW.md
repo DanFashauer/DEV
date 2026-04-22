@@ -1,61 +1,45 @@
 # Test Server Workflow (SignalGrid)
 
-This project has two kinds of tests:
+This repo has both in-process tests and tests that call a running app at `http://localhost:3010`.
 
-1. **Default/unit-ish tests** that run locally without booting the app server.
-2. **Server-dependent suites** that call `http://localhost:3010` and require a running test server.
+## API test scripts (explicit behavior)
 
-## Suites that require the test server
+- `bun run test:api:unit`
+  - Runs API suites that do **not** require an external server.
+- `bun run test:api:server`
+  - **Recommended** for current server-dependent API suites.
+  - Automatically starts the test server, waits for readiness, runs suites, and stops the server (even on failure).
+- `bun run test:api:server:only`
+  - Runs only server-dependent API suites and assumes the test server is already running.
+- `bun run test:api:server:local`
+  - Alias of `test:api:server`.
+- `bun run test:api`
+  - Alias of `test:api:unit` (safe default).
+- `bun run test:api:all`
+  - Runs all API tests regardless of server requirements.
 
-The following suites are server/harness dependent (based on current test files and failure messaging):
+## API suites in `test:api:server:only`
 
-- `tests/api/integration-v1.test.ts`
 - `tests/api/integrations-itsm.test.ts`
 - `tests/api/integrations-webhooks.test.ts`
 - `tests/api/location-report.test.ts`
 - `tests/api/policies.test.ts`
-- `tests/api/session-start.test.ts`
 - `tests/api/webauthn-admin.test.ts`
-- `tests/demo/healthcare-flow.test.ts`
-- `tests/demo/logistics-flow.test.ts`
-- `tests/demo/retail-flow.test.ts`
-- `tests/security/rate-limit.test.ts`
-- `tests/security/replay-attack.test.ts`
-- `tests/security/secret-redaction.test.ts`
-- `tests/security/stepup-enforcement.test.ts`
-- `tests/security/webhook-signing.test.ts`
 
-## Start the test server
+## Optional manual server workflow
 
-In one terminal:
+If you want to manage server lifecycle manually:
 
 ```bash
-bun run scripts/test-server.ts start
+bun run test:server:start
+bun run test:server:wait
+bun run test:api:server:only
+bun run test:server:stop
 ```
 
-Keep it running while executing server-dependent tests.
+## Notes
 
-## Run server-dependent tests intentionally
+- Use `test:api:server` for reliability in local dev and CI to avoid setup blockers.
+- Use `test:api:server:only` only when you intentionally manage server lifecycle yourself.
 
-In a second terminal, enable the server-test flag:
-
-```bash
-RUN_SERVER_TESTS=1 npm run test:run
-```
-
-You can also scope to specific files while the server is running:
-
-```bash
-RUN_SERVER_TESTS=1 npx vitest run tests/api/integration-v1.test.ts
-```
-
-## What default `npm run test:run` means
-
-Without the server running (and without `RUN_SERVER_TESTS=1`), failures from the suites above are **expected harness/setup outcomes** (for example: "Server not reachable at http://localhost:3010"), not necessarily product regressions.
-
-## Current quality signal
-
-- `npm run typecheck` passes.
-- `npm run lint` passes.
-- Targeted product-path tests (non-server-dependent suites) pass.
-- Remaining failures in a plain default run without localhost:3010 are expected due to missing server setup.
+- `tests/api/integration-v1.test.ts` is currently a legacy contract suite and is intentionally not part of default server-dependent runs until `/api/v1/*` endpoints are restored.

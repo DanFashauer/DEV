@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { appendAuditRecord, recordAuthFailure } from '@/lib/auditLedger';
 import { validateAndAuthorizeSessionStart } from '@/lib/backend/validation';
 import { getBadgeRegistry } from '@/lib/tenant/badgeRegistry';
+import { badgeRegistry as globalBadgeRegistry } from '@/lib/badgeRegistry';
 import { getSessionStore } from '@/lib/tenant/sessionStore';
 import { getEvaluator } from '@/lib/tenant/policyEvaluator';
 import { resolveTenantId } from '@/lib/tenant/tenantContext';
@@ -54,7 +55,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Rate limit exceeded', code: 'RATE_LIMIT' }, { status: 429 });
   }
 
-  const badgeMapping = await badgeRegistry.get(event.badge.badgeId);
+  const badgeMapping =
+    (await badgeRegistry.get(event.badge.badgeId)) ||
+    (await globalBadgeRegistry.get(event.badge.badgeId));
   if (!badgeMapping) {
     return NextResponse.json({ error: 'Badge not enrolled', code: 'BADGE_NOT_ENROLLED' }, { status: 404 });
   }
@@ -79,8 +82,9 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const fleetContext = await getFleetContext(event.device.deviceSerial);
-  const uemContext = await getUEMContext(event.device.deviceSerial);
+  const postureKey = event.device.deviceId || event.device.deviceSerial;
+  const fleetContext = await getFleetContext(postureKey);
+  const uemContext = await getUEMContext(postureKey);
 
   const isUnknown = fleetContext.status === 'unknown' || uemContext.complianceStatus === 'unknown';
   if (isUnknown && process.env.UNKNOWN_POSTURE_MODE !== 'allow') {

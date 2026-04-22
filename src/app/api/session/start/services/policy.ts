@@ -131,6 +131,14 @@ export function recordDeniedPolicySideEffects(params: {
 }) {
   const { policyActions, deviceId, userId, badgeId, userName, riskScore } = params;
 
+  const actionsToRecord = policyActions.length
+    ? policyActions
+    : [
+        { type: 'quarantine_device', policyName: 'default.non_compliant' },
+        { type: 'emit_siem_event', policyName: 'default.non_compliant' },
+        { type: 'send_itsm_ticket', policyName: 'default.non_compliant' },
+      ];
+
   addSecurityEvent({
     type: 'session_denied',
     timestamp: new Date().toISOString(),
@@ -138,12 +146,12 @@ export function recordDeniedPolicySideEffects(params: {
     device: { id: deviceId, complianceStatus: 'non_compliant' },
     decision: 'DENY',
     reason: 'DEVICE_NON_COMPLIANT',
-    actionsTriggered: policyActions.map((a) => a.type),
+    actionsTriggered: actionsToRecord.map((a) => a.type),
     riskScore,
     policy: policyActions[0]?.policyName,
   });
 
-  for (const action of policyActions) {
+  for (const action of actionsToRecord) {
     // Log integration payloads for demo visibility
     if (action.type === 'quarantine_device') {
       addIntegrationLog('nac', {
