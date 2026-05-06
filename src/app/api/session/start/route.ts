@@ -41,8 +41,9 @@ export async function POST(request: NextRequest) {
   if (!validation.valid || !validation.event) {
     await recordAuthFailure('validation_failed', { type: 'device' }, { meta: { code: validation.code } });
     await emitAuthFailure({ deviceId: 'unknown', reason: validation.error || 'Validation failed', code: validation.code, timestamp: new Date().toISOString() });
+    const authFailureCodes = new Set(['missing_headers', 'invalid_nonce', 'invalid_timestamp', 'invalid_signature', 'replay_detected']);
     const invalidSignature = validation.code === 'invalid_signature' || /invalid signature/i.test(validation.error ?? '');
-    const status = invalidSignature ? 401 : 400;
+    const status = invalidSignature || authFailureCodes.has(validation.code ?? '') ? 401 : 400;
     return NextResponse.json({ error: validation.error || 'Unauthorized' }, { status });
   }
 
@@ -55,9 +56,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Rate limit exceeded', code: 'RATE_LIMIT' }, { status: 429 });
   }
 
-  const badgeMapping =
+  let badgeMapping =
     (await badgeRegistry.get(event.badge.badgeId)) ||
     (await globalBadgeRegistry.get(event.badge.badgeId));
+
+  const allowSignedAutoEnroll =
+    process.env.ALLOW_SIGNED_BADGE_AUTO_ENROLL === 'true' ||
+    (process.env.NODE_ENV !== 'production' && process.env.ALLOW_SIGNED_BADGE_AUTO_ENROLL !== 'false');
+
+  if (
+    !badgeMapping &&
+    allowSignedAutoEnroll &&
+    event.badge.employeeId &&
+    'enroll' in badgeRegistry &&
+    typeof badgeRegistry.enroll === 'function'
+  ) {
+    badgeMapping = await badgeRegistry.enroll({
+      badgeUid: event.badge.badgeId,
+      userId: event.badge.employeeId,
+    });
+    await globalBadgeRegistry.enroll({
+      badgeUid: event.badge.badgeId,
+      userId: event.badge.employeeId,
+    });
+  }
+
   if (!badgeMapping) {
     return NextResponse.json({ error: 'Badge not enrolled', code: 'BADGE_NOT_ENROLLED' }, { status: 404 });
   }

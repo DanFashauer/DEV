@@ -1,0 +1,11 @@
+.git
+.next
+node_modules
+coverage
+playwright-report
+semgrep-report.json
+load-report.json
+.env*
+!.env.example
+npm-debug.log*
+.DS_Store

@@ -5,12 +5,26 @@ import { spawn } from 'node:child_process';
 const PORT = Number(process.env.TEST_SERVER_PORT || '3010');
 const SERVER_URL = `http://localhost:${PORT}`;
 const HEALTH_URL = `${SERVER_URL}/api/health`;
+process.env.ADMIN_API_KEY ||= 'dev-admin-key-12345';
+process.env.BACKEND_SIGNING_SECRET ||= 'development-secret-key';
+process.env.DEVICE_WEBHOOK_SECRET ||= 'dev-secret';
+process.env.UNKNOWN_POSTURE_MODE ||= 'allow';
+
 const SERVER_SUITES = [
+  'tests/api/integration-v1.test.ts',
   'tests/api/integrations-itsm.test.ts',
   'tests/api/integrations-webhooks.test.ts',
   'tests/api/location-report.test.ts',
   'tests/api/policies.test.ts',
   'tests/api/webauthn-admin.test.ts',
+  'tests/demo/healthcare-flow.test.ts',
+  'tests/demo/logistics-flow.test.ts',
+  'tests/demo/retail-flow.test.ts',
+  'tests/security/rate-limit.test.ts',
+  'tests/security/replay-attack.test.ts',
+  'tests/security/secret-redaction.test.ts',
+  'tests/security/stepup-enforcement.test.ts',
+  'tests/security/webhook-signing.test.ts',
 ];
 
 async function sleep(ms: number) {
@@ -61,7 +75,7 @@ async function stopServer(serverPid?: number) {
 
   // Safety fallback for orphaned Next.js test server processes
   try {
-    await Bun.$`pkill -f 'next dev --port ${PORT}'`.quiet();
+    await Bun.$`pkill -f 'next dev --port ${PORT}' || true; pkill -f 'bun run dev --port ${PORT}' || true`.quiet();
   } catch {
     // ignore when no process matches
   }
@@ -86,7 +100,7 @@ async function main() {
     }
 
     console.log('🧪 Running server-dependent API suites...');
-    await Bun.$`bunx vitest run ${SERVER_SUITES}`;
+    await Bun.$`bunx vitest run --config vitest.server.config.ts ${SERVER_SUITES}`;
   } catch (error) {
     exitCode = 1;
     const message = error instanceof Error ? error.message : String(error);

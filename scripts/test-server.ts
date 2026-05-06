@@ -55,9 +55,9 @@ async function killExistingServers(): Promise<void> {
     });
     
     lsof.on('error', () => {
-      // lsof not available, try fuser
-      const fuser = spawn('fuser', [`-k`, `${PORT}/tcp`], { shell: true });
-      fuser.on('close', () => {
+      // lsof is not present in every CI image. Fall back to command-pattern kills.
+      const killer = spawn('sh', ['-c', `pkill -f "next dev --port ${PORT}" || true; pkill -f "bun run dev --port ${PORT}" || true; fuser -k ${PORT}/tcp || true`]);
+      killer.on('close', () => {
         setTimeout(resolve, 1000);
       });
     });

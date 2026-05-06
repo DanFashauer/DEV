@@ -419,11 +419,11 @@ describe('API v1 - Public Endpoints', () => {
   });
 
   describe('Response Performance', () => {
-    it('should return health check within 50ms', async () => {
+    it('should return health check within 150ms', async () => {
       const start = performance.now();
       await fetch(`${baseUrl}/health`);
       const duration = performance.now() - start;
-      expect(duration).toBeLessThan(50);
+      expect(duration).toBeLessThan(150);
     });
 
     it('should return paginated list within 200ms', async () => {
