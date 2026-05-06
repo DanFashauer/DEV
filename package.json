@@ -13,7 +13,7 @@
     "test:demo": "vitest run tests/demo",
     "test:api:unit": "vitest run tests/api --exclude tests/api/integration-v1.test.ts --exclude tests/api/integrations-itsm.test.ts --exclude tests/api/integrations-webhooks.test.ts --exclude tests/api/location-report.test.ts --exclude tests/api/policies.test.ts --exclude tests/api/webauthn-admin.test.ts",
     "test:api:server": "bun run scripts/test-api-server.ts",
-    "test:api:server:only": "vitest run tests/api/integrations-itsm.test.ts tests/api/integrations-webhooks.test.ts tests/api/location-report.test.ts tests/api/policies.test.ts tests/api/webauthn-admin.test.ts",
+    "test:api:server:only": "vitest run --config vitest.server.config.ts tests/api/integration-v1.test.ts tests/api/integrations-itsm.test.ts tests/api/integrations-webhooks.test.ts tests/api/location-report.test.ts tests/api/policies.test.ts tests/api/webauthn-admin.test.ts tests/demo/healthcare-flow.test.ts tests/demo/logistics-flow.test.ts tests/demo/retail-flow.test.ts tests/security/rate-limit.test.ts tests/security/replay-attack.test.ts tests/security/secret-redaction.test.ts tests/security/stepup-enforcement.test.ts tests/security/webhook-signing.test.ts",
     "test:api:server:local": "bun run test:api:server",
     "test:api": "bun run test:api:unit",
     "test:api:all": "vitest run tests/api",

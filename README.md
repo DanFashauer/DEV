@@ -143,6 +143,12 @@ These steps are based on scripts currently defined in `package.json`.
 
 Additional script options are available in `package.json` for API tests, security tests, e2e tests, and integration simulations.
 
+## Production operations
+
+SignalGrid now includes a production container path and launch runbook for operating the product as a managed service or customer-hosted deployment. See [docs/PRODUCTION_RUNBOOK.md](docs/PRODUCTION_RUNBOOK.md) for release gates, required environment variables, container deployment, health checks, and incident rollback steps.
+
+The public integration compatibility surface is available under `/api/v1/*` for health, devices, events, metrics, session start, and location reporting workflows.
+
 ## Security note
 
 Demo and development paths are intentionally optimized for speed and validation. They are not equivalent to hardened production controls. Production deployment requires strict key management, signed data paths, environment hardening, and operational guardrails.
