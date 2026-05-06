@@ -22,9 +22,35 @@ Runtime truth matters: we have seen environments that still appear healthy while
 Authentication proves identity; SignalGrid ensures the system is actually capable of operating before access is granted.
 SignalGrid ensures access decisions are based on runtime truth, not stale or incomplete signals.
 
+## Strategic Reframe: Feature vs System
+
+Most teams still implement access like a **feature**:
+
+Access attempt → failure → ticket → troubleshooting → recovery.
+
+SignalGrid treats access as a **runtime system**:
+
+Access attempt → detect risk → decide → remediate → verify outcome.
+
+This matters because real environments are stateful and failure-prone. Resolution has to be built into the flow, not bolted on after disruption.
+
 ## Positioning Statement
 
 SignalGrid helps IT and security teams make shared-device runtime access decisions between authentication and enforcement by resolving identity, device, and session risk before access breaks.
+
+## Board-Level Positioning Option
+
+Most access systems are built like features. SignalGrid treats access as a runtime system, so issues are resolved before they become operational disruptions.
+
+## One-Line Explanation (Buyer-Friendly)
+
+SignalGrid treats access and security as a runtime system, not a static feature.
+
+## Technical Conversation Bridge (Use with senior engineers)
+
+- “Most organizations treat access control like a feature. In production, it behaves like a system problem with state, retries, and failure paths.”
+- “SignalGrid adds runtime decision + remediation loops so outcome correctness is maintained when signals are stale, partial, or contradictory.”
+- “The goal is not more alerts. The goal is correct access outcomes under real conditions.”
 
 ## Ideal Customer Profile (ICP)
 
@@ -47,6 +73,7 @@ SignalGrid helps IT and security teams make shared-device runtime access decisio
 - “What prompted you to take this conversation now?”
 - “If this works, what changes for your team in the next 90 days?”
 - “Which metric matters most: cycle time, ticket volume, compliance consistency, or analyst time?”
+- “Where does your process still depend on reactive support after users are already impacted?”
 
 ### 2) Current Workflow Reality (6–8 min)
 - “Walk me through one recurring workflow from trigger to closure.”
@@ -54,16 +81,20 @@ SignalGrid helps IT and security teams make shared-device runtime access decisio
 - “How often do exceptions or retries happen?”
 - “How do you currently audit who approved what and why?”
 - “Where do authentication checks end and enforcement begin today?”
+- “What parts of remediation are outside the access flow today?”
+- “Where do failures happen because systems disagree in runtime, even though pre-checks looked fine?”
 
 ### 3) Risk and Constraints (4–6 min)
 - “What is the failure mode you’re most worried about?”
 - “What approval boundaries are non-negotiable?”
 - “Any integration, change-management, or procurement blockers we should design around?”
+- “If we treated this as a system reliability problem, what failure path would you fix first?”
 
 ### 4) Pilot Shape (5–8 min)
 - “Which one workflow would be highest-value but low-risk for a pilot?”
 - “What baseline metric should we compare against?”
 - “Who needs to be involved for technical sign-off and business sign-off?”
+- “What reduction in post-failure tickets would make this pilot a clear win?”
 
 ## Discovery Scorecard
 
