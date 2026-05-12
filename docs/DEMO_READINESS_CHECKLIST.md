@@ -10,6 +10,31 @@ The other two scenarios (`compliant → allow`, `unknown → fail closed`) are d
 
 ---
 
+## Browser Runtime Decision Demo (`/demo`)
+
+Use this path when the goal is to let a buyer understand SignalGrid in under 3 minutes without running the full admin/demo script flow.
+
+### How to run locally
+1. Start the app with `npm run dev` or run a production build with `npm run build && npm run start`.
+2. Open `http://localhost:3000/demo`.
+3. Review the three scenario cards:
+   - Compliant device → `ACCESS_GRANTED`
+   - Non-compliant device → `DEVICE_NON_COMPLIANT`
+   - Unknown posture → `DEVICE_POSTURE_UNKNOWN`
+4. Click **Run scenario** on any card to call `POST /api/demo/session-start` with deterministic demo data.
+
+### Safety contract
+- The browser demo uses deterministic scenario fixtures only.
+- `POST /api/demo/session-start` is simulated and clearly marks responses with `demo.simulated: true`.
+- The browser demo does not send real webhooks.
+- The browser demo does not mutate production state.
+- The browser demo does not expose secrets.
+
+### Expected API shape
+The safe demo API mirrors the real session-start response envelope closely enough for buyer walkthroughs:
+- Allow path: `success: true`, `decision: "ACCESS_GRANTED"`, `session`, `actions`, `riskScore`, `riskLevel`, and `demo` metadata.
+- Deny paths: `success: false`, `decision: "ACCESS_DENIED"`, `error`, `code`, `actions`, `riskScore`, `riskLevel`, and `demo` metadata containing the visible outcome (`DEVICE_NON_COMPLIANT` or `DEVICE_POSTURE_UNKNOWN`).
+
 ## 1) Canonical Demo Flow (No Improvisation Runbook)
 
 ### Preconditions
