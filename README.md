@@ -108,6 +108,14 @@ Identity + Badge + Device/Posture + Location Context
 
 See [docs/ARCHITECTURE_OVERVIEW.md](docs/ARCHITECTURE_OVERVIEW.md) for the evolving architecture model.
 
+## Business-facing docs
+
+- [Claim boundaries](docs/CLAIM_BOUNDARIES.md) — safe language for MVP, demo, pilot, and production claims.
+- [Value map](docs/VALUE_MAP.md) — executive, IT/security, workflow, audit, and pilot-metric mapping.
+- [Product board](docs/PRODUCT_BOARD.md) — current MVP, demo confidence, pilot readiness, future roadmap, and non-goals.
+- [Integration priorities](docs/INTEGRATION_PRIORITIES.md) — current demo integrations, first real targets, later targets, and safety boundaries.
+- [Architecture future notes](docs/ARCHITECTURE_FUTURE_NOTES.md) — future gateway, remediation, AI-assist, guardrails, and non-goals.
+
 ## Current repository status
 
 - **Demo-ready**: Yes — includes demo control scripts, demo validation flow, and demo-oriented tests.
