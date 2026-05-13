@@ -1,0 +1,96 @@
+name: Demo Validation
+
+on:
+  pull_request:
+    paths:
+      - "src/app/demo/**"
+      - "src/app/api/demo/**"
+      - "src/lib/demo/**"
+      - "scripts/capture-demo-media.ts"
+      - "tests/api/demo-session-start.test.ts"
+      - "docs/DEMO_MEDIA_CAPTURE.md"
+      - "docs/DEMO_READINESS_CHECKLIST.md"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/demo-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/app/demo/**"
+      - "src/app/api/demo/**"
+      - "src/lib/demo/**"
+      - "scripts/capture-demo-media.ts"
+      - "tests/api/demo-session-start.test.ts"
+      - "docs/DEMO_MEDIA_CAPTURE.md"
+      - "docs/DEMO_READINESS_CHECKLIST.md"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/demo-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-demo:
+    name: Validate demo workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CI: true
+      NODE_ENV: test
+      NEXT_TELEMETRY_DISABLED: "1"
+      ADMIN_API_KEY: local-demo-validation-key
+      BACKEND_SECRET: local-demo-validation-backend-secret
+      DEVICE_WEBHOOK_SECRET: local-demo-validation-device-secret
+      BACKEND_SIGNING_SECRET: local-demo-validation-signing-secret
+      ALLOW_SIGNED_BADGE_AUTO_ENROLL: "true"
+      UNKNOWN_POSTURE_MODE: deny
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run deterministic demo API test
+        run: npx vitest run tests/api/demo-session-start.test.ts
+
+      - name: Generate demo media
+        run: npm run demo:media
+
+      - name: Validate demo media report
+        run: test -f artifacts/demo-media/capture-report.json
+
+      - name: Upload demo media artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: signalgrid-demo-media
+          path: artifacts/demo-media/
+          if-no-files-found: error
+          retention-days: 14
