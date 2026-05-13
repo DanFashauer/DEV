@@ -49,7 +49,10 @@
     "demo:doctor": "bun run scripts/demo-control.ts doctor",
     "demo:report": "bun run scripts/demo-control.ts report",
     "test:redaction": "bun test scripts/test-secret-redaction.ts",
-    "demo:seed": "bun run scripts/demo-seed.ts"
+    "demo:seed": "bun run scripts/demo-seed.ts",
+    "demo:media": "bun run scripts/capture-demo-media.ts",
+    "demo:screenshots": "bun run scripts/capture-demo-media.ts --mode=screenshots",
+    "demo:video": "bun run scripts/capture-demo-media.ts --mode=video"
   },
   "dependencies": {
     "ioredis": "^5.10.0",
