@@ -1,6 +1,6 @@
 # SignalGrid Production Runbook
 
-This runbook is the operating baseline for selling and running SignalGrid as a managed product or customer-hosted service.
+This runbook is the operating baseline for piloting or running SignalGrid as a managed product or customer-hosted service after the target environment, customer scope, and release gates have been validated.
 
 ## Release gates
 
@@ -38,14 +38,14 @@ Keep `ENABLE_DEV_BYPASS=false`, `ENABLE_DESTRUCTIVE_ACTIONS=false`, and `DEMO_MO
 
 ## Container deployment
 
-Build and run the standalone production container:
+Build and run the standalone production container. These commands must be validated in a Docker-capable environment before relying on them for a customer deployment:
 
 ```bash
 docker build -t signalgrid:latest .
 docker run --rm -p 3000:3000 --env-file .env.production signalgrid:latest
 ```
 
-The container runs as a non-root `signalgrid` user and serves the Next.js standalone build from `server.js`.
+The Dockerfile is intended to run as a non-root `signalgrid` user and serve the Next.js standalone build from `server.js`; confirm this behavior during Docker-capable release validation.
 
 ## Health and compatibility endpoints
 
@@ -62,6 +62,7 @@ The container runs as a non-root `signalgrid` user and serves the Next.js standa
 5. Smoke test `/api/health`, `/api/v1/health`, session start, location report, and one denied-risk path.
 6. Enable monitoring on health status, 401/403 spikes, rate-limit spikes, integration DLQ depth, and webhook retry count.
 7. Keep the first customer rollout in shadow or advisory mode until the customer signs off on enforcement actions.
+8. Confirm demo and production modes remain separated, with simulated demo data excluded from customer production workflows.
 
 ## Incident rollback
 

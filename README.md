@@ -111,7 +111,7 @@ See [docs/ARCHITECTURE_OVERVIEW.md](docs/ARCHITECTURE_OVERVIEW.md) for the evolv
 ## Current repository status
 
 - **Demo-ready**: Yes — includes demo control scripts, demo validation flow, and demo-oriented tests.
-- **Pilot-ready**: In progress — production hardening and operational maturity work are tracked in roadmap docs.
+- **Pilot-ready**: In progress — production hardening, Docker validation in a Docker-capable environment, and operational maturity work are tracked in roadmap docs.
 
 ## Repository structure
 
@@ -145,13 +145,13 @@ Additional script options are available in `package.json` for API tests, securit
 
 ## Production operations
 
-SignalGrid now includes a production container path and launch runbook for operating the product as a managed service or customer-hosted deployment. See [docs/PRODUCTION_RUNBOOK.md](docs/PRODUCTION_RUNBOOK.md) for release gates, required environment variables, container deployment, health checks, and incident rollback steps.
+SignalGrid includes a production container path and launch runbook for operating the product as a managed service or customer-hosted deployment after target-environment validation. See [docs/PRODUCTION_RUNBOOK.md](docs/PRODUCTION_RUNBOOK.md) for release gates, required environment variables, container deployment, health checks, and incident rollback steps. Docker build/run commands should be validated in a Docker-capable environment before customer deployment.
 
 The public integration compatibility surface is available under `/api/v1/*` for health, devices, events, metrics, session start, and location reporting workflows.
 
 ## Security note
 
-Demo and development paths are intentionally optimized for speed and validation. They are not equivalent to hardened production controls. Production deployment requires strict key management, signed data paths, environment hardening, and operational guardrails.
+Demo and development paths are intentionally optimized for speed and validation. They are not equivalent to hardened production controls, and demo outputs are simulated unless explicitly configured otherwise. Production deployment requires strict key management, signed data paths, environment hardening, operational guardrails, and signed pilot or customer deployment scope. See [docs/DISCLAIMER.md](docs/DISCLAIMER.md).
 
 ## Roadmap preview
 
