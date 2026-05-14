@@ -89,7 +89,7 @@ The safe demo API mirrors the real session-start response envelope closely enoug
 - Security event stream may include allow event depending on policy/event pipeline.
 
 ### Current readiness status
-- **Partially blocked** in this repo state because session-start posture adapters currently return `unknown` by default, which causes fail-closed deny unless `UNKNOWN_POSTURE_MODE=allow`.
+- **Ready when seeded with fresh posture data** because session-start posture adapters now read the shared telemetry posture store. Missing or expired posture still correctly fails closed unless `UNKNOWN_POSTURE_MODE=allow`.
 
 ---
 
@@ -159,8 +159,8 @@ The safe demo API mirrors the real session-start response envelope closely enoug
 - Deterministic executive demo script orchestration for healthcare deny scenario.
 
 ### Mocked / simulated now
-- `getFleetContext` and `getUEMContext` in session-start path are hardcoded to `unknown` (not live adapter-backed).
-- `demo:seed` and `sim:posture` are largely simulation/logging utilities and do not provide authoritative live adapter state for session-start.
+- Browser `/demo` scenarios are deterministic and simulated for buyer-safe walkthroughs.
+- Demo/default keys used by local scripts are not production controls.
 - Remediation attempt in scenario B is talk-track/simulated, not a stateful remediation-retry decision loop.
 
 ### Future work (demo-readiness relevant only)
@@ -172,10 +172,10 @@ The safe demo API mirrors the real session-start response envelope closely enoug
 
 ## 4) Remaining Technical Blockers (Can Break Demo)
 
-1. **Posture adapter disconnect (highest risk):** session-start posture service is hardcoded unknown; this can collapse intended compliant/non-compliant differentiation.
-2. **Remediation path gap:** required MVP scenario mentions remediation attempt, but session-start currently jumps directly to deny on non-compliance.
-3. **Test drift in session-start API expectations:** current API tests show status-code expectation mismatches, indicating contract drift risk before buyer demos.
-4. **Demo verification coupling:** `/api/demo/verify` PASS is tied to denied timeline + specific action event presence; allow-path demo validation is under-specified.
+1. **Remediation path gap:** required MVP scenario mentions remediation attempt, but session-start currently jumps directly to deny on non-compliance.
+2. **Scenario verification coupling:** `/api/demo/verify` PASS is tied to denied timeline + specific action event presence; allow-path and unknown-path demo validation are under-specified.
+3. **Local default-key confusion:** demo/test scripts still use local defaults; hosts must avoid presenting those as shared-stage or production-safe settings.
+4. **Environment drift risk:** package-manager and toolchain choices are not yet fully normalized across README, scripts, and automation.
 
 ---
 
@@ -192,9 +192,9 @@ The safe demo API mirrors the real session-start response envelope closely enoug
 
 ## 6) Demo-Readiness Next Fix Tasks (No Feature Expansion)
 
-1. **Wire real posture reads in session-start service** from existing telemetry/UEM stores so scenario A and B are both first-class and deterministic.
-2. **Implement minimal remediation attempt state machine** in session-start flow (single retry path + explicit audit fields).
-3. **Add one golden script for each scenario** (allow/deny/unknown) that returns machine-checkable pass/fail JSON.
-4. **Align session-start API tests with contract** (or contract with tests) to remove status-code ambiguity before external demos.
-5. **Extend `/api/demo/verify` with scenario selector** so each of the three required scenarios can be verified explicitly.
+1. **Implement minimal remediation attempt state machine** in session-start flow (single retry path + explicit audit fields), or keep remediation consistently labeled as simulated.
+2. **Add one golden script for each scenario** (allow/deny/unknown) that returns machine-checkable pass/fail JSON.
+3. **Extend `/api/demo/verify` with scenario selector** so each of the three required scenarios can be verified explicitly.
+4. **Document local-only demo defaults** so default keys are never mistaken for shared-stage or production configuration.
+5. **Keep seeded posture fixtures fresh** in demo scripts so scenario A and B remain deterministic.
 

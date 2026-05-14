@@ -1,5 +1,9 @@
 # Repo Review & Recommended Next Steps (2026-03-30)
 
+## Historical status note
+
+This review is retained as dated backlog evidence. Several findings have since changed; use `docs/READINESS_HYGIENE_STATUS.md` for the current completed/open/conflicting readiness list before acting on any item below.
+
 ## Scope of this review
 This is a focused, repo-wide hardening review intended to identify what should be fixed next after the recent admin-auth tightening work.
 

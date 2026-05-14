@@ -163,7 +163,7 @@ Demo and development paths are intentionally optimized for speed and validation.
 
 ## Roadmap preview
 
-Near-term priorities include authentication hardening, trust consistency, source-of-truth cleanup, admin decomposition, and pilot readiness milestones. See [docs/ROADMAP.md](docs/ROADMAP.md).
+Near-term priorities include readiness hygiene, removal of remaining unsafe defaults, package/toolchain normalization, demo verification, and pilot readiness milestones. See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/READINESS_HYGIENE_STATUS.md](docs/READINESS_HYGIENE_STATUS.md).
 
 ## Contributing
 

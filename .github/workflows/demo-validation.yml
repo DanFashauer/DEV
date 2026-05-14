@@ -1,0 +1,95 @@
+name: Demo Validation
+
+on:
+  pull_request:
+    paths:
+      - 'src/app/demo/**'
+      - 'src/app/api/demo/**'
+      - 'src/lib/demo/**'
+      - 'scripts/capture-demo-media.ts'
+      - 'tests/api/demo-session-start.test.ts'
+      - 'docs/DEMO_MEDIA_CAPTURE.md'
+      - 'docs/DEMO_READINESS_CHECKLIST.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/demo-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/app/demo/**'
+      - 'src/app/api/demo/**'
+      - 'src/lib/demo/**'
+      - 'scripts/capture-demo-media.ts'
+      - 'tests/api/demo-session-start.test.ts'
+      - 'docs/DEMO_MEDIA_CAPTURE.md'
+      - 'docs/DEMO_READINESS_CHECKLIST.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/demo-validation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-demo:
+    name: Validate browser demo and media capture
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Keep capture deterministic and local-only. The media script starts a local dev server if needed.
+      DEMO_MEDIA_SERVER_COMMAND: npm run dev
+      DEMO_MEDIA_SERVER_TIMEOUT_MS: '90000'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Setup Bun for demo media script
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npm run typecheck
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run demo API unit test
+        run: npx vitest run tests/api/demo-session-start.test.ts
+
+      - name: Generate deterministic demo media
+        run: npm run demo:media
+        env:
+          DEMO_MEDIA_BASE_URL: http://localhost:3000
+
+      - name: Verify demo media report exists
+        run: test -f artifacts/demo-media/capture-report.json
+
+      - name: Upload demo media artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-media-${{ github.run_id }}
+          path: artifacts/demo-media/
+          if-no-files-found: error
+          retention-days: 14

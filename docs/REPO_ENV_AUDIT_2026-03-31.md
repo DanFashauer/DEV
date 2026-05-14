@@ -1,5 +1,9 @@
 # Repository + Environment Audit (2026-03-31)
 
+## Historical status note
+
+This audit is retained as dated environment evidence. Use `docs/READINESS_HYGIENE_STATUS.md` and `docs/ROADMAP.md` for current readiness priorities and re-check code before acting on historical findings.
+
 ## Scope
 This audit covers:
 - Local execution environment sanity.
