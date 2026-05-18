@@ -7,6 +7,14 @@ type RouteContext = {
   params: Promise<{ path?: string[] }>;
 };
 
+type AuthResult =
+  | { authorized: true }
+  | { authorized: false; response: NextResponse };
+
+type SignatureResult =
+  | { valid: true }
+  | { valid: false; response: NextResponse };
+
 const VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.npm_package_version || "0.1.0";
 const startedAt = Date.now();
 
@@ -83,23 +91,68 @@ function error(status: number, code: string, message: string) {
   );
 }
 
-function isAuthorized(request: NextRequest) {
-  const configuredKey = process.env.ADMIN_API_KEY || "test-api-key";
+function getConfiguredApiKey() {
+  return process.env.ADMIN_API_KEY;
+}
+
+function getConfiguredHmacSecret() {
+  return process.env.DEVICE_WEBHOOK_SECRET || process.env.BACKEND_SIGNING_SECRET;
+}
+
+function authorize(request: NextRequest): AuthResult {
+  const configuredKey = getConfiguredApiKey();
+  if (!configuredKey) {
+    return {
+      authorized: false,
+      response: error(500, "API_KEY_NOT_CONFIGURED", "API key not configured"),
+    };
+  }
+
   const providedKey = request.headers.get("x-api-key") || request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  return providedKey === configuredKey;
+  if (providedKey !== configuredKey) {
+    return {
+      authorized: false,
+      response: error(401, "UNAUTHORIZED", "Authentication required"),
+    };
+  }
+
+  return { authorized: true };
 }
 
-function hmacSecret() {
-  return process.env.DEVICE_WEBHOOK_SECRET || process.env.BACKEND_SIGNING_SECRET || "dev-secret";
+function safeHexBuffer(value: string) {
+  if (!/^[0-9a-f]+$/i.test(value)) return null;
+  return Buffer.from(value, "hex");
 }
 
-async function verifySignature(request: NextRequest, bodyText: string) {
+async function verifySignature(request: NextRequest, bodyText: string): Promise<SignatureResult> {
+  const secret = getConfiguredHmacSecret();
+  if (!secret) {
+    return {
+      valid: false,
+      response: error(500, "SIGNING_SECRET_NOT_CONFIGURED", "Signing secret not configured"),
+    };
+  }
+
   const signature = request.headers.get("x-signature");
-  if (!signature) return false;
-  const expected = crypto.createHmac("sha256", hmacSecret()).update(bodyText).digest("hex");
-  const a = Buffer.from(signature, "hex");
-  const b = Buffer.from(expected, "hex");
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!signature) {
+    return {
+      valid: false,
+      response: error(401, "UNAUTHORIZED", "Missing request signature"),
+    };
+  }
+
+  const expected = crypto.createHmac("sha256", secret).update(bodyText).digest("hex");
+  const actualBuffer = safeHexBuffer(signature);
+  const expectedBuffer = Buffer.from(expected, "hex");
+
+  if (!actualBuffer || actualBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(actualBuffer, expectedBuffer)) {
+    return {
+      valid: false,
+      response: error(401, "UNAUTHORIZED", "Invalid request signature"),
+    };
+  }
+
+  return { valid: true };
 }
 
 function parsePagination(request: NextRequest) {
@@ -150,7 +203,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   if (path === "/metrics") {
-    if (!isAuthorized(request)) return error(401, "UNAUTHORIZED", "Authentication required");
+    const auth = authorize(request);
+    if (!auth.authorized) return auth.response;
     return new NextResponse(
       [
         "# HELP signalgrid_requests_total Total requests observed by the SignalGrid v1 API.",
@@ -174,7 +228,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   if (path === "/devices") {
-    if (!isAuthorized(request)) return error(401, "UNAUTHORIZED", "Authentication required");
+    const auth = authorize(request);
+    if (!auth.authorized) return auth.response;
     const enrolledFilter = url.searchParams.get("enrolled");
     const filtered = enrolledFilter === null ? demoDevices : demoDevices.filter((device) => String(device.enrolled) === enrolledFilter);
     const { items, pagination } = paginate(filtered, request);
@@ -182,7 +237,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   if (path === "/events") {
-    if (!isAuthorized(request)) return error(401, "UNAUTHORIZED", "Authentication required");
+    const auth = authorize(request);
+    if (!auth.authorized) return auth.response;
     const type = url.searchParams.get("type");
     const filtered = type ? demoEvents.filter((event) => event.type === type) : demoEvents;
     const { items, pagination } = paginate(filtered, request);
@@ -203,8 +259,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return error(400, "BAD_REQUEST", "Request body must be valid JSON");
   }
 
-  if (!(await verifySignature(request, bodyText))) {
-    return error(401, "UNAUTHORIZED", "Invalid or missing request signature");
+  const signature = await verifySignature(request, bodyText);
+  if (!signature.valid) {
+    return signature.response;
   }
 
   const payload = body as { timestamp?: unknown; observedAt?: unknown; lat?: unknown; lon?: unknown };
