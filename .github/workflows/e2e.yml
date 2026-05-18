@@ -5,32 +5,47 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      ADMIN_API_KEY: dev-admin-key-12345
+      DEVICE_WEBHOOK_SECRET: dev-secret
+      BACKEND_SIGNING_SECRET: dev-secret
+      SERVER_URL: http://localhost:3000
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22'
+          cache: npm
 
       - name: Install dependencies
-        run: bun install
+        run: npm ci
 
       - name: Install Playwright browsers
-        run: bunx playwright install --with-deps
+        run: npx playwright install --with-deps
 
       - name: Build
-        run: bun run build
+        run: npm run build
 
       - name: Run E2E tests
-        run: bun run test:e2e
-        env:
-          SERVER_URL: http://localhost:3000
+        run: npm run test:e2e
 
       - name: Upload Playwright report
         if: always()
