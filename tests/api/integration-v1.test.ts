@@ -3,12 +3,22 @@
  * Tests for public API endpoints and third-party integrations
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 
 describe('API v1 - Public Endpoints', () => {
   const serverUrl = process.env.SERVER_URL || 'http://localhost:3010';
   const baseUrl = `${serverUrl}/api/v1`;
-  const apiKey = process.env.ADMIN_API_KEY || 'test-api-key';
+  const apiKey = process.env.ADMIN_API_KEY || 'dev-admin-key-12345';
+  const signingSecret = process.env.DEVICE_WEBHOOK_SECRET || process.env.BACKEND_SIGNING_SECRET || 'dev-secret';
+
+  function signPayload(payload: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const crypto = require('crypto') as typeof import('crypto');
+    return crypto
+      .createHmac('sha256', signingSecret)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+  }
 
   beforeAll(async () => {
     // Wait for server to be ready
@@ -141,7 +151,7 @@ describe('API v1 - Public Endpoints', () => {
 
     it('should filter by event type', async () => {
       const eventTypes = ['session_allowed', 'session_denied', 'quarantine'];
-      
+
       for (const type of eventTypes) {
         const response = await fetch(`${baseUrl}/events?type=${type}`, {
           headers: {
@@ -174,13 +184,7 @@ describe('API v1 - Public Endpoints', () => {
         nonce: 'test-nonce-' + Date.now(),
       };
 
-      // Create HMAC signature
-      const crypto = await import('crypto');
-      const secret = process.env.DEVICE_WEBHOOK_SECRET || 'dev-secret';
-      const signature = crypto
-        .createHmac('sha256', secret)
-        .update(JSON.stringify(payload))
-        .digest('hex');
+      const signature = signPayload(payload);
 
       const response = await fetch(`${baseUrl}/session/start`, {
         method: 'POST',
@@ -240,12 +244,7 @@ describe('API v1 - Public Endpoints', () => {
         timestamp: oldTimestamp,
       };
 
-      const crypto = await import('crypto');
-      const secret = process.env.DEVICE_WEBHOOK_SECRET || 'dev-secret';
-      const signature = crypto
-        .createHmac('sha256', secret)
-        .update(JSON.stringify(payload))
-        .digest('hex');
+      const signature = signPayload(payload);
 
       const response = await fetch(`${baseUrl}/session/start`, {
         method: 'POST',
@@ -272,12 +271,7 @@ describe('API v1 - Public Endpoints', () => {
         accuracyM: 10,
       };
 
-      const crypto = await import('crypto');
-      const secret = process.env.DEVICE_WEBHOOK_SECRET || 'dev-secret';
-      const signature = crypto
-        .createHmac('sha256', secret)
-        .update(JSON.stringify(payload))
-        .digest('hex');
+      const signature = signPayload(payload);
 
       const response = await fetch(`${baseUrl}/location/report`, {
         method: 'POST',
@@ -313,12 +307,7 @@ describe('API v1 - Public Endpoints', () => {
       ];
 
       for (const payload of invalidPayloads) {
-        const crypto = await import('crypto');
-        const secret = process.env.DEVICE_WEBHOOK_SECRET || 'dev-secret';
-        const signature = crypto
-          .createHmac('sha256', secret)
-          .update(JSON.stringify(payload))
-          .digest('hex');
+        const signature = signPayload(payload);
 
         const response = await fetch(`${baseUrl}/location/report`, {
           method: 'POST',
@@ -453,9 +442,7 @@ describe('API v1 - Public Endpoints', () => {
     it('should handle concurrent requests', async () => {
       const promises = Array(10)
         .fill(null)
-        .map(() =>
-          fetch(`${baseUrl}/health`)
-        );
+        .map(() => fetch(`${baseUrl}/health`));
 
       const responses = await Promise.all(promises);
       responses.forEach(response => {
