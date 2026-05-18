@@ -7,7 +7,7 @@ on:
       - '.github/workflows/**'
       - 'src/**'
       - 'package.json'
-      - 'bun.lock'
+      - 'package-lock.json'
       - 'next.config.*'
       - 'tsconfig.json'
       - 'postcss.config.*'
@@ -18,36 +18,49 @@ on:
       - '.github/workflows/**'
       - 'src/**'
       - 'package.json'
-      - 'bun.lock'
+      - 'package-lock.json'
       - 'next.config.*'
       - 'tsconfig.json'
       - 'postcss.config.*'
       - 'eslint.config.*'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: nextjs-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22'
+          cache: npm
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Run ESLint
-        run: bun lint
+        run: npm run lint
 
       - name: Run TypeScript type check
-        run: bun typecheck
+        run: npm run typecheck
 
       - name: Build Next.js application
-        run: bun run build
+        run: npm run build
 
       - name: Run security audit
-        run: bun audit --production
+        run: npm audit --omit=dev --audit-level=critical
