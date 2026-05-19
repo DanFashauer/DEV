@@ -1,270 +1,138 @@
 # SignalGrid Brand Guide
 
-## Company Identity
+## Positioning
 
 ### Company Name
 **SignalGrid**
 
-### Product Name
-**SignalGrid Identity Platform**
+### Product Framing
+**SignalGrid Runtime Decision Layer**
 
-### Tagline
-> Device identity and security automation for modern enterprises.
+### Positioning Line
+> Zero Trust orchestration for shared and mobile frontline environments.
 
-### Brand Personality
+### Category Definition
+SignalGrid sits between authentication, device posture, session context, and enforcement systems to determine the correct access outcome at runtime.
 
-SignalGrid feels:
-
-- **Modern** — Cutting-edge technology, forward-thinking
-- **Enterprise-Grade** — Reliable, scalable, secure
-- **Security-First** — Trustworthy, vigilant, protective
-- **Intelligent** — Smart automation, predictive capabilities
-
-### Brand Voice
-
-- **Confident** — Clear, decisive, authoritative
-- **Professional** — Enterprise-appropriate, not casual
-- **Helpful** — Educational, solution-oriented
-- **Technical** — Precise, accurate, knowledgeable
+### Claim Boundary Reminder
+Use this guide with [docs/CLAIM_BOUNDARIES.md](../../docs/CLAIM_BOUNDARIES.md). Do not imply production guarantees, compliance certification, or autonomous remediation unless validated in target environments.
 
 ---
 
-## Logo Direction
+## Brand Character
 
-### Concept
+SignalGrid should feel:
 
-**SignalGrid** represents the connection of device signals across an enterprise.
+- **Premium Enterprise** — serious, reliable, and decision-critical.
+- **Architectural** — precise, structured, intentional.
+- **Calm Under Pressure** — no alarmist cyber aesthetics.
+- **Operationally Grounded** — tied to real frontline workflows.
 
-### Visual Themes
+### Voice and Tone
 
-- Grid network
-- Signal nodes
-- Identity connections
-- Central hub
-
-### Logo Mark Idea
-
-```
-  •   •
-    │
-  • ■ •
-    │
-  •   •
-```
-
-- **Center node (■)** — Device identity (the core)
-- **Outer nodes (•)** — Signals from across the infrastructure
-- **Connecting lines** — The relationships between signals
-
-### Color in Logo
-
-Use the **Electric Blue (#2F80ED)** for the center node to emphasize identity as the core of the platform.
+- **Clear** — direct language over buzzwords.
+- **Measured** — confident without overclaiming.
+- **Technical-but-business-readable** — explainable to security and operations leaders.
+- **Outcome-oriented** — emphasize deterministic decisions and auditable context.
 
 ---
 
-## Color Palette
+## Visual Direction
 
-### Primary Colors
+### Core Style
 
-| Color Name | Hex | Usage |
-|------------|-----|-------|
-| Deep Navy | `#0B1E34` | Backgrounds, headers, primary text |
-| Electric Blue | `#2F80ED` | Primary actions, links, highlights |
-| Cyber Teal | `#00D1C1` | Success states, positive indicators |
+- Dark warm charcoal foundation
+- Off-white typography
+- Muted teal accents
+- Minimal geometry and negative space
+- Refined enterprise restraint (no neon/cyberpunk styling)
 
-### Secondary Colors
+### Design Principles
 
-| Color Name | Hex | Usage |
-|------------|-----|-------|
-| Graphite | `#1F2937` | Secondary text, borders |
-| Cloud White | `#F9FAFB` | Light backgrounds, cards |
-| Signal Green | `#22C55E` | Success, active states |
+1. **Decision-first hierarchy**: the most important access outcome should be instantly legible.
+2. **Low-noise surfaces**: reduce decorative visual noise and avoid “busy dashboard” patterns.
+3. **Intentional contrast**: use contrast to support trust states and readability, not decoration.
+4. **Scalable simplicity**: all marks and UI motifs must hold from favicon to keynote scale.
 
-### Accent Colors
+---
 
-| Color Name | Hex | Usage |
-|------------|-----|-------|
-| Warning Orange | `#F59E0B` | Warnings, medium risk |
-| Danger Red | `#EF4444` | Errors, high risk, alerts |
+## Color System
 
-### Color Usage
+### Primary Palette
 
-- **Backgrounds:** Deep Navy for dark mode, Cloud White for light mode
-- **Primary Actions:** Electric Blue
-- **Success States:** Signal Green / Cyber Teal
-- **Error States:** Danger Red
-- **Text:** Deep Navy (dark mode), Graphite (light mode)
+| Token | Hex | Usage |
+|---|---|---|
+| Warm Charcoal 950 | `#15181B` | Primary background, hero surfaces |
+| Warm Charcoal 900 | `#1D2226` | Secondary dark surfaces, nav |
+| Off-White 100 | `#F3F1EC` | Primary typography on dark |
+| Off-White 300 | `#D8D4CC` | Secondary typography |
+| Muted Teal 500 | `#4F8C87` | Primary accent, key highlights |
+| Muted Teal 400 | `#6FA7A1` | Hover/accent variation |
+
+### Functional / Risk Colors (Restrained)
+
+| Token | Hex | Usage |
+|---|---|---|
+| Decision Allow | `#5E8F73` | Positive/allow states |
+| Decision Review | `#B08B57` | Caution/step-up/review states |
+| Decision Deny | `#A15B5B` | Deny/risk-critical states |
+| Border Neutral | `#2A3136` | Dividers, low-emphasis outlines |
+
+### Color Usage Rules
+
+- Keep Muted Teal for key product accents and primary focal points.
+- Avoid saturated electric blues, cyber cyan, or neon gradients.
+- Use risk colors for state communication only, never as broad brand accents.
 
 ---
 
 ## Typography
 
-### Primary Font
-
+### Primary Typeface
 **Inter**
 
-- Used for: Headlines, body text, UI elements
-- Weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold)
+- UI and body: 400, 500
+- Headings: 600, 700
 
-### Secondary Font
-
+### Supporting Typeface
 **IBM Plex Sans**
 
-- Used for: Code blocks, technical content
-- Weights: 400 (regular), 500 (medium), 600 (semibold)
+- Monospaced-adjacent technical callouts and integration examples.
 
-### Fallback Font
+### Type Guidance
 
-**Roboto**
-
-- System fallback for cross-platform consistency
-
-### Type Scale
-
-| Element | Font | Size | Weight |
-|---------|------|------|--------|
-| H1 | Inter | 48px | 700 |
-| H2 | Inter | 36px | 700 |
-| H3 | Inter | 24px | 600 |
-| H4 | Inter | 20px | 600 |
-| Body | Inter | 16px | 400 |
-| Small | Inter | 14px | 400 |
-| Caption | Inter | 12px | 400 |
-| Code | IBM Plex Sans | 14px | 400 |
+- Prefer medium-to-tight heading spacing with generous margins.
+- Use sentence case for most UI labels and section headings.
+- Avoid overly playful, condensed, or futuristic display fonts.
 
 ---
 
-## Design Tone
-
-### Overall Feel
-
-- Clean and minimal
-- Professional but not stiff
-- Technical but accessible
-- Security-focused without being intimidating
-
-### UI Patterns
-
-- **Cards** — Cloud White background with subtle Graphite border
-- **Buttons** — Electric Blue with white text, rounded corners (8px)
-- **Badges** — Small, colored pills for status indicators
-- **Alerts** — Full-width banners with icon + color coding
-
-### Spacing
-
-- Base unit: 4px
-- Standard spacing: 16px, 24px, 32px
-- Container max-width: 1200px
-
----
-
-## Imagery & Iconography
+## Imagery and Iconography
 
 ### Icon Style
 
-- Line-based icons (1.5px stroke)
-- Rounded corners (2px radius)
-- Electric Blue or Deep Navy color
+- Geometric, minimal, and functional.
+- 1.5–2px optical stroke balance.
+- No shield/padlock clichés.
 
-### Icon Set
+### Imagery
 
-Use Heroicons or Phosphor Icons for consistency.
-
-### Photography
-
-- Avoid stock photos when possible
-- If using photos: focus on enterprise settings, modern offices, technology
-- Dark, moody tones preferred for security-focused imagery
-
-### Illustrations
-
-- Simple, geometric illustrations
-- Abstract representations of device connections
-- Blue and teal color scheme
+- Focus on operational environments, device workflows, and system diagrams.
+- Favor subtle, low-saturation treatment.
+- Avoid generic stock “blue cybersecurity dashboard” visuals.
 
 ---
 
-## Website Guidelines
+## Implementation Guidance
 
-### Layout
+### Repo and Documentation
 
-- Clean, single-column for readability
-- Generous whitespace
-- Clear hierarchy
+- Keep diagrams and visuals aligned to runtime decision + orchestration framing.
+- Reflect MVP/demo boundaries in all messaging.
+- Maintain consistency between README, docs, and demo surfaces.
 
-### Content
+### Demo and Website
 
-- Lead with value proposition
-- Use concrete examples
-- Include social proof (customer logos, metrics)
-- Clear CTAs
-
-### Dark Mode
-
-- Primary dark mode design
-- Deep Navy background (#0B1E34)
-- Cloud White text
-- Electric Blue accents
-
----
-
-## Application UI
-
-### Dashboard Design
-
-- Dark mode default
-- Card-based layout
-- Status indicators use Signal Green / Cyber Teal / Danger Red
-- Data tables with clear headers
-
-### Charts & Graphs
-
-- Electric Blue for primary data
-- Cyber Teal for secondary
-- Graphite for axes and labels
-
-### Forms
-
-- Clear labels above inputs
-- Inline validation messages
-- Electric Blue focus states
-
----
-
-## Competitive Positioning
-
-### Similar Brands for Reference
-
-- **Okta** — Clean, modern, identity-focused
-- **CrowdStrike** — Security-first, dark mode, professional
-- **Cloudflare** — Technical, fast, innovative
-
-### Differentiation
-
-SignalGrid owns:
-- The intersection of device identity + security automation
-- Visual language that emphasizes "grid" / network
-- Action-oriented messaging ("automate," "connect," "respond")
-
----
-
-## Brand Assets
-
-### Files to Create
-
-- [ ] Logo (SVG, PNG) — Full color, horizontal
-- [ ] Logo mark (SVG, PNG) — Icon only
-- [ ] Logo (white) — For dark backgrounds
-- [ ] Favicon (ICO)
-- [ ] Social media profile images
-
-### Social Media
-
-- Twitter: @signalgrid
-- LinkedIn: SignalGrid
-- GitHub: signalgrid
-
----
-
-*Last Updated: 2024*
-*Version: 1.0*
+- Emphasize deterministic outcomes and decision traceability.
+- Avoid language that implies validated production SLA/compliance posture.
+- Keep motion and visual effects minimal and purposeful.

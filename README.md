@@ -12,6 +12,16 @@
 - **Who we serve:** Regulated and high-consequence frontline organizations.
 - **Why it matters:** Better risk control, operational resilience, productivity, and accountability without workflow-breaking friction.
 
+## Brand and presentation direction
+
+SignalGrid branding is being aligned to a premium enterprise style that matches the current product framing:
+
+- Warm charcoal foundations, off-white typography, and muted teal accents
+- Minimal, architectural visuals with restrained risk-state colors
+- Runtime decision-layer positioning (not a generic identity/security dashboard)
+
+See [docs/BRAND_SYSTEM.md](docs/BRAND_SYSTEM.md) and [startup/branding/brand.md](startup/branding/brand.md) for current guidance.
+
 ## The problem we solve
 
 Shared and mobile devices in hospitals, warehouses, and other regulated environments are often used by multiple people across shifts and locations. Traditional controls often assume static trust, creating operational and security gaps between identity, device posture, context, and enforcement.

@@ -1,248 +1,127 @@
 # SignalGrid Logo Concepts
 
-## Enterprise Security Tone
+## Status
 
-**Design Principles:**
-- Trustworthy, professional, enterprise-ready
-- Simple, memorable, scalable
-- Works at 16x16 favicon and 512x512 hero
-- Works in light and dark mode
-- Avoid: cutesy, childish, overly complex
+This document supersedes earlier concept exploration.
+
+- **Deprecated concepts**: shield/badge, padlock-adjacent forms, and cyber-signal wave clichés.
+- **Preferred direction**: premium abstract **S/G monogram** or **decision-core** mark.
 
 ---
 
-## Concept 1: Grid Signal
+## Brand Fit Criteria
+
+Any final logo must communicate:
+
+- Runtime decision intelligence
+- Enterprise seriousness
+- Architectural clarity
+- Scalability from 16px favicon to large-format presentation
+
+It must **not** communicate:
+
+- Generic cybersecurity branding
+- Consumer app playfulness
+- Tactical “security tool” tropes (shields, lock icons, badges)
+
+---
+
+## Deprecated Concepts (for record)
+
+### 1) Grid Signal (Deprecated)
+Reason: too close to generic SaaS/security iconography and over-indexed on “signal waves.”
+
+### 2) Badge Shield (Deprecated)
+Reason: directly conflicts with updated direction to avoid shield/badge clichés.
+
+### 3) Device Chain (Deprecated)
+Reason: visually literal and network-diagram-heavy; weak brand distinctiveness.
+
+---
+
+## Preferred Concepts
+
+## Concept A: S/G Monogram (Primary Candidate)
 
 ### Description
-A stylized grid pattern with signal waves emanating from a central point. Represents both "grid" (network/device ecosystem) and "signal" (authentication/proximity).
+A minimal geometric monogram where **S** and **G** are resolved through shared structure and negative space. The mark should feel like a designed architectural symbol, not lettering ornament.
 
-### Visual Elements
+### Visual Intent
 
-```
-   ╔═══════════════════════════════════════╗
-   ║                                       ║
-   ║     Concept: Grid Signal              ║
-   ║                                       ║
-   ║          ╭─────╮                      ║
-   ║         ╱       ╲                     ║
-   ║        │    ●    │    ← Central dot  ║
-   ║         ╲       ╱                     ║
-   ║          ╰─────╯                      ║
-   ║            │ │                        ║
-   ║          ╭─╯ ╰─╮                      ║
-   ║         ╱       ╲                     ║
-   ║        │  ━━━━   │   ← Signal waves  ║
-   ║         ╲       ╱                     ║
-   ║          ╰─────╯                      ║
-   ║                                       ║
-   ║     SIGNALGRID                        ║
-   ║                                       ║
-   ╚═══════════════════════════════════════╝
-```
+- Interlocking geometry, balanced optical weight
+- Strong silhouette for favicon usage
+- Distinctive internal cut/void suggesting directional decision flow
 
-### Colors
-- Primary: `#0F172A` (Slate 900 - deep navy)
-- Accent: `#3B82F6` (Blue 500 - trust blue)
-- Signal wave: `#22D3EE` (Cyan 400 - tech accent)
+### Use Cases
 
-### Typography
-- Wordmark: Inter or SF Pro (clean, modern sans-serif)
-- Weight: 600 (semibold) for Signal, 400 (regular) for Grid
-- Letter-spacing: -0.02em for modern feel
-
-### Usage
-- Favicon: Central dot with one signal wave
-- Header: Full icon + wordmark
-- Dark mode: Invert colors or use white stroke
+- Product app icon
+- README/website hero lockup
+- Slide title pages and enterprise collateral
 
 ---
 
-## Concept 2: Badge Shield
+## Concept B: Decision Core Mark (Secondary Candidate)
 
 ### Description
-A security badge shape integrated with a shield, representing secure device access. The badge notch at top evokes physical access cards while the shield communicates security.
+An abstract “decision core” symbol: a central structural form with restrained branching paths implying context evaluation and deterministic outcomes.
 
-### Visual Elements
+### Visual Intent
 
-```
-   ╔═══════════════════════════════════════╗
-   ║                                       ║
-   ║     Concept: Badge Shield              ║
-   ║                                       ║
-   ║           ╭───╮                        ║
-   ║          ╱     ╲                       ║
-   ║         │       │                      ║
-   ║         │  ✓✓✓  │  ← Verification     ║
-   ║         │       │     marks           ║
-   ║          ╲     ╱                       ║
-   ║           ╰───╯                        ║
-   ║             │                          ║
-   ║         ╭──────╮                      ║
-   ║        ╱        ╲                     ║
-   ║       │ ════════ │  ← Shield body    ║
-   ║        ╲        ╱                     ║
-   ║         ╰──────╯                      ║
-   ║                                       ║
-   ║     SIGNALGRID                        ║
-   ║                                       ║
-   ╚═══════════════════════════════════════╝
-```
+- One core + subtle directional elements
+- Minimal line complexity
+- Works as monochrome stamp and single-accent version
 
-### Colors
-- Primary: `#1E293B` (Slate 800)
-- Badge accent: `#10B981` (Emerald 500 - verified)
-- Shield accent: `#3B82F6` (Blue 500)
+### Use Cases
 
-### Typography
-- Same as Concept 1
-
-### Usage
-- Favicon: Shield shape alone
-- App icon: Badge + shield with checkmarks
+- Integration diagrams
+- Small UI identity markers
+- Social profile avatar
 
 ---
 
-## Concept 3: Device Chain
+## Geometry and Construction Rules
 
-### Description
-Connected device nodes forming a chain/network. Represents the ecosystem of shared devices managed by SignalGrid.
-
-### Visual Elements
-
-```
-   ╔═══════════════════════════════════════╗
-   ║                                       ║
-   ║     Concept: Device Chain             ║
-   ║                                       ║
-   ║          ●────●                        ║
-   ║         ╱      ╲                       ║
-   ║        ●        ●                      ║
-   ║         ╲      ╱                       ║
-   ║          ●────●                        ║
-   ║           │  │                         ║
-   ║          ●────●  ← Multiple            ║
-   ║         ╱      ╲   device clusters    ║
-   ║        ●        ●                      ║
-   ║                                       ║
-   ║     SIGNALGRID                        ║
-   ║                                       ║
-   ╚═══════════════════════════════════════╝
-```
-
-### Colors
-- Primary: `#0F172A` (Slate 900)
-- Accent: `#6366F1` (Indigo 500 - connectivity)
-- Node inactive: `#94A3B8` (Slate 400)
-
-### Typography
-- Same as Concept 1
-
-### Usage
-- Favicon: 2x2 node cluster
-- Marketing: Larger network visualization
+- Build on a simple grid, but avoid obvious grid visual artifacts.
+- Prioritize symmetry or near-symmetry with purposeful asymmetry only where it improves legibility.
+- Use negative space intentionally to imply decision boundaries.
+- Avoid thin details that break at small sizes.
 
 ---
 
-## Logo Do's and Don'ts
+## Color Guidance
 
-### ✅ Do
-- Use the logo at sizes >= 32px with adequate padding
-- Maintain clear space (height of "S" in SignalGrid) around logo
-- Use provided color variants for different backgrounds
-- Use for favicon: simplified version (concept 1 or 2)
+Use brand palette from `startup/branding/brand.md` and `docs/BRAND_SYSTEM.md`.
 
-### ❌ Don't
-- Stretch or distort the logo
-- Add effects (shadows, gradients, glows)
-- Change colors outside of approved palette
-- Place on busy backgrounds without clear space
-- Modify the icon apart from the wordmark
+### Recommended Logo Variants
 
----
+1. Off-White mark on Warm Charcoal background
+2. Warm Charcoal mark on Off-White background
+3. Muted Teal accent variant (single accent region only)
+4. Monochrome fallback
 
-## Wordmark Variants
+### Avoid
 
-### Full Logo (Default)
-```
-SIGNALGRID
-```
-- Use for: Headers, marketing materials
-
-### Icon Only (Favicon)
-```
-[Concept 1 or 2 simplified]
-```
-- Use for: Browser tab, app icon, small contexts
-
-### Stacked (Mobile)
-```
-SIGNAL
-GRID
-```
-- Use for: App splash, narrow containers
+- Neon gradients
+- Multi-hue rainbow treatments
+- Glows, bevels, and embossed effects
 
 ---
 
-## Color Palette
+## Wordmark Direction
 
-### Primary Colors
-
-| Name | Hex | Usage |
-|------|-----|-------|
-| Slate 900 | `#0F172A` | Primary text, dark backgrounds |
-| Slate 800 | `#1E293B` | Secondary text, cards |
-| Blue 500 | `#3B82F6` | Primary accent, CTAs |
-| Blue 600 | `#2563EB` | Hover states |
-
-### Accent Colors
-
-| Name | Hex | Usage |
-|------|-----|-------|
-| Cyan 400 | `#22D3EE` | Signal indicators, success |
-| Emerald 500 | `#10B981` | Verified, secure |
-| Amber 500 | `#F59E0B` | Warnings |
-| Red 500 | `#EF4444` | Errors, alerts |
-
-### Neutral Colors
-
-| Name | Hex | Usage |
-|------|-----|-------|
-| White | `#FFFFFF` | Light backgrounds |
-| Slate 100 | `#F1F5F9` | Light card backgrounds |
-| Slate 200 | `#E2E8F0` | Borders |
-| Slate 400 | `#94A3B8` | Muted text |
+- Typeface: Inter or equivalent modern enterprise sans-serif
+- Weight: 500–600 for balanced authority
+- Tracking: slight tightening for premium compactness
+- Casing: “SignalGrid” preferred (title case)
 
 ---
 
-## Animation Guidelines
+## Acceptance Checklist
 
-### Loading State
-- Fade in logo with subtle scale (0.95 → 1.0)
-- Duration: 300ms, ease-out
-- Signal wave animation: ripple outward
+A candidate can move forward only if it:
 
-### Interaction
-- Hover: Subtle brightness increase
-- Click: Scale down (1.0 → 0.98), scale back
-- Don't over-animate; keep professional
-
----
-
-## File Deliverables (When Ready)
-
-### Required Formats
-- SVG (primary, scalable)
-- PNG (2x for retina)
-- ICO (favicon)
-
-### Sizes to Generate
-- 16x16 (favicon)
-- 32x32 (favicon retina)
-- 128x128 (app icon small)
-- 512x512 (app icon)
-- 1024x1024 (marketing)
-
-### Variants
-- Light background (dark logo)
-- Dark background (light logo)
-- Monochrome (single color)
+- Reads clearly at 16px, 24px, and 32px
+- Works in monochrome without loss of meaning
+- Avoids shield/padlock/badge resemblance
+- Feels consistent with runtime decision-layer positioning
+- Looks credible in enterprise procurement and board-level contexts
