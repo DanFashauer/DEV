@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 const outcomes = [
   {
     title: 'Allow',
@@ -22,8 +24,8 @@ export default function HomePage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-16">
         <header className="rounded-3xl border border-[#2A3136] bg-[#1D2226] p-8 md:p-12">
           <div className="mb-8 flex items-center gap-4">
-            <img src="/signalgrid-logo-mark.svg" alt="SignalGrid mark" className="h-11 w-11" />
-            <img src="/signalgrid-logo.svg" alt="SignalGrid" className="h-7 w-auto" />
+            <Image src="/signalgrid-logo-mark.svg" alt="SignalGrid mark" width={44} height={44} className="h-11 w-11" priority />
+            <Image src="/signalgrid-logo.svg" alt="SignalGrid" width={180} height={28} className="h-7 w-auto" priority />
           </div>
 
           <div className="grid gap-10 lg:grid-cols-[1.1fr,0.9fr] lg:items-end">
@@ -45,10 +47,13 @@ export default function HomePage() {
                 Request early access
               </a>
             </div>
-            <img
+            <Image
               src="/readme-hero.svg"
               alt="SignalGrid decision flow illustration"
+              width={1240}
+              height={440}
               className="w-full rounded-2xl border border-[#2A3136] bg-[#15181B] p-3"
+              priority
             />
           </div>
         </header>
