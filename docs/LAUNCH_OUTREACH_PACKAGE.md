@@ -4,6 +4,7 @@
 This package is for early design-partner outreach using the current landing page, demo, and architecture visual. It is designed to start high-quality conversations and secure pilot discovery calls.
 
 ## Guardrails
+- Use fully qualified links in external outreach; replace `{{SignalGridBaseUrl}}` with your public HTTPS host (example: `https://demo.signalgrid.example`).
 - Do **not** position SignalGrid as production-ready.
 - Do **not** imply compliance certification or legal guarantees.
 - Do **not** claim replacement of existing IAM, UEM, endpoint security, or broader enterprise security programs.
@@ -17,8 +18,8 @@ SignalGrid is a runtime decision layer for shared-device and mobile frontline en
 The goal is simple:
 help teams make clearer access decisions using identity, device posture, and session context before workflows break.
 What I can show today:
-- a live `/demo` flow
-- scenario verification through `/api/demo/verify?scenario=all`
+- a live `{{SignalGridBaseUrl}}/demo` flow
+- scenario verification through `{{SignalGridBaseUrl}}/api/demo/verify?scenario=all`
 - an architecture view showing where SignalGrid fits between authentication and enforcement
 This is early and intentionally scoped. Not a production rollout pitch.
 If you work in endpoint, mobility, IAM, UEM, frontline IT, or security architecture and this problem sounds familiar, I’d value 15 minutes of candid feedback.
@@ -49,9 +50,9 @@ I’m reaching out because your team’s work in {{Company/Area}} seems closely 
 I’m currently running a small design-partner motion for **SignalGrid**. This is not a production rollout pitch — it’s a structured feedback loop with endpoint, mobility, IAM, UEM, frontline IT, and security architecture leaders.
 
 What we can share today:
-- live product flow at `/demo`
-- verification endpoint: `/api/demo/verify?scenario=all`
-- architecture explainer: `docs/assets/signalgrid-runtime-architecture.svg`
+- live product flow at `{{SignalGridBaseUrl}}/demo`
+- verification endpoint: `{{SignalGridBaseUrl}}/api/demo/verify?scenario=all`
+- architecture explainer: `{{SignalGridBaseUrl}}/assets/signalgrid-runtime-architecture.svg`
 
 If useful, I’d love a 15-minute discovery call to understand your current access-decision workflow and see if a short pilot is worth scoping.
 
@@ -97,9 +98,9 @@ Ask:
 4. What would make a pilot worthwhile in 30–45 days?
 
 ## 6:00–10:00 — Show + React
-- Show `/demo` flow.
-- Reference `/api/demo/verify?scenario=all` to demonstrate scenario coverage.
-- Use `docs/assets/signalgrid-runtime-architecture.svg` to explain where SignalGrid sits between authentication and enforcement.
+- Show `{{SignalGridBaseUrl}}/demo` flow.
+- Reference `{{SignalGridBaseUrl}}/api/demo/verify?scenario=all` to demonstrate scenario coverage.
+- Use `{{SignalGridBaseUrl}}/assets/signalgrid-runtime-architecture.svg` to explain where SignalGrid sits between authentication and enforcement.
 
 Prompt reactions:
 - “What feels realistic vs. hand-wavy?”
@@ -156,11 +157,11 @@ Evaluate whether SignalGrid improves clarity and speed of access outcomes in a l
 ## 7) Short Demo Walkthrough Script
 “Thanks for taking a look — I’ll keep this brief and concrete.
 
-First, I’ll open `/demo` and walk through the current runtime decision flow end-to-end for shared-device and mobile frontline scenarios. As we do this, note where your endpoint, mobility/UEM, IAM, and frontline IT ownership boundaries show up.
+First, I’ll open `{{SignalGridBaseUrl}}/demo` and walk through the current runtime decision flow end-to-end for shared-device and mobile frontline scenarios. As we do this, note where your endpoint, mobility/UEM, IAM, and frontline IT ownership boundaries show up.
 
-Second, I’ll reference `/api/demo/verify?scenario=all` to show that each demo scenario path is wired and verifiable in the current build.
+Second, I’ll reference `{{SignalGridBaseUrl}}/api/demo/verify?scenario=all` to show that each demo scenario path is wired and verifiable in the current build.
 
-Third, I’ll pull up `docs/assets/signalgrid-runtime-architecture.svg` to anchor where SignalGrid fits between authentication and enforcement.
+Third, I’ll pull up `{{SignalGridBaseUrl}}/assets/signalgrid-runtime-architecture.svg` to anchor where SignalGrid fits between authentication and enforcement.
 
 Important context: this is design-partner stage. We’re not positioning this as production-ready, and remediation actions are represented as simulated talk-track unless validated in your environment.
 
