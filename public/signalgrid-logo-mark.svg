@@ -1,0 +1,8 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SignalGrid logo mark</title>
+  <desc id="desc">Icon-only abstract SignalGrid S/G decision-core monogram for favicon and avatar use.</desc>
+  <rect width="256" height="256" rx="52" fill="#15181B"/>
+  <rect x="29" y="29" width="198" height="198" rx="40" fill="#1D2226" stroke="#2A3136" stroke-width="3"/>
+  <path d="M65 73C79 55 99 46 124 46C154 46 179 58 195 79L173 97C161 81 145 72 125 72C111 72 100 76 92 85C84 94 82 103 85 112C88 121 96 128 109 134L153 151C177 161 191 176 196 198C201 221 194 241 178 256C161 271 139 279 112 279C85 279 62 269 44 250L66 231C79 246 95 253 114 253C129 253 141 248 149 238C157 228 160 218 157 209C154 199 145 191 131 185L86 168C64 160 49 145 44 123C40 104 47 87 65 73Z" fill="#F3F1EC" transform="translate(0 -23)"/>
+  <path d="M186 75V100H145V170C145 184 154 192 170 192H185V217H163C136 217 120 201 120 174V100H95V75H120V49H145V75H186Z" fill="#4F8C87"/>
+</svg>

@@ -1,0 +1,15 @@
+<svg width="720" height="220" viewBox="0 0 720 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SignalGrid logo</title>
+  <desc id="desc">Abstract SignalGrid monogram with wordmark in warm charcoal, off-white, and muted teal.</desc>
+  <rect width="720" height="220" rx="24" fill="#15181B"/>
+  <g transform="translate(42 36)">
+    <rect x="0" y="0" width="148" height="148" rx="30" fill="#1D2226" stroke="#2A3136" stroke-width="2"/>
+    <path d="M33 40C43 28 57 22 74 22C95 22 111 30 123 45L109 57C100 45 88 39 74 39C62 39 53 43 47 50C41 57 39 64 41 70C43 76 48 81 57 85L89 98C105 105 115 115 118 129C121 143 116 156 105 166C95 176 81 181 64 181C44 181 27 172 15 155L30 143C39 156 51 162 65 162C76 162 84 159 91 152C98 146 100 139 98 133C96 126 90 121 81 117L49 104C33 97 23 86 20 72C18 60 22 49 33 40Z" fill="#F3F1EC"/>
+    <path d="M112 43V61H82V113C82 124 88 130 100 130H111V148H95C75 148 64 137 64 117V61H45V43H64V24H82V43H112Z" fill="#4F8C87"/>
+  </g>
+  <g transform="translate(230 76)">
+    <text x="0" y="56" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="600" letter-spacing="0.8">SignalGrid</text>
+    <text x="2" y="92" fill="#D8D4CC" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="500" letter-spacing="0.4">Runtime Decision Layer</text>
+  </g>
+  <line x1="216" y1="50" x2="216" y2="170" stroke="#2A3136" stroke-width="2"/>
+</svg>

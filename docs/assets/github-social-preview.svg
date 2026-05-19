@@ -1,0 +1,14 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SignalGrid GitHub social preview</title>
+  <desc id="desc">SignalGrid social card with restrained enterprise styling and runtime decision layer positioning.</desc>
+  <rect width="1200" height="630" fill="#15181B"/>
+  <rect x="64" y="64" width="1072" height="502" rx="28" fill="#1D2226" stroke="#2A3136" stroke-width="2"/>
+  <circle cx="150" cy="132" r="8" fill="#4F8C87"/>
+  <circle cx="178" cy="132" r="8" fill="#B08B57"/>
+  <circle cx="206" cy="132" r="8" fill="#A15B5B"/>
+  <text x="128" y="275" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="96" font-weight="650" letter-spacing="0.5">SignalGrid</text>
+  <text x="128" y="337" fill="#D8D4CC" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500">Runtime Decision Layer Between Authentication and Enforcement</text>
+  <path d="M128 420H520" stroke="#4F8C87" stroke-width="8" stroke-linecap="round"/>
+  <path d="M548 420H856" stroke="#2A3136" stroke-width="8" stroke-linecap="round"/>
+  <path d="M886 420H1072" stroke="#4F8C87" stroke-width="8" stroke-linecap="round"/>
+</svg>
