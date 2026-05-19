@@ -3,6 +3,7 @@
  * Tests for public API endpoints and third-party integrations
  */
 
+import crypto from 'node:crypto';
 import { describe, it, expect, beforeAll } from 'vitest';
 
 describe('API v1 - Public Endpoints', () => {
@@ -12,8 +13,6 @@ describe('API v1 - Public Endpoints', () => {
   const signingSecret = process.env.DEVICE_WEBHOOK_SECRET || process.env.BACKEND_SIGNING_SECRET || 'dev-secret';
 
   function signPayload(payload: unknown) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const crypto = require('crypto') as typeof import('crypto');
     return crypto
       .createHmac('sha256', signingSecret)
       .update(JSON.stringify(payload))
