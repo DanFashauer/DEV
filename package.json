@@ -52,7 +52,8 @@
     "demo:seed": "bun run scripts/demo-seed.ts",
     "demo:media": "bun run scripts/capture-demo-media.ts",
     "demo:screenshots": "bun run scripts/capture-demo-media.ts --mode=screenshots",
-    "demo:video": "bun run scripts/capture-demo-media.ts --mode=video"
+    "demo:video": "bun run scripts/capture-demo-media.ts --mode=video",
+    "rc:smoke": "bun run scripts/rc-smoke.ts"
   },
   "dependencies": {
     "ioredis": "^5.10.0",

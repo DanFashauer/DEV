@@ -3,6 +3,7 @@
  * Tests for public API endpoints and third-party integrations
  */
 
+import crypto from 'node:crypto';
 import { describe, it, expect, beforeAll } from 'vitest';
 
 describe('API v1 - Public Endpoints', () => {
@@ -12,8 +13,6 @@ describe('API v1 - Public Endpoints', () => {
   const signingSecret = process.env.DEVICE_WEBHOOK_SECRET || process.env.BACKEND_SIGNING_SECRET || 'dev-secret';
 
   function signPayload(payload: unknown) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const crypto = require('crypto') as typeof import('crypto');
     return crypto
       .createHmac('sha256', signingSecret)
       .update(JSON.stringify(payload))
@@ -226,6 +225,45 @@ describe('API v1 - Public Endpoints', () => {
       });
 
       expect(response.status).toBe(401);
+    });
+
+
+    it('should reject missing signature with 401', async () => {
+      const payload = {
+        device: { deviceId: 'test-device-123' },
+        badge: { badgeId: 'badge-001' },
+        timestamp: new Date().toISOString(),
+      };
+
+      const response = await fetch(`${baseUrl}/session/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should reject signed malformed payload with INVALID_SESSION_START_PAYLOAD', async () => {
+      const payload = {
+        timestamp: new Date().toISOString(),
+        nonce: 'malformed-' + Date.now(),
+      };
+
+      const signature = signPayload(payload);
+
+      const response = await fetch(`${baseUrl}/session/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Signature': signature,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      expect(response.status).toBe(400);
+      const data = await response.json() as { code?: string };
+      expect(data.code).toBe('INVALID_SESSION_START_PAYLOAD');
     });
 
     it('should enforce timestamp window', async () => {
