@@ -1,0 +1,36 @@
+<svg width="1240" height="440" viewBox="0 0 1240 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SignalGrid README hero diagram</title>
+  <desc id="desc">Conceptual flow: Identity, device, and session context into SignalGrid and decisions allow, deny, or step-up.</desc>
+  <rect width="1240" height="440" rx="20" fill="#15181B"/>
+  <text x="52" y="64" fill="#D8D4CC" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="500">Conceptual diagram (MVP/demo framing, not production proof)</text>
+
+  <rect x="52" y="120" width="270" height="78" rx="14" fill="#1D2226" stroke="#2A3136"/>
+  <text x="76" y="166" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="550">Identity Context</text>
+
+  <rect x="52" y="216" width="270" height="78" rx="14" fill="#1D2226" stroke="#2A3136"/>
+  <text x="76" y="262" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="550">Device Context</text>
+
+  <rect x="52" y="312" width="270" height="78" rx="14" fill="#1D2226" stroke="#2A3136"/>
+  <text x="76" y="358" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="550">Session Context</text>
+
+  <path d="M334 160H452" stroke="#4F8C87" stroke-width="4" stroke-linecap="round"/>
+  <path d="M334 256H452" stroke="#4F8C87" stroke-width="4" stroke-linecap="round"/>
+  <path d="M334 352H452" stroke="#4F8C87" stroke-width="4" stroke-linecap="round"/>
+
+  <rect x="456" y="146" width="312" height="218" rx="20" fill="#1D2226" stroke="#4F8C87" stroke-width="2"/>
+  <text x="520" y="230" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="650">SignalGrid</text>
+  <text x="506" y="268" fill="#D8D4CC" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="500">Runtime decision layer</text>
+
+  <path d="M780 196H926" stroke="#5E8F73" stroke-width="4" stroke-linecap="round"/>
+  <path d="M780 256H926" stroke="#A15B5B" stroke-width="4" stroke-linecap="round"/>
+  <path d="M780 316H926" stroke="#B08B57" stroke-width="4" stroke-linecap="round"/>
+
+  <rect x="936" y="165" width="252" height="56" rx="12" fill="#1D2226" stroke="#5E8F73"/>
+  <text x="1028" y="200" text-anchor="middle" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="600">Allow</text>
+
+  <rect x="936" y="225" width="252" height="56" rx="12" fill="#1D2226" stroke="#A15B5B"/>
+  <text x="1028" y="260" text-anchor="middle" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="600">Deny</text>
+
+  <rect x="936" y="285" width="252" height="56" rx="12" fill="#1D2226" stroke="#B08B57"/>
+  <text x="1028" y="320" text-anchor="middle" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="600">Step-Up</text>
+</svg>

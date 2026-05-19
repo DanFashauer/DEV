@@ -1,5 +1,11 @@
 # SignalGrid
 
+<p align="left">
+  <img src="public/signalgrid-logo.svg" alt="SignalGrid logo" width="360"/>
+</p>
+
+![SignalGrid conceptual runtime decision flow](docs/assets/readme-hero.svg)
+
 **SignalGrid is a Zero Trust orchestration platform for shared and mobile work environments.**
 
 **Mission:** SignalGrid enables secure, contextual, real-time access by continuously evaluating identity, device trust, and operational context.

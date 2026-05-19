@@ -1,0 +1,13 @@
+<svg width="1200" height="627" viewBox="0 0 1200 627" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SignalGrid LinkedIn teaser</title>
+  <desc id="desc">Minimal teaser with SignalGrid mark and restrained positioning line.</desc>
+  <rect width="1200" height="627" fill="#15181B"/>
+  <rect x="84" y="84" width="1032" height="459" rx="28" fill="#1D2226" stroke="#2A3136" stroke-width="2"/>
+  <g transform="translate(144 204)">
+    <rect x="0" y="0" width="132" height="132" rx="30" fill="#15181B" stroke="#2A3136" stroke-width="2"/>
+    <path d="M26 36C36 25 50 20 66 20C86 20 102 28 114 42L102 53C93 43 81 37 68 37C56 37 47 41 42 48C37 55 35 61 37 67C39 73 44 77 53 81L81 93C96 100 105 108 108 121C111 134 106 145 96 154C86 163 73 168 58 168C39 168 24 159 14 143L27 133C35 144 46 149 59 149C69 149 77 146 83 140C89 134 91 128 89 122C87 116 82 111 74 107L46 95C31 88 22 79 19 67C16 55 19 45 26 36Z" fill="#F3F1EC"/>
+    <path d="M106 41V57H79V105C79 115 84 120 94 120H105V137H91C73 137 62 127 62 109V57H45V41H62V24H79V41H106Z" fill="#4F8C87"/>
+  </g>
+  <text x="320" y="294" fill="#F3F1EC" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="640">SignalGrid</text>
+  <text x="320" y="350" fill="#D8D4CC" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="500">Runtime decisions between authentication and enforcement.</text>
+</svg>
