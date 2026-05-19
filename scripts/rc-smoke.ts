@@ -130,14 +130,19 @@ async function run() {
     });
     record('/api/v1/session/start rejects missing signature', missingSig.response.status === 401);
 
-    const malformedPayload = { ...minimumPayload, timestamp: 'not-a-timestamp' };
+    const malformedPayload = {
+      timestamp: new Date().toISOString(),
+      nonce: `malformed-${Date.now()}`,
+      reader: { readerType: 'BLE' },
+      context: { locationId: 'loc-001' },
+    };
     const malformedSig = sign(malformedPayload);
     const malformed = await jsonFetch('/api/v1/session/start', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-signature': malformedSig },
       body: JSON.stringify(malformedPayload),
     });
-    record('/api/v1/session/start rejects signed malformed payload with INVALID_SESSION_START_PAYLOAD', malformed.response.status >= 400 && (malformed.body?.code === 'INVALID_SESSION_START_PAYLOAD' || malformed.response.status === 401));
+    record('/api/v1/session/start rejects signed malformed payload with INVALID_SESSION_START_PAYLOAD', malformed.response.status === 400 && malformed.body?.code === 'INVALID_SESSION_START_PAYLOAD');
 
     const validSig = sign(minimumPayload);
     const valid = await jsonFetch('/api/v1/session/start', {

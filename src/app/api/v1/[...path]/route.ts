@@ -181,6 +181,16 @@ function isFreshTimestamp(timestamp: unknown) {
   return Number.isFinite(time) && Math.abs(Date.now() - time) <= 5 * 60 * 1000;
 }
 
+
+function isValidSessionStartPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object") return false;
+  const p = payload as { device?: { deviceId?: unknown }; badge?: { badgeId?: unknown; badgeUid?: unknown } };
+  const hasDeviceId = typeof p.device?.deviceId === "string" && p.device.deviceId.trim().length > 0;
+  const hasBadgeId = typeof p.badge?.badgeId === "string" && p.badge.badgeId.trim().length > 0;
+  const hasBadgeUid = typeof p.badge?.badgeUid === "string" && p.badge.badgeUid.trim().length > 0;
+  return hasDeviceId && (hasBadgeId || hasBadgeUid);
+}
+
 function getPath(params: { path?: string[] }) {
   return `/${(params.path || []).join("/")}`;
 }
@@ -271,6 +281,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   if (path === "/session/start") {
+    if (!isValidSessionStartPayload(body)) {
+      return error(400, "INVALID_SESSION_START_PAYLOAD", "Session start payload must include device.deviceId and badge.badgeId or badge.badgeUid");
+    }
+
     return json({
       sessionId: crypto.randomUUID(),
       decision: "ALLOW",
