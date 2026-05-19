@@ -31,6 +31,12 @@ This document tracks the initial SVG brand assets in this repository and how to 
 - **Use it for:** Introductory launch/update posts with restrained positioning.
 - **Notes:** Includes minimal logo treatment and a non-hype one-line message.
 
+
+### `docs/assets/signalgrid-runtime-architecture.svg`
+- **Purpose:** Primary marketing architecture poster for SignalGrid runtime decision positioning.
+- **Use it for:** README/website architecture section, investor decks, discovery calls, and LinkedIn thought-leadership visuals.
+- **Notes:** Conceptual diagram emphasizing runtime inputs, SignalGrid decision logic, deterministic outcomes, and integration boundaries. Keep copy aligned to claim boundaries and avoid implying validated production integrations.
+
 ## PNG export guidance (when required)
 
 Prefer using source SVG directly whenever possible. If a target platform requires PNG:
