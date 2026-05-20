@@ -59,7 +59,15 @@ Issues that do not break the demo but should be improved.
 
 ### Current Non-Blocking Items
 
-(None yet - pending first manual review)
+
+- ID: AUTO_WORKFLOWS_MANUAL_PHASE
+- Title: Auto-approve/auto-merge intentionally disabled
+- Date: 2026-05-20
+- Severity: Low
+- Area: repository workflow governance
+- Suggested fix: Re-enable only after branch protection, labels, and permissions are reviewed.
+- Status: Active (intentional)
+
 
 ---
 

@@ -1,8 +1,9 @@
 name: Auto-merge (no human approvals)
 
+# Disabled during controlled-demo/manual-merge phase; manual runs only.
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, labeled]
+  workflow_dispatch:
+
 
 permissions:
   contents: write
