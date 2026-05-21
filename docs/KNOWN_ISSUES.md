@@ -59,15 +59,7 @@ Issues that do not break the demo but should be improved.
 
 ### Current Non-Blocking Items
 
-
-- ID: AUTO_WORKFLOWS_MANUAL_PHASE
-- Title: Auto-approve/auto-merge workflows archived (not active)
-- Date: 2026-05-20
-- Severity: Low
-- Area: repository workflow governance
-- Suggested fix: Restore only after branch protection, labels, app permissions, and merge policy are reviewed.
-- Status: Archived (intentional)
-
+(None yet - pending first manual review)
 
 ---
 
