@@ -65,8 +65,9 @@ This audit covers:
 
 ### 4) Workflow automation has broad write-level behavior that should be revalidated (P1)
 **What was observed**
-- Auto-merge workflow has top-level `contents: write` and `pull-requests: write` permissions.
-- Auto-approve flow can auto-approve and auto-merge labeled PRs after checks.
+- Auto-approve and auto-merge automation workflows are archived under `.github/workflows-disabled/` during the controlled-demo/manual-review phase; they are not active workflows.
+- The archived workflows must not be restored until branch protection, required labels, GitHub App permissions, and merge policy are reviewed together.
+- If restored, the workflows must use a valid `pull_request` context or explicit `workflow_dispatch` inputs such as `pr_number` before approving or merging pull requests.
 
 **Why this matters**
 - Automation blast radius is higher when write permissions are broad.
