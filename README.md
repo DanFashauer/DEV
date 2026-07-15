@@ -1,3 +1,14 @@
+> # ⚠️ Legacy — retired POC / concept
+>
+> **This repository is a retired proof-of-concept (pre-dev / concept stage).**
+> Active development has moved to the consolidated, canonical monorepo:
+>
+> → **[DanFashauer/SignalGrid-Review-Hub](https://github.com/DanFashauer/SignalGrid-Review-Hub)** (dev → alpha → beta → prod tiers; live demo, deterministic core, control plane, docs).
+>
+> This repo is kept for history only and is no longer maintained. Please use the canonical repo above.
+
+---
+
 # SignalGrid
 
 <p align="left">
