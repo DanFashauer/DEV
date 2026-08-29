@@ -65,17 +65,17 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0",
-    "@tailwindcss/postcss": "^4.1.17",
+    "@playwright/test": "^1.61.1",
+    "@tailwindcss/postcss": "^4.3.2",
     "@types/ioredis": "^5.0.0",
-    "@types/node": "^24.10.2",
+    "@types/node": "^26.0.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^11.0.0",
-    "eslint": "^9.39.1",
-    "eslint-config-next": "^16.2.1",
+    "eslint": "^10.6.0",
+    "eslint-config-next": "^16.2.9",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5.9.3",
-    "vitest": "^2.1.8"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }
